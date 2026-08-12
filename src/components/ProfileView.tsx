@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FeedPost, Itinerary, isWebsiteOwner } from '../types';
 import { BRAND_LOGOS } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
-import { Check, Mail, MapPin, LogOut, User as UserIcon, Sparkles, ShieldCheck } from 'lucide-react';
+import { Check, Mail, MapPin, LogOut, User as UserIcon, Sparkles, ShieldCheck, Phone, Globe } from 'lucide-react';
 
 interface ProfileViewProps {
   savedItineraries: Itinerary[];
@@ -110,17 +110,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               )}
             </div>
 
-            <p className="text-xs md:text-sm text-sky-200/90 font-medium flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-sky-300" />
-              <span>{user?.email}</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:text-sm text-sky-200/90 font-medium">
+              <span className="flex items-center gap-1">
+                <Mail className="w-3.5 h-3.5 text-sky-300" />
+                <span>{user?.email}</span>
+              </span>
+              {user?.phone && (
+                <span className="flex items-center gap-1">
+                  <span className="text-white/40">•</span>
+                  <Phone className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>{user.phone}</span>
+                </span>
+              )}
+              {user?.country && (
+                <span className="flex items-center gap-1">
+                  <span className="text-white/40">•</span>
+                  <Globe className="w-3.5 h-3.5 text-sky-400" />
+                  <span>{user.country}</span>
+                </span>
+              )}
               {user?.homeLocation && (
-                <>
+                <span className="flex items-center gap-1">
                   <span className="text-white/40">•</span>
                   <MapPin className="w-3.5 h-3.5 text-amber-300" />
                   <span>{user.homeLocation}</span>
-                </>
+                </span>
               )}
-            </p>
+            </div>
 
             {/* Travel Preferences Chips */}
             {user?.travelPreferences && user.travelPreferences.length > 0 && (

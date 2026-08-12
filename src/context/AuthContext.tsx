@@ -16,12 +16,16 @@ interface AuthContextType {
   registerWithEmail: (
     fullName: string,
     email: string,
+    phone: string,
+    country: string,
     pass: string,
+    agreeTerms: boolean,
     photoURL?: string
   ) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithApple: () => Promise<{ success: boolean; error?: string }>;
-  sendPasswordReset: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  sendPasswordReset: (email: string) => Promise<{ success: boolean; message?: string; error?: string; demoCode?: string }>;
+  resetPasswordWithCode: (email: string, resetCode: string, newPass: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   verifyEmail: () => Promise<{ success: boolean; error?: string }>;
   resendVerification: () => Promise<{ success: boolean; message?: string; error?: string }>;
   saveOnboardingPreferences: (
@@ -196,7 +200,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const registerWithEmail = async (
     fullName: string,
     email: string,
+    phone: string,
+    country: string,
     pass: string,
+    agreeTerms: boolean,
     photoURL?: string
   ) => {
     setIsLoading(true);
@@ -204,7 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, password: pass, photoURL }),
+        body: JSON.stringify({ fullName, email, phone, country, password: pass, agreeTerms, photoURL }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -273,7 +280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Password Reset
+  // Request Password Reset Code
   const sendPasswordReset = async (email: string) => {
     try {
       const res = await fetch('/api/auth/forgot-password', {
@@ -285,9 +292,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!res.ok) {
         return { success: false, error: data.error };
       }
-      return { success: true, message: data.message };
+      return { success: true, message: data.message, demoCode: data.demoResetCode };
     } catch {
       return { success: false, error: 'Failed to send reset link.' };
+    }
+  };
+
+  // Reset Password With Code
+  const resetPasswordWithCode = async (email: string, resetCode: string, newPass: string) => {
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, resetCode, newPassword: newPass }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Failed to reset password.' };
+      }
+      return { success: true, message: data.message };
+    } catch {
+      return { success: false, error: 'Network error resetting password. Please try again.' };
     }
   };
 
@@ -391,6 +416,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         loginWithApple,
         sendPasswordReset,
+        resetPasswordWithCode,
         verifyEmail,
         resendVerification,
         saveOnboardingPreferences,

@@ -1,0 +1,41 @@
+{
+  "alex@globetrotter.ai": {
+    "uid": "user_alex_123",
+    "fullName": "Alex Mercer",
+    "email": "alex@globetrotter.ai",
+    "passwordHash": "f306bea67a80c30fc0593edc97a5989620766a0b78aee4863d9e22172c39eb48fae58606d709ff494264cef34c2ae3608eba902fa1362159e521357af1daf0e5",
+    "photoURL": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    "emailVerified": true,
+    "provider": "email",
+    "createdAt": "2026-08-12T15:30:21.040Z",
+    "homeLocation": "San Francisco, CA",
+    "travelPreferences": [
+      "Culture",
+      "Nature",
+      "Food"
+    ],
+    "isProfileComplete": true,
+    "passwordSalt": "0cccddab81c536a2b719c0da95bf473a"
+  },
+  "explorer.google@gmail.com": {
+    "uid": "goog_1786548642514_ckkmn",
+    "fullName": "Google Traveler",
+    "email": "explorer.google@gmail.com",
+    "photoURL": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    "emailVerified": true,
+    "provider": "google",
+    "createdAt": "2026-08-12T15:30:42.514Z",
+    "isProfileComplete": false
+  },
+  "test.traveler@example.com": {
+    "uid": "usr_1786554733499_w2wfv",
+    "fullName": "Test Traveler",
+    "email": "test.traveler@example.com",
+    "passwordHash": "SecurePassword123!",
+    "photoURL": "https://api.dicebear.com/7.x/avataaars/svg?seed=Test%20Traveler",
+    "emailVerified": false,
+    "provider": "email",
+    "createdAt": "2026-08-12T17:12:13.500Z",
+    "isProfileComplete": false
+  }
+}

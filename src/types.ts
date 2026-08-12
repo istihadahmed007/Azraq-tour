@@ -171,10 +171,13 @@ export interface User {
   uid: string;
   fullName: string;
   email: string;
+  phone?: string;
+  country?: string;
   photoURL?: string;
   emailVerified: boolean;
   provider: 'email' | 'google' | 'apple';
   createdAt: string;
+  updatedAt?: string;
   homeLocation?: string;
   travelPreferences?: string[];
   isProfileComplete?: boolean;

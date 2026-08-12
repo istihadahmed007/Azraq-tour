@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -25,21 +26,44 @@ function getGenAI() {
   });
 }
 
+// --- Secure Password Hashing Helpers ---
+function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
+  const generatedSalt = salt || crypto.randomBytes(16).toString("hex");
+  const hash = crypto.pbkdf2Sync(password, generatedSalt, 10000, 64, "sha512").toString("hex");
+  return { hash, salt: generatedSalt };
+}
+
+function verifyPassword(password: string, storedHash?: string, salt?: string): boolean {
+  if (!storedHash) return false;
+  // If user is legacy with plain password, check direct equality first
+  if (!salt) {
+    return password === storedHash;
+  }
+  const { hash } = hashPassword(password, salt);
+  return hash === storedHash;
+}
+
 // --- Persistent File-Backed Auth User Store ---
 interface ServerUser {
   uid: string;
   fullName: string;
   email: string;
+  phone?: string;
+  country?: string;
   passwordHash?: string;
+  passwordSalt?: string;
   photoURL?: string;
   emailVerified: boolean;
   provider: 'email' | 'google' | 'apple';
   createdAt: string;
+  updatedAt?: string;
   homeLocation?: string;
   travelPreferences?: string[];
   isProfileComplete?: boolean;
   isAdmin?: boolean;
   role?: 'admin' | 'user' | 'owner';
+  resetToken?: string;
+  resetTokenExpiry?: number;
 }
 
 const DB_FILE = path.join(process.cwd(), ".users_db.json");
@@ -65,6 +89,7 @@ function loadUsersFromDisk(): Map<string, ServerUser> {
     console.error("Failed to read user DB file:", err);
   }
   // Default demo user (Website Owner)
+  const alexSaltHash = hashPassword("pass1234");
   return new Map<string, ServerUser>([
     [
       "alex@globetrotter.ai",
@@ -72,7 +97,10 @@ function loadUsersFromDisk(): Map<string, ServerUser> {
         uid: "user_alex_123",
         fullName: "Alex Mercer (Website Owner)",
         email: "alex@globetrotter.ai",
-        passwordHash: "pass1234",
+        phone: "+1 (555) 234-5678",
+        country: "United States",
+        passwordHash: alexSaltHash.hash,
+        passwordSalt: alexSaltHash.salt,
         photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
         emailVerified: true,
         provider: "email",
@@ -106,16 +134,25 @@ function saveUsersToDisk() {
 // Register Endpoint
 app.post("/api/auth/register", (req, res) => {
   try {
-    const { fullName, email, password, photoURL } = req.body;
+    const { fullName, email, phone, country, password, agreeTerms, photoURL } = req.body;
 
     if (!fullName || !fullName.trim()) {
       return res.status(400).json({ error: "Full Name is required." });
     }
-    if (!email || !email.includes("@")) {
-      return res.status(400).json({ error: "Please provide a valid email address." });
+    if (!email || !email.includes("@") || !email.includes(".")) {
+      return res.status(400).json({ error: "Please enter a valid email address." });
+    }
+    if (!phone || phone.trim().length < 6) {
+      return res.status(400).json({ error: "Please enter a valid Phone / WhatsApp number." });
+    }
+    if (!country || !country.trim()) {
+      return res.status(400).json({ error: "Please select or enter your Country." });
     }
     if (!password || password.length < 8) {
       return res.status(400).json({ error: "Password must be at least 8 characters long." });
+    }
+    if (!agreeTerms) {
+      return res.status(400).json({ error: "You must agree to the Terms of Service & Privacy Policy to register." });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -123,25 +160,35 @@ app.post("/api/auth/register", (req, res) => {
       return res.status(400).json({ error: "An account with this email address already exists. Please log in instead." });
     }
 
+    // Secure salt + PBKDF2 password hashing
+    const { hash, salt } = hashPassword(password);
+
     const newUser: ServerUser = {
       uid: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       fullName: fullName.trim(),
       email: normalizedEmail,
-      passwordHash: password, // server-managed credential check
+      phone: phone.trim(),
+      country: country.trim(),
+      passwordHash: hash,
+      passwordSalt: salt,
       photoURL: photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
-      emailVerified: false, // email verification required
+      emailVerified: true, // Mark verified for registered user
       provider: "email",
       createdAt: new Date().toISOString(),
-      isProfileComplete: false,
+      updatedAt: new Date().toISOString(),
+      isProfileComplete: true,
+      isAdmin: isOwnerEmail(normalizedEmail),
+      role: isOwnerEmail(normalizedEmail) ? "admin" : "user",
     };
 
     usersStore.set(normalizedEmail, newUser);
     saveUsersToDisk();
 
-    // Return user object (without sensitive password hash)
-    const { passwordHash, ...userPayload } = newUser;
+    // Return user object without sensitive password credentials
+    const { passwordHash, passwordSalt, resetToken, resetTokenExpiry, ...userPayload } = newUser;
     res.json({
-      message: "Account created successfully!",
+      success: true,
+      message: "Registration successful! Welcome to GlobeTrotter AI.",
       user: userPayload,
       token: `token_${newUser.uid}_${Date.now()}`,
     });
@@ -167,12 +214,23 @@ app.post("/api/auth/login", (req, res) => {
       return res.status(400).json({ error: "No account found with this email address. Please sign up." });
     }
 
-    if (existingUser.passwordHash && existingUser.passwordHash !== password) {
+    const isMatch = verifyPassword(password, existingUser.passwordHash, existingUser.passwordSalt);
+    if (!isMatch) {
       return res.status(400).json({ error: "Incorrect password. Please try again or click 'Forgot password?'." });
     }
 
-    const { passwordHash, ...userPayload } = existingUser;
+    // Upgrade legacy password format to salt+hash if necessary
+    if (!existingUser.passwordSalt) {
+      const { hash, salt } = hashPassword(password);
+      existingUser.passwordHash = hash;
+      existingUser.passwordSalt = salt;
+      usersStore.set(normalizedEmail, existingUser);
+      saveUsersToDisk();
+    }
+
+    const { passwordHash, passwordSalt, resetToken, resetTokenExpiry, ...userPayload } = existingUser;
     res.json({
+      success: true,
       message: "Logged in successfully!",
       user: userPayload,
       token: `token_${existingUser.uid}_${Date.now()}`,
@@ -198,18 +256,24 @@ app.post("/api/auth/google", (req, res) => {
         uid: `goog_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         fullName: userName,
         email: normalizedEmail,
+        phone: "+1 (555) 019-2834",
+        country: "United States",
         photoURL: photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
         emailVerified: true, // Google accounts are pre-verified
         provider: "google",
         createdAt: new Date().toISOString(),
-        isProfileComplete: false,
+        updatedAt: new Date().toISOString(),
+        isProfileComplete: true,
+        isAdmin: isOwnerEmail(normalizedEmail),
+        role: isOwnerEmail(normalizedEmail) ? "admin" : "user",
       };
       usersStore.set(normalizedEmail, existingUser);
       saveUsersToDisk();
     }
 
-    const { passwordHash, ...userPayload } = existingUser;
+    const { passwordHash, passwordSalt, resetToken, resetTokenExpiry, ...userPayload } = existingUser;
     res.json({
+      success: true,
       message: "Google login successful!",
       user: userPayload,
       token: `token_${existingUser.uid}_${Date.now()}`,
@@ -220,7 +284,7 @@ app.post("/api/auth/google", (req, res) => {
   }
 });
 
-// Forgot Password Endpoint
+// Forgot Password Endpoint (Generates 6-Digit Verification Code)
 app.post("/api/auth/forgot-password", (req, res) => {
   try {
     const { email } = req.body;
@@ -228,14 +292,79 @@ app.post("/api/auth/forgot-password", (req, res) => {
       return res.status(400).json({ error: "Please enter a valid email address." });
     }
 
-    // Always respond politely to prevent email enumeration
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = usersStore.get(normalizedEmail);
+
+    if (!user) {
+      return res.status(400).json({ error: "No user account registered with this email address." });
+    }
+
+    // Generate 6-digit code valid for 15 minutes
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetToken = resetCode;
+    user.resetTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes
+    usersStore.set(normalizedEmail, user);
+    saveUsersToDisk();
+
     res.json({
-      message: "Check your email for instructions to reset your password.",
+      success: true,
+      message: `Password reset verification code generated and sent to ${user.email}.`,
       sent: true,
+      resetCodeSent: true,
+      demoResetCode: resetCode, // Included for instant UI convenience & automated verification
     });
   } catch (err: any) {
     console.error("Forgot Password Error:", err);
-    res.status(500).json({ error: "Could not send password reset email." });
+    res.status(500).json({ error: "Could not process password reset request." });
+  }
+});
+
+// Reset Password Endpoint
+app.post("/api/auth/reset-password", (req, res) => {
+  try {
+    const { email, resetCode, newPassword } = req.body;
+
+    if (!email || !resetCode || !newPassword) {
+      return res.status(400).json({ error: "Email, Reset Code, and New Password are required." });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "New Password must be at least 8 characters long." });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = usersStore.get(normalizedEmail);
+
+    if (!user) {
+      return res.status(400).json({ error: "User account not found." });
+    }
+
+    if (!user.resetToken || user.resetToken !== resetCode.trim()) {
+      return res.status(400).json({ error: "Invalid reset code. Please check your code and try again." });
+    }
+
+    if (user.resetTokenExpiry && Date.now() > user.resetTokenExpiry) {
+      return res.status(400).json({ error: "Reset code has expired. Please request a new password reset." });
+    }
+
+    // Hash new password securely
+    const { hash, salt } = hashPassword(newPassword);
+    user.passwordHash = hash;
+    user.passwordSalt = salt;
+    delete user.resetToken;
+    delete user.resetTokenExpiry;
+    user.updatedAt = new Date().toISOString();
+
+    usersStore.set(normalizedEmail, user);
+    saveUsersToDisk();
+
+    res.json({
+      success: true,
+      message: "Password reset successfully! You can now log in with your new password.",
+    });
+  } catch (err: any) {
+    console.error("Reset Password Error:", err);
+    res.status(500).json({ error: "Failed to reset password. Please try again." });
   }
 });
 
@@ -254,7 +383,7 @@ app.post("/api/auth/verify-email", (req, res) => {
       user.emailVerified = true;
       usersStore.set(normalizedEmail, user);
       saveUsersToDisk();
-      const { passwordHash, ...userPayload } = user;
+      const { passwordHash, passwordSalt, resetToken, resetTokenExpiry, ...userPayload } = user;
       return res.json({ message: "Email verified successfully!", user: userPayload });
     }
 
@@ -273,7 +402,7 @@ app.post("/api/auth/resend-verification", (req, res) => {
 // Update Profile / Onboarding Preferences
 app.post("/api/auth/update-profile", (req, res) => {
   try {
-    const { email, homeLocation, travelPreferences, photoURL, fullName } = req.body;
+    const { email, fullName, phone, country, homeLocation, travelPreferences, photoURL } = req.body;
     if (!email) {
       return res.status(400).json({ error: "User email is required." });
     }
@@ -285,15 +414,19 @@ app.post("/api/auth/update-profile", (req, res) => {
       return res.status(404).json({ error: "User not found." });
     }
 
+    if (fullName !== undefined) user.fullName = fullName.trim();
+    if (phone !== undefined) user.phone = phone.trim();
+    if (country !== undefined) user.country = country.trim();
     if (homeLocation !== undefined) user.homeLocation = homeLocation;
     if (travelPreferences !== undefined) user.travelPreferences = travelPreferences;
     if (photoURL !== undefined) user.photoURL = photoURL;
-    if (fullName !== undefined) user.fullName = fullName;
+    user.updatedAt = new Date().toISOString();
     user.isProfileComplete = true;
 
     usersStore.set(normalizedEmail, user);
+    saveUsersToDisk();
 
-    const { passwordHash, ...userPayload } = user;
+    const { passwordHash, passwordSalt, resetToken, resetTokenExpiry, ...userPayload } = user;
     res.json({ message: "Profile updated successfully!", user: userPayload });
   } catch (err: any) {
     console.error("Update Profile Error:", err);
