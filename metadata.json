@@ -1,0 +1,6 @@
+{
+  "name": "GlobeTrotter AI - Travel Concierge",
+  "description": "AI-powered travel concierge, itinerary planner, travel feed, and smart packing assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

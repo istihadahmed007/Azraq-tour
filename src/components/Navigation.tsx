@@ -1,0 +1,367 @@
+import React from 'react';
+import { BrandTheme, NavView, isWebsiteOwner } from '../types';
+import { BRAND_LOGOS } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+
+interface NavigationProps {
+  currentView: NavView;
+  onViewChange: (view: NavView) => void;
+  brandTheme: BrandTheme;
+  onToggleBrand: () => void;
+  onNewTripClick: () => void;
+  savedTripsCount: number;
+}
+
+export const Navigation: React.FC<NavigationProps> = ({
+  currentView,
+  onViewChange,
+  brandTheme,
+  onToggleBrand,
+  onNewTripClick,
+  savedTripsCount,
+}) => {
+  const { user, isGuest, openAuthModal, logout } = useAuth();
+  const isAzraq = true;
+
+  const brandTitle = 'Azraq Tours & Travels';
+  const brandSub = 'Luxury AI Concierge';
+  const logoUrl = BRAND_LOGOS.azraq;
+
+  return (
+    <>
+      {/* Top Navigation Bar */}
+      <nav
+        aria-label="Main Navigation"
+        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+          isAzraq
+            ? 'bg-sky-900/60 backdrop-blur-xl border-b border-sky-300/30 shadow-lg'
+            : 'bg-slate-900/50 backdrop-blur-2xl border-b border-white/20 shadow-xl'
+        }`}
+      >
+        <div className="flex justify-between items-center px-4 md:px-8 py-3 w-full max-w-7xl mx-auto">
+          {/* Logo & Brand Name */}
+          <div
+            onClick={() => onViewChange('discover')}
+            className="flex items-center gap-3 cursor-pointer group"
+          >
+            <img
+              src={logoUrl}
+              alt={brandTitle}
+              className="h-9 w-9 rounded-full object-cover border border-white/20 shadow-md group-hover:scale-105 transition-transform"
+            />
+            <div>
+              <span
+                className={`font-serif-display text-xl md:text-2xl tracking-tight font-bold ${
+                  isAzraq ? 'text-blue-900 dark:text-[#adc7ff]' : 'text-[#adc7ff]'
+                }`}
+              >
+                {brandTitle}
+              </span>
+              <span className="hidden sm:inline-block ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
+                AI
+              </span>
+            </div>
+          </div>
+
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-1 bg-white/5 dark:bg-white/5 p-1 rounded-full border border-white/10">
+            <button
+              onClick={() => onViewChange('discover')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                currentView === 'discover'
+                  ? 'bg-primary text-on-primary shadow-md font-semibold'
+                  : 'text-on-surface-variant hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Discover
+            </button>
+            <button
+              onClick={() => onViewChange('planner')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+                currentView === 'planner'
+                  ? 'bg-primary text-on-primary shadow-md font-semibold'
+                  : 'text-on-surface-variant hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Planner
+              {savedTripsCount > 0 && (
+                <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+              )}
+            </button>
+            <button
+              onClick={() => onViewChange('feed')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                currentView === 'feed'
+                  ? 'bg-primary text-on-primary shadow-md font-semibold'
+                  : 'text-on-surface-variant hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Feed
+            </button>
+            <button
+              onClick={() => onViewChange('map')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                currentView === 'map'
+                  ? 'bg-primary text-on-primary shadow-md font-semibold'
+                  : 'text-on-surface-variant hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Map
+            </button>
+            <button
+              onClick={() => onViewChange('profile')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                currentView === 'profile'
+                  ? 'bg-primary text-on-primary shadow-md font-semibold'
+                  : 'text-on-surface-variant hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Profile
+            </button>
+            {isWebsiteOwner(user) && (
+              <button
+                onClick={() => onViewChange('admin')}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+                  currentView === 'admin'
+                    ? 'bg-sky-500 text-slate-950 font-bold shadow-md'
+                    : 'text-sky-300 hover:text-white hover:bg-sky-500/20'
+                }`}
+                title="Travel Agency Quotation Staff Portal (Website Owner)"
+              >
+                <span className="material-symbols-outlined text-base">admin_panel_settings</span>
+                <span>Quotes Admin</span>
+              </button>
+            )}
+          </div>
+
+          {/* Right Action Icons */}
+          <div className="flex items-center gap-2">
+            {/* Quick Notifications Button */}
+            <button
+              onClick={() => onViewChange('feed')}
+              className="p-2 rounded-full hover:bg-white/10 text-on-surface-variant hover:text-primary transition-colors relative"
+              title="Notifications"
+            >
+              <span className="material-symbols-outlined">notifications</span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-tertiary rounded-full"></span>
+            </button>
+
+            {/* Quick Map Button */}
+            <button
+              onClick={() => onViewChange('map')}
+              className="p-2 rounded-full hover:bg-white/10 text-on-surface-variant hover:text-primary transition-colors"
+              title="Explore Map"
+            >
+              <span className="material-symbols-outlined">explore</span>
+            </button>
+
+            {/* User Profile / Auth State Controls */}
+            {isGuest ? (
+              <div className="flex items-center gap-2 ml-1">
+                <button
+                  onClick={() => openAuthModal('login')}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold text-sky-200 hover:text-white bg-white/5 hover:bg-white/10 transition-all border border-sky-300/20"
+                >
+                  Log In
+                </button>
+
+                <button
+                  onClick={() => openAuthModal('register')}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 transition-all shadow-md active:scale-98"
+                >
+                  Create Account
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 ml-1">
+                <div
+                  onClick={() => onViewChange('profile')}
+                  className="flex items-center gap-2 p-1 pr-2 rounded-full hover:bg-white/10 cursor-pointer transition-all border border-sky-300/20"
+                  title={`${user?.fullName} (${user?.email})`}
+                >
+                  <img
+                    src={user?.photoURL || BRAND_LOGOS.userAvatar}
+                    alt={user?.fullName}
+                    className="w-8 h-8 rounded-full object-cover border border-sky-300/50"
+                  />
+                  <span className="hidden lg:inline text-xs font-medium text-white max-w-[100px] truncate">
+                    {user?.fullName.split(' ')[0]}
+                  </span>
+                  {!user?.emailVerified && (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAuthModal('email_verification');
+                      }}
+                      className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"
+                      title="Email unverified - click to verify"
+                    />
+                  )}
+                </div>
+
+                <button
+                  onClick={logout}
+                  title="Log Out"
+                  className="p-1.5 rounded-full hover:bg-rose-500/20 text-sky-200 hover:text-rose-300 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm">logout</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* Desktop Side Navigation Bar */}
+      <aside className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 z-40 bg-slate-950/40 backdrop-blur-2xl border-r border-white/20 shadow-2xl pt-24 pb-6 px-4 gap-2">
+        <div className="px-3 mb-2">
+          <h2 className="font-serif-display text-lg text-primary font-semibold">{brandTitle}</h2>
+          <p className="text-xs text-outline font-medium">{brandSub}</p>
+        </div>
+
+        <nav className="flex flex-col gap-1.5 flex-1">
+          <button
+            onClick={() => onViewChange('discover')}
+            className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
+              currentView === 'discover'
+                ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md'
+                : 'text-on-surface-variant hover:bg-white/5 hover:text-white hover:translate-x-1'
+            }`}
+          >
+            <span className="material-symbols-outlined text-xl">travel_explore</span>
+            <span>Discover</span>
+          </button>
+
+          <button
+            onClick={() => onViewChange('planner')}
+            className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
+              currentView === 'planner'
+                ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md'
+                : 'text-on-surface-variant hover:bg-white/5 hover:text-white hover:translate-x-1'
+            }`}
+          >
+            <span className="material-symbols-outlined text-xl">event_note</span>
+            <span>Planner</span>
+          </button>
+
+          <button
+            onClick={() => onViewChange('feed')}
+            className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
+              currentView === 'feed'
+                ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md'
+                : 'text-on-surface-variant hover:bg-white/5 hover:text-white hover:translate-x-1'
+            }`}
+          >
+            <span className="material-symbols-outlined text-xl">auto_awesome_motion</span>
+            <span>Feed</span>
+          </button>
+
+          <button
+            onClick={() => onViewChange('map')}
+            className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
+              currentView === 'map'
+                ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md'
+                : 'text-on-surface-variant hover:bg-white/5 hover:text-white hover:translate-x-1'
+            }`}
+          >
+            <span className="material-symbols-outlined text-xl">map</span>
+            <span>Map</span>
+          </button>
+
+          <button
+            onClick={() => onViewChange('profile')}
+            className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
+              currentView === 'profile'
+                ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md'
+                : 'text-on-surface-variant hover:bg-white/5 hover:text-white hover:translate-x-1'
+            }`}
+          >
+            <span className="material-symbols-outlined text-xl">account_circle</span>
+            <span>Profile</span>
+          </button>
+
+          {isWebsiteOwner(user) && (
+            <button
+              onClick={() => onViewChange('admin')}
+              className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
+                currentView === 'admin'
+                  ? 'bg-sky-500/20 text-sky-300 border border-sky-400/30 shadow-md'
+                  : 'text-sky-300 hover:bg-white/5 hover:text-white hover:translate-x-1'
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl">admin_panel_settings</span>
+              <span>Quotes Admin</span>
+            </button>
+          )}
+        </nav>
+
+        {/* New Trip Action Button */}
+        <div className="mt-auto pt-4">
+          <button
+            onClick={onNewTripClick}
+            className="w-full bg-primary text-on-primary rounded-xl py-3 px-4 font-semibold text-sm hover:bg-primary-fixed transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[0.98] active:scale-95"
+          >
+            <span className="material-symbols-outlined text-lg">add</span>
+            <span>New Trip</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sky-950/80 backdrop-blur-2xl border-t border-white/20 px-4 py-2 flex justify-around items-center shadow-2xl">
+        <button
+          onClick={() => onViewChange('discover')}
+          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
+            currentView === 'discover' ? 'text-primary' : 'text-on-surface-variant'
+          }`}
+        >
+          <span className="material-symbols-outlined text-2xl">travel_explore</span>
+          <span className="text-[10px] font-medium">Discover</span>
+        </button>
+
+        <button
+          onClick={() => onViewChange('planner')}
+          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors relative ${
+            currentView === 'planner' ? 'text-primary font-bold' : 'text-on-surface-variant'
+          }`}
+        >
+          {currentView === 'planner' && (
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary rounded-full"></div>
+          )}
+          <span className="material-symbols-outlined text-2xl">event_note</span>
+          <span className="text-[10px] font-medium">Planner</span>
+        </button>
+
+        <button
+          onClick={() => onViewChange('feed')}
+          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
+            currentView === 'feed' ? 'text-primary' : 'text-on-surface-variant'
+          }`}
+        >
+          <span className="material-symbols-outlined text-2xl">auto_awesome_motion</span>
+          <span className="text-[10px] font-medium">Feed</span>
+        </button>
+
+        <button
+          onClick={() => onViewChange('map')}
+          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
+            currentView === 'map' ? 'text-primary' : 'text-on-surface-variant'
+          }`}
+        >
+          <span className="material-symbols-outlined text-2xl">map</span>
+          <span className="text-[10px] font-medium">Map</span>
+        </button>
+
+        <button
+          onClick={() => onViewChange('profile')}
+          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
+            currentView === 'profile' ? 'text-primary' : 'text-on-surface-variant'
+          }`}
+        >
+          <span className="material-symbols-outlined text-2xl">account_circle</span>
+          <span className="text-[10px] font-medium">Profile</span>
+        </button>
+      </nav>
+    </>
+  );
+};
