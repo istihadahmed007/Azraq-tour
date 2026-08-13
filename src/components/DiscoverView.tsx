@@ -3,6 +3,7 @@ import { Destination } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { QuotationSection } from './QuotationSection';
 import { PopularBDDestinationsSection } from './PopularBDDestinationsSection';
+import { getVisaFeeForDestination } from '../data/visaRequirementsData';
 
 interface DiscoverViewProps {
   destinations: Destination[];
@@ -34,8 +35,6 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     'Wildlife',
     'Luxury',
   ];
-
-  const [visibleCount, setVisibleCount] = useState<number>(12);
 
   // Extract list of all unique countries sorted alphabetically
   const countries = useMemo(() => {
@@ -82,14 +81,10 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     return result;
   }, [destinations, selectedCategory, selectedCountry, searchQuery, sortBy]);
 
-  // Reset pagination when filters change
-  React.useEffect(() => {
-    setVisibleCount(12);
-  }, [selectedCategory, selectedCountry, searchQuery, sortBy]);
-
+  // Strictly limit displayed destinations to exactly 15 max
   const visibleDestinations = useMemo(() => {
-    return filteredDestinations.slice(0, visibleCount);
-  }, [filteredDestinations, visibleCount]);
+    return filteredDestinations.slice(0, 15);
+  }, [filteredDestinations]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,13 +102,13 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
   ];
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-24 md:pt-12 pb-24 flex flex-col gap-10">
+    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-8 pt-24 md:pt-12 pb-24 flex flex-col gap-10">
       {/* Hero Header Section */}
       <section className="flex flex-col items-center justify-center text-center pt-6 md:pt-12 pb-4 gap-6 relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-300 text-xs sm:text-sm font-semibold uppercase tracking-wider">
-          <span>Explore 100 Authentic Asian Tourist Destinations</span>
+          <span>Explore 15 Handpicked Asian Destinations</span>
         </div>
 
         <h1 className="hero-title max-w-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#adc7ff] via-[#76d6d5] to-[#ffba20] drop-shadow-sm leading-tight">
@@ -134,14 +129,14 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search 100 destinations, cities, countries, or activities..."
+              placeholder="Search top destinations, cities, countries, or activities..."
               className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-on-surface placeholder:text-outline text-base font-normal"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="text-xs sm:text-sm text-outline hover:text-white px-2"
+                className="text-xs sm:text-sm text-outline hover:text-white px-2 cursor-pointer"
               >
                 Clear
               </button>
@@ -192,7 +187,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
                 selectedCategory === cat
                   ? 'bg-primary text-on-primary shadow-md'
                   : 'bg-white/5 text-on-surface-variant hover:bg-white/10 hover:text-white border border-white/5'
@@ -239,15 +234,15 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             </div>
 
             <span className="text-xs text-sky-300 font-bold bg-sky-500/10 border border-sky-400/20 px-3 py-1.5 rounded-xl">
-              Showing {Math.min(visibleCount, filteredDestinations.length)} of {filteredDestinations.length} Destinations
+              Displaying {visibleDestinations.length} of 15 Featured Destinations
             </span>
           </div>
         </div>
       </div>
 
-      {/* Grid of Destinations */}
+      {/* Grid of Exactly 15 Destinations (5 cards per row on desktop) */}
       <section className="flex flex-col gap-6">
-        {filteredDestinations.length === 0 ? (
+        {visibleDestinations.length === 0 ? (
           <div className="text-center py-16 bg-white/5 rounded-3xl border border-white/10 space-y-3">
             <span className="material-symbols-outlined text-4xl text-outline">travel_explore</span>
             <h3 className="text-lg font-bold text-white">No destinations found</h3>
@@ -266,125 +261,111 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             </button>
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visibleDestinations.map((dest) => (
-                <div
-                  key={dest.id}
-                  onClick={() => onSelectDestination(dest)}
-                  className="rounded-3xl overflow-hidden relative group cursor-pointer glass-card border border-white/15 shadow-xl transition-all duration-300 hover:border-sky-400/50 hover:shadow-2xl hover:shadow-sky-500/10 flex flex-col h-[380px]"
-                >
-                  {/* Image Container */}
-                  <div className="relative h-48 w-full overflow-hidden shrink-0">
-                    <img
-                      src={dest.imageUrl}
-                      alt={dest.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4.5 sm:gap-5">
+            {visibleDestinations.map((dest, index) => (
+              <div
+                key={dest.id}
+                onClick={() => onSelectDestination(dest)}
+                style={{ animationDelay: `${index * 40}ms` }}
+                className="group relative flex flex-col h-[390px] rounded-2xl overflow-hidden glass-card border border-white/15 bg-slate-900/90 shadow-lg hover:shadow-2xl hover:shadow-sky-500/20 hover:border-sky-400/60 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer animate-fade-in"
+              >
+                {/* Image Container */}
+                <div className="relative h-44 w-full overflow-hidden shrink-0">
+                  <img
+                    src={dest.imageUrl}
+                    alt={dest.name}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
 
-                    {/* Top Flag & Category Badges */}
-                    <div className="absolute top-3 left-3 right-3 flex justify-between items-center z-10">
-                      <span className="bg-black/60 backdrop-blur-md border border-white/20 text-white font-semibold text-xs px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md">
-                        <span>{dest.flag}</span>
-                        <span>{dest.country}</span>
-                      </span>
+                  {/* Top Badges */}
+                  <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center z-10">
+                    <span className="bg-black/70 backdrop-blur-md border border-white/20 text-white font-semibold text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
+                      <span>{dest.flag}</span>
+                      <span className="truncate max-w-[80px]">{dest.country}</span>
+                    </span>
 
-                      <span className="bg-sky-500/80 backdrop-blur-md text-slate-950 font-bold text-[11px] px-2.5 py-1 rounded-full shadow-md">
-                        {dest.category}
-                      </span>
-                    </div>
-
-                    {/* Rating Badge */}
-                    <div className="absolute bottom-3 right-3 z-10">
-                      <span className="bg-black/70 backdrop-blur-md text-amber-400 font-bold text-xs px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-0.5">
-                        <span className="material-symbols-outlined text-xs">star</span>
-                        {dest.rating}
-                      </span>
-                    </div>
+                    <span className="bg-sky-500/90 backdrop-blur-md text-slate-950 font-extrabold text-[10px] px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider">
+                      {dest.category}
+                    </span>
                   </div>
 
-                  {/* Content Area */}
-                  <div className="p-5 flex flex-col justify-between flex-1 bg-slate-900/90 text-on-surface">
-                    <div className="space-y-1.5">
-                      <div className="text-[11px] font-semibold text-sky-400 uppercase tracking-wider">
-                        {dest.cityRegion}
-                      </div>
+                  {/* Rating Badge */}
+                  <div className="absolute bottom-2.5 right-2.5 z-10">
+                    <span className="bg-black/75 backdrop-blur-md text-amber-400 font-bold text-[11px] px-2 py-0.5 rounded-full border border-amber-400/30 flex items-center gap-0.5 shadow-md">
+                      <span className="material-symbols-outlined text-[12px]">star</span>
+                      {dest.rating}
+                    </span>
+                  </div>
+                </div>
 
-                      <h3 className="font-serif-display font-bold text-xl text-white group-hover:text-sky-300 transition-colors line-clamp-1">
-                        {dest.name}
-                      </h3>
-
-                      <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed font-normal">
-                        {dest.description}
-                      </p>
+                {/* Content Body */}
+                <div className="p-4 flex flex-col justify-between flex-1 bg-slate-900/95 text-on-surface">
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-bold text-sky-400 uppercase tracking-wider truncate">
+                      {dest.cityRegion || dest.country}
                     </div>
 
-                    {/* Quick Specs & Actions */}
-                    <div className="pt-3 border-t border-white/10 space-y-2">
-                      <div className="flex items-center justify-between text-[11px] text-slate-300 font-medium">
-                        <span className="flex items-center gap-1 text-emerald-300">
-                          <span className="material-symbols-outlined text-xs">calendar_month</span>
-                          {dest.bestTimeToVisit || 'Best: Nov - Mar'}
-                        </span>
+                    <h3 className="font-serif-display font-bold text-base text-white group-hover:text-sky-300 transition-colors line-clamp-1">
+                      {dest.name}
+                    </h3>
 
-                        <span className="flex items-center gap-1 text-amber-300 font-semibold">
-                          <span className="material-symbols-outlined text-xs">payments</span>
-                          {dest.estimatedBudget || '$200 - $500'}
-                        </span>
-                      </div>
+                    <p className="text-[11px] text-slate-300 line-clamp-2 leading-relaxed font-normal">
+                      {dest.description}
+                    </p>
+                  </div>
 
-                      <div className="flex items-center justify-between pt-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectDestination(dest);
-                          }}
-                          className="text-xs text-sky-300 font-bold hover:underline flex items-center gap-1"
-                        >
-                          <span>Explore Details</span>
-                          <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                        </button>
+                  {/* Specs & Actions Footer */}
+                  <div className="pt-2.5 border-t border-white/10 space-y-2">
+                    {/* Key Specs Row */}
+                    <div className="grid grid-cols-2 gap-1 text-[10px] font-medium">
+                      <span className="flex items-center gap-1 text-emerald-300 truncate">
+                        <span className="material-symbols-outlined text-xs shrink-0">calendar_month</span>
+                        <span className="truncate">{dest.bestTimeToVisit || 'Nov - Mar'}</span>
+                      </span>
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            requireAuth(
-                              { type: 'generate_itinerary', label: `Itinerary for ${dest.name}` },
-                              () => onQuickGenerateItinerary(dest.name)
-                            );
-                          }}
-                          className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary/20 hover:bg-primary text-primary hover:text-on-primary transition-all border border-primary/30 flex items-center gap-1"
-                        >
-                          <span className="material-symbols-outlined text-xs">auto_awesome</span>
-                          <span>Itinerary</span>
-                        </button>
-                      </div>
+                      <span className="flex items-center gap-1 text-teal-300 font-bold truncate justify-end">
+                        <span className="material-symbols-outlined text-xs shrink-0">verified_user</span>
+                        <span className="truncate">{getVisaFeeForDestination(dest.country || dest.name)}</span>
+                      </span>
+                    </div>
+
+                    {/* Buttons Row */}
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectDestination(dest);
+                        }}
+                        className="text-[11px] text-sky-300 hover:text-white font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
+                      >
+                        <span>Explore</span>
+                        <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          requireAuth(
+                            { type: 'generate_itinerary', label: `Itinerary for ${dest.name}` },
+                            () => onQuickGenerateItinerary(dest.name)
+                          );
+                        }}
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-sky-500/20 hover:bg-sky-400 text-sky-300 hover:text-slate-950 transition-all border border-sky-400/30 flex items-center gap-1 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-xs">auto_awesome</span>
+                        <span>Itinerary</span>
+                      </button>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Load More Button */}
-            {filteredDestinations.length > visibleCount && (
-              <div className="flex flex-col items-center justify-center pt-8 gap-3">
-                <button
-                  onClick={() => setVisibleCount((prev) => prev + 12)}
-                  className="px-8 py-3.5 rounded-full bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-slate-950 font-bold text-sm shadow-xl hover:shadow-sky-500/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-                >
-                  <span>Show More Destinations ({filteredDestinations.length - visibleCount} remaining)</span>
-                  <span className="material-symbols-outlined text-base">expand_more</span>
-                </button>
-                <span className="text-xs text-slate-400 font-medium">
-                  Displaying {visibleCount} of {filteredDestinations.length} total destinations
-                </span>
               </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
       </section>
     </div>
   );
 };
+
