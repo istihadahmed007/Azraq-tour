@@ -76,6 +76,17 @@ export const Navigation: React.FC<NavigationProps> = ({
               Discover
             </button>
             <button
+              onClick={() => onViewChange('packages')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+                currentView === 'packages'
+                  ? 'bg-primary text-on-primary shadow-md font-semibold'
+                  : 'text-on-surface-variant hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Tour Packages
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            </button>
+            <button
               onClick={() => onViewChange('planner')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
                 currentView === 'planner'
@@ -233,6 +244,18 @@ export const Navigation: React.FC<NavigationProps> = ({
           </button>
 
           <button
+            onClick={() => onViewChange('packages')}
+            className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
+              currentView === 'packages'
+                ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md'
+                : 'text-on-surface-variant hover:bg-white/5 hover:text-white hover:translate-x-1'
+            }`}
+          >
+            <span className="material-symbols-outlined text-xl">card_travel</span>
+            <span>Tour Packages</span>
+          </button>
+
+          <button
             onClick={() => onViewChange('planner')}
             className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
               currentView === 'planner'
@@ -308,58 +331,68 @@ export const Navigation: React.FC<NavigationProps> = ({
       </aside>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sky-950/80 backdrop-blur-2xl border-t border-white/20 px-4 py-2 flex justify-around items-center shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sky-950/90 backdrop-blur-2xl border-t border-white/20 px-2 py-2 flex justify-around items-center shadow-2xl">
         <button
           onClick={() => onViewChange('discover')}
-          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-            currentView === 'discover' ? 'text-primary' : 'text-on-surface-variant'
+          className={`flex flex-col items-center gap-1 min-h-[48px] px-2 py-1 rounded-xl transition-colors ${
+            currentView === 'discover' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-white'
           }`}
         >
           <span className="material-symbols-outlined text-2xl">travel_explore</span>
-          <span className="text-[10px] font-medium">Discover</span>
+          <span className="text-[14px] font-medium tracking-tight">Discover</span>
+        </button>
+
+        <button
+          onClick={() => onViewChange('packages')}
+          className={`flex flex-col items-center gap-1 min-h-[48px] px-2 py-1 rounded-xl transition-colors ${
+            currentView === 'packages' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-white'
+          }`}
+        >
+          <span className="material-symbols-outlined text-2xl">card_travel</span>
+          <span className="text-[14px] font-medium tracking-tight">Packages</span>
         </button>
 
         <button
           onClick={() => onViewChange('planner')}
-          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors relative ${
-            currentView === 'planner' ? 'text-primary font-bold' : 'text-on-surface-variant'
+          className={`flex flex-col items-center gap-1 min-h-[48px] px-2 py-1 rounded-xl transition-colors relative ${
+            currentView === 'planner' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-white'
           }`}
         >
           {currentView === 'planner' && (
-            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary rounded-full"></div>
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full"></div>
           )}
           <span className="material-symbols-outlined text-2xl">event_note</span>
-          <span className="text-[10px] font-medium">Planner</span>
+          <span className="text-[14px] font-medium tracking-tight">Planner</span>
         </button>
 
         <button
           onClick={() => onViewChange('feed')}
-          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-            currentView === 'feed' ? 'text-primary' : 'text-on-surface-variant'
+          className={`flex flex-col items-center gap-1 min-h-[48px] px-2 py-1 rounded-xl transition-colors ${
+            currentView === 'feed' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-white'
           }`}
         >
           <span className="material-symbols-outlined text-2xl">auto_awesome_motion</span>
-          <span className="text-[10px] font-medium">Feed</span>
+          <span className="text-[14px] font-medium tracking-tight">Feed</span>
         </button>
 
         <button
           onClick={() => onViewChange('map')}
-          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-            currentView === 'map' ? 'text-primary' : 'text-on-surface-variant'
+          className={`flex flex-col items-center gap-1 min-h-[48px] px-2 py-1 rounded-xl transition-colors ${
+            currentView === 'map' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-white'
           }`}
         >
           <span className="material-symbols-outlined text-2xl">map</span>
-          <span className="text-[10px] font-medium">Map</span>
+          <span className="text-[14px] font-medium tracking-tight">Map</span>
         </button>
 
         <button
           onClick={() => onViewChange('profile')}
-          className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-            currentView === 'profile' ? 'text-primary' : 'text-on-surface-variant'
+          className={`flex flex-col items-center gap-1 min-h-[48px] px-2 py-1 rounded-xl transition-colors ${
+            currentView === 'profile' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-white'
           }`}
         >
           <span className="material-symbols-outlined text-2xl">account_circle</span>
-          <span className="text-[10px] font-medium">Profile</span>
+          <span className="text-[14px] font-medium tracking-tight">Profile</span>
         </button>
       </nav>
     </>

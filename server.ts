@@ -4,6 +4,7 @@ import fs from "fs";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
+import { INITIAL_TOUR_PACKAGES } from "./src/data/initialPackagesData";
 
 const app = express();
 const PORT = 3000;
@@ -1194,6 +1195,441 @@ app.patch("/api/quotes/admin/:id", (req, res) => {
   } catch (err: any) {
     console.error("Admin Update Quote Error:", err);
     res.status(500).json({ error: "Failed to update quotation." });
+  }
+});
+
+// --- Tour Package Management Database ---
+const PACKAGES_DB_FILE = path.join(process.cwd(), ".packages_db.json");
+
+interface ServerTourPackage {
+  id: string;
+  destination_id: string;
+  destination_name: string;
+  country: string;
+  package_name: string;
+  duration: string;
+  price: number;
+  currency: string;
+  pricing_tiers: Array<{ pax: number; price: number }>;
+  description: string;
+  itinerary: Array<{ day: number | string; title: string; activities: string[]; meals?: string; overnight?: string }>;
+  hotel: string;
+  meals: string;
+  transportation: string;
+  inclusions: string[];
+  exclusions: string[];
+  visa_information: string;
+  required_documents: string[];
+  important_notes: string[];
+  terms_conditions: string[];
+  source_pdf: string;
+  status: 'published' | 'draft' | 'archived';
+  created_at: string;
+  updated_at: string;
+  images: string[];
+  highlights: string[];
+  departure_info?: string;
+  number_of_travelers?: string;
+  contact_info?: string;
+}
+
+function loadPackagesFromDisk(): ServerTourPackage[] {
+  try {
+    if (fs.existsSync(PACKAGES_DB_FILE)) {
+      const data = fs.readFileSync(PACKAGES_DB_FILE, "utf-8");
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to read packages DB file:", err);
+  }
+  return INITIAL_TOUR_PACKAGES as any[];
+}
+
+let packagesStore: ServerTourPackage[] = loadPackagesFromDisk();
+
+function savePackagesToDisk() {
+  try {
+    fs.writeFileSync(PACKAGES_DB_FILE, JSON.stringify(packagesStore, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to save packages DB file:", err);
+  }
+}
+
+// 1. Get All Published Tour Packages
+app.get("/api/packages", (req, res) => {
+  try {
+    const { country, destination, search, status } = req.query;
+    let list = packagesStore;
+
+    if (status && status !== 'all') {
+      list = list.filter((p) => p.status === status);
+    } else if (!status) {
+      // By default, public endpoint returns published packages
+      list = list.filter((p) => p.status === 'published');
+    }
+
+    if (country) {
+      const cNorm = String(country).toLowerCase();
+      list = list.filter((p) => p.country.toLowerCase().includes(cNorm));
+    }
+
+    if (destination) {
+      const dNorm = String(destination).toLowerCase();
+      list = list.filter((p) => p.destination_name.toLowerCase().includes(dNorm));
+    }
+
+    if (search) {
+      const sNorm = String(search).toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.package_name.toLowerCase().includes(sNorm) ||
+          p.destination_name.toLowerCase().includes(sNorm) ||
+          p.country.toLowerCase().includes(sNorm) ||
+          p.description.toLowerCase().includes(sNorm)
+      );
+    }
+
+    res.json({ success: true, packages: list });
+  } catch (err: any) {
+    console.error("Get Packages Error:", err);
+    res.status(500).json({ error: "Failed to load tour packages." });
+  }
+});
+
+// 2. Get Single Package Details
+app.get("/api/packages/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const pkg = packagesStore.find((p) => p.id === id);
+    if (!pkg) {
+      return res.status(404).json({ error: "Tour package not found." });
+    }
+    res.json({ success: true, package: pkg });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch package details." });
+  }
+});
+
+// 3. Save / Update / Bulk Publish Packages (Admin)
+app.post("/api/packages/save", (req, res) => {
+  try {
+    const { packages } = req.body;
+    if (!Array.isArray(packages)) {
+      return res.status(400).json({ error: "Packages array is required." });
+    }
+
+    // Merge or replace packages
+    for (const newPkg of packages) {
+      const index = packagesStore.findIndex((p) => p.id === newPkg.id);
+      const updatedPkg: ServerTourPackage = {
+        ...newPkg,
+        updated_at: new Date().toISOString(),
+      };
+      if (index >= 0) {
+        packagesStore[index] = updatedPkg;
+      } else {
+        packagesStore.unshift(updatedPkg);
+      }
+    }
+
+    savePackagesToDisk();
+    res.json({
+      success: true,
+      message: `${packages.length} package(s) saved successfully!`,
+      packages: packagesStore,
+    });
+  } catch (err: any) {
+    console.error("Save Packages Error:", err);
+    res.status(500).json({ error: "Failed to save packages." });
+  }
+});
+
+// 4. Update Single Package Status (Publish / Unpublish / Delete)
+app.patch("/api/packages/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const index = packagesStore.findIndex((p) => p.id === id);
+    if (index === -1) {
+      return res.status(404).json({ error: "Package not found." });
+    }
+
+    packagesStore[index] = {
+      ...packagesStore[index],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    savePackagesToDisk();
+    res.json({ success: true, package: packagesStore[index] });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to update package." });
+  }
+});
+
+app.delete("/api/packages/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    packagesStore = packagesStore.filter((p) => p.id !== id);
+    savePackagesToDisk();
+    res.json({ success: true, message: "Package deleted successfully." });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to delete package." });
+  }
+});
+
+// 5. Submit Customer Package Quotation
+app.post("/api/quotes/package", (req, res) => {
+  try {
+    const {
+      customerName,
+      email,
+      phone,
+      destination,
+      package_id,
+      package_name,
+      travelDate,
+      adults,
+      children,
+      specialRequirements,
+      message,
+    } = req.body;
+
+    if (!customerName || !email || !phone || !destination) {
+      return res.status(400).json({
+        error: "Please fill in all required fields (Name, Email, WhatsApp/Phone, Destination).",
+      });
+    }
+
+    const randomId = Math.floor(100000 + Math.random() * 900000);
+    const id = `PKG-${randomId}`;
+
+    const newQuote: QuoteRecord = {
+      id,
+      type: "package" as any,
+      customerName,
+      email: email.trim().toLowerCase(),
+      phone,
+      destination,
+      package_id: package_id || "",
+      package_name: package_name || "",
+      travelDate: travelDate || "",
+      adults: Number(adults) || 1,
+      children: Number(children) || 0,
+      specialRequirements: specialRequirements || "",
+      message: message || "",
+      status: "New",
+      createdAt: new Date().toISOString(),
+    };
+
+    quotesStore.unshift(newQuote);
+    saveQuotesToDisk();
+
+    res.json({
+      success: true,
+      message: "Tour Package Quotation Request Submitted Successfully! Our travel team will contact you shortly via WhatsApp / Email.",
+      quote: newQuote,
+    });
+  } catch (err: any) {
+    console.error("Package Quote Error:", err);
+    res.status(500).json({ error: "Failed to submit quotation request." });
+  }
+});
+
+// 6. AI PDF Tour Package Extraction Endpoint (Gemini PDF Parser)
+app.post("/api/pdf/extract", async (req, res) => {
+  try {
+    const { pdfText, fileName, pdfBase64 } = req.body;
+
+    if (!pdfText && !pdfBase64) {
+      return res.status(400).json({ error: "PDF text or PDF Base64 is required for processing." });
+    }
+
+    const ai = getGenAI();
+
+    const systemPrompt = `You are an expert travel agency PDF data extractor.
+Your task is to parse tour package information from the uploaded PDF document with 100% precision.
+
+CRITICAL SOURCE OF TRUTH RULES:
+1. ONLY extract information that is explicitly stated in the document.
+2. NEVER invent, assume, fabricate, or add destinations, tour packages, prices, itineraries, or hotels not present in the document.
+3. If a field is missing or not specified in the PDF, return "Not specified" or an empty array [].
+4. Extract all pricing tiers (Pax quantity vs Price per person) accurately.
+5. Identify the country and exact city/region destinations mentioned in the PDF.`;
+
+    const promptText = pdfText
+      ? `Document Content:\n${pdfText}`
+      : `Document Content in Base64 provided. Please extract all tour package details.`;
+
+    const contents = pdfBase64
+      ? [
+          {
+            inlineData: {
+              mimeType: "application/pdf",
+              data: pdfBase64,
+            },
+          },
+          { text: "Extract all tour package information from this PDF as structured JSON according to schema." },
+        ]
+      : [promptText];
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: contents as any,
+      config: {
+        systemInstruction: systemPrompt,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            detectedPackagesCount: { type: Type.INTEGER },
+            detectedDestinations: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+            },
+            packages: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  package_name: { type: Type.STRING },
+                  country: { type: Type.STRING },
+                  destination_name: { type: Type.STRING },
+                  duration: { type: Type.STRING },
+                  price: { type: Type.NUMBER, description: "Starting price per person" },
+                  currency: { type: Type.STRING, description: "Currency e.g. BDT or USD" },
+                  pricing_tiers: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        pax: { type: Type.INTEGER },
+                        price: { type: Type.NUMBER },
+                      },
+                      required: ["pax", "price"],
+                    },
+                  },
+                  description: { type: Type.STRING },
+                  itinerary: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        day: { type: Type.INTEGER },
+                        title: { type: Type.STRING },
+                        activities: {
+                          type: Type.ARRAY,
+                          items: { type: Type.STRING },
+                        },
+                        meals: { type: Type.STRING },
+                        overnight: { type: Type.STRING },
+                      },
+                      required: ["day", "title", "activities"],
+                    },
+                  },
+                  hotel: { type: Type.STRING },
+                  meals: { type: Type.STRING },
+                  transportation: { type: Type.STRING },
+                  inclusions: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  exclusions: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  visa_information: { type: Type.STRING },
+                  required_documents: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  important_notes: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  terms_conditions: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  departure_info: { type: Type.STRING },
+                  highlights: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                },
+                required: [
+                  "package_name",
+                  "country",
+                  "destination_name",
+                  "duration",
+                  "price",
+                  "itinerary",
+                  "inclusions",
+                  "exclusions",
+                ],
+              },
+            },
+          },
+          required: ["detectedPackagesCount", "detectedDestinations", "packages"],
+        },
+      },
+    });
+
+    const jsonText = response.text || "{}";
+    const extractedResult = JSON.parse(jsonText);
+
+    // Format packages with IDs and metadata
+    const sourceFileName = fileName || "uploaded_package.pdf";
+    const formattedPackages: ServerTourPackage[] = (extractedResult.packages || []).map(
+      (pkg: any, idx: number) => {
+        const destId = `dest_${(pkg.country || "general").toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+        const startingPrice = pkg.price || (pkg.pricing_tiers && pkg.pricing_tiers[0]?.price) || 0;
+        return {
+          id: `pkg_pdf_${Date.now()}_${idx}`,
+          destination_id: destId,
+          destination_name: pkg.destination_name || pkg.country || "Not specified",
+          country: pkg.country || "Not specified",
+          package_name: pkg.package_name || "Tour Package",
+          duration: pkg.duration || "Not specified",
+          price: startingPrice,
+          currency: pkg.currency || "BDT",
+          pricing_tiers: pkg.pricing_tiers || [{ pax: 2, price: startingPrice }],
+          description: pkg.description || "Extracted from PDF document.",
+          itinerary: pkg.itinerary || [],
+          hotel: pkg.hotel || "Not specified",
+          meals: pkg.meals || "Not specified",
+          transportation: pkg.transportation || "Not specified",
+          inclusions: pkg.inclusions || [],
+          exclusions: pkg.exclusions || [],
+          visa_information: pkg.visa_information || "Not specified",
+          required_documents: pkg.required_documents || [],
+          important_notes: pkg.important_notes || [],
+          terms_conditions: pkg.terms_conditions || [],
+          source_pdf: sourceFileName,
+          status: "draft", // Staged for Admin Preview before publishing
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          images: [],
+          highlights: pkg.highlights || [],
+          departure_info: pkg.departure_info || "Not specified",
+        };
+      }
+    );
+
+    res.json({
+      success: true,
+      message: `Extracted ${formattedPackages.length} package(s) and ${extractedResult.detectedDestinations?.length || 0} destination(s).`,
+      detectedPackagesCount: formattedPackages.length,
+      detectedDestinations: extractedResult.detectedDestinations || [],
+      packages: formattedPackages,
+    });
+  } catch (err: any) {
+    console.error("PDF Extraction Error:", err);
+    res.status(500).json({ error: err.message || "Failed to process and extract PDF information." });
   }
 });
 

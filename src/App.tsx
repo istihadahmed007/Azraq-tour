@@ -8,10 +8,12 @@ import {
 } from './data/mockData';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { PackageProvider } from './context/PackageContext';
 import { AuthModal } from './components/AuthModal';
 import { Toast } from './components/Toast';
 import { Navigation } from './components/Navigation';
 import { DiscoverView } from './components/DiscoverView';
+import { PackagesView } from './components/PackagesView';
 import { PlannerView } from './components/PlannerView';
 import { FeedView } from './components/FeedView';
 import { MapView } from './components/MapView';
@@ -144,6 +146,8 @@ function AppContent() {
           />
         )}
 
+        {currentView === 'packages' && <PackagesView />}
+
         {currentView === 'planner' && (
           <PlannerView
             currentItinerary={currentItinerary}
@@ -238,7 +242,9 @@ function AppContent() {
 export function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <PackageProvider>
+        <AppContent />
+      </PackageProvider>
     </AuthProvider>
   );
 }

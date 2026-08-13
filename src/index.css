@@ -1,16 +1,148 @@
 @import "tailwindcss";
 
 @layer base {
-  body {
-    font-family: 'Inter', sans-serif;
+  :root {
+    --font-primary: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-poppins: 'Poppins', 'Inter', sans-serif;
+    --font-roboto: 'Roboto', 'Inter', sans-serif;
   }
-  h1, h2, h3, .font-serif-title {
-    font-family: 'Playfair Display', Georgia, serif;
+
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-primary);
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: 0.015em;
+    color: #f0f9ff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Headings typography system with CSS clamp() */
+  h1, .hero-title, .text-hero {
+    font-family: var(--font-poppins);
+    font-size: clamp(2rem, 5vw, 3rem) !important; /* 32px on mobile to 48px on desktop */
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.02em;
+  }
+
+  h2, .section-title, .text-section-title {
+    font-family: var(--font-poppins);
+    font-size: clamp(1.5rem, 4vw, 2rem) !important; /* 24px on mobile to 32px on desktop */
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+    letter-spacing: -0.015em;
+  }
+
+  h3, .card-title, .text-card-title {
+    font-family: var(--font-poppins);
+    font-size: clamp(1.125rem, 2.5vw, 1.25rem) !important; /* 18px on mobile to 20px-22px on desktop */
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    letter-spacing: -0.01em;
+  }
+
+  h4, .subheading, .text-subheading {
+    font-family: var(--font-primary);
+    font-size: clamp(1rem, 2vw, 1.125rem) !important; /* 16px on mobile to 18px on desktop */
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Body Text responsive typography hierarchy */
+  p, .body-text, .text-body {
+    font-family: var(--font-primary);
+    font-size: clamp(1rem, 2vw, 1.125rem); /* 16px to 18px */
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .description-text {
+    font-family: var(--font-primary);
+    font-size: clamp(0.9375rem, 1.8vw, 1rem); /* 15px to 16px */
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .small-text {
+    font-family: var(--font-primary);
+    font-size: clamp(0.875rem, 1.5vw, 0.9375rem); /* Minimum 14px on mobile! */
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .caption-text {
+    font-family: var(--font-primary);
+    font-size: clamp(0.8125rem, 1.2vw, 0.875rem); /* Minimum 13px on mobile */
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  /* Form inputs & controls legibility */
+  input, select, textarea {
+    font-size: 16px !important;
+    font-family: var(--font-primary);
   }
 }
 
+/* Font Family Utilities */
+.font-inter {
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+
+.font-poppins {
+  font-family: 'Poppins', 'Inter', sans-serif !important;
+}
+
+.font-roboto {
+  font-family: 'Roboto', 'Inter', sans-serif !important;
+}
+
 .font-serif-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Poppins', 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+}
+
+/* Button Typography & Sizing Standards */
+.btn-main, .btn-primary {
+  font-family: var(--font-poppins);
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  min-height: 48px; /* 48px-56px touch target height */
+  padding: 12px 24px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease-out;
+}
+
+.btn-secondary {
+  font-family: var(--font-primary);
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease-out;
+}
+
+/* Mobile Responsive Card & Layout Spacing */
+.mobile-card {
+  padding: clamp(1rem, 4vw, 1.25rem); /* 16px to 20px padding */
+  border-radius: 20px;
+  margin-bottom: clamp(1.5rem, 5vw, 2rem); /* 24px to 32px margin */
 }
 
 .sky-natural-bg {

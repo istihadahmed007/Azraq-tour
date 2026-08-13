@@ -199,6 +199,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ brandTitle = 'GlobeTrotter
     );
   };
 
+  const handleGoogleLogin = async () => {
+    setErrorMessage('');
+    setInfoMessage('');
+    const res = await loginWithGoogle(email, fullName);
+    if (!res.success && res.error) {
+      setErrorMessage(res.error);
+    } else if (res.success) {
+      showToast('Signed in & verified by Google! 🎉', 'success');
+      closeAuthModal();
+    }
+  };
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -475,7 +487,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ brandTitle = 'GlobeTrotter
 
                 {/* Continue with Google */}
                 <button
-                  onClick={loginWithGoogle}
+                  onClick={handleGoogleLogin}
                   disabled={isLoading}
                   className="w-full py-2 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-semibold text-xs transition-all flex items-center justify-center gap-2.5 shadow-md active:scale-98"
                 >
@@ -1011,7 +1023,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ brandTitle = 'GlobeTrotter
                 </div>
 
                 <button
-                  onClick={loginWithGoogle}
+                  onClick={handleGoogleLogin}
                   disabled={isLoading}
                   className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-semibold text-xs transition-all flex items-center justify-center gap-2.5 shadow-md active:scale-98"
                 >

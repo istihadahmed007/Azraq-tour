@@ -101,14 +101,14 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       <section className="flex flex-col items-center justify-center text-center pt-6 md:pt-12 pb-4 gap-6 relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-300 text-xs font-semibold uppercase tracking-wider">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-300 text-xs sm:text-sm font-semibold uppercase tracking-wider">
           <span>Explore 100 Authentic Asian Tourist Destinations</span>
         </div>
 
-        <h1 className="font-serif-display text-3xl md:text-5xl lg:text-6xl max-w-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#adc7ff] via-[#76d6d5] to-[#ffba20] drop-shadow-sm leading-tight">
+        <h1 className="hero-title max-w-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#adc7ff] via-[#76d6d5] to-[#ffba20] drop-shadow-sm leading-tight">
           Discover Asia's Most Breathtaking Wonders
         </h1>
-        <p className="text-sm md:text-base text-on-surface-variant max-w-2xl font-normal leading-relaxed">
+        <p className="body-text text-base md:text-lg text-on-surface-variant max-w-2xl font-normal leading-relaxed">
           From Cox's Bazar and Kyoto to Bali, Maldives, and Dubai—explore complete records, local food, visa guides, and instant travel quotations.
         </p>
 
@@ -124,13 +124,13 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search 100 destinations, cities, countries, or activities..."
-              className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-on-surface placeholder:text-outline text-sm md:text-base font-normal"
+              className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-on-surface placeholder:text-outline text-base font-normal"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="text-xs text-outline hover:text-white px-2"
+                className="text-xs sm:text-sm text-outline hover:text-white px-2"
               >
                 Clear
               </button>
@@ -139,7 +139,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
 
           <button
             type="submit"
-            className="w-full sm:w-auto bg-primary text-on-primary hover:bg-primary-fixed font-semibold text-sm px-6 py-3 rounded-xl sm:rounded-full transition-all duration-200 ease-out flex items-center justify-center gap-2 shadow-lg shadow-primary/20 shrink-0"
+            className="w-full sm:w-auto min-h-[48px] bg-primary text-on-primary hover:bg-primary-fixed font-semibold text-base px-6 py-3 rounded-xl sm:rounded-full transition-all duration-200 ease-out flex items-center justify-center gap-2 shadow-lg shadow-primary/20 shrink-0 cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg">auto_awesome</span>
             <span>AI Search</span>
@@ -148,12 +148,12 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
 
         {/* Quick Sample Suggestions */}
         <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl">
-          <span className="text-xs text-outline font-medium">Quick searches:</span>
+          <span className="text-xs sm:text-sm text-outline font-medium">Quick searches:</span>
           {samplePrompts.map((prompt, idx) => (
             <button
               key={idx}
               onClick={() => setSearchQuery(prompt)}
-              className="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-on-surface-variant hover:text-primary transition-all border border-white/10"
+              className="text-xs sm:text-sm px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-on-surface-variant hover:text-primary transition-all border border-white/10 cursor-pointer"
             >
               {prompt}
             </button>

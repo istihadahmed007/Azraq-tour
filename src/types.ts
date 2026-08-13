@@ -1,4 +1,4 @@
-export type NavView = 'discover' | 'planner' | 'feed' | 'map' | 'profile' | 'admin';
+export type NavView = 'discover' | 'packages' | 'planner' | 'feed' | 'map' | 'profile' | 'admin';
 
 export type QuoteStatus = 'New' | 'Reviewing' | 'Quotation Prepared' | 'Sent' | 'Customer Confirmed' | 'Closed';
 
@@ -117,6 +117,81 @@ export interface FeedPost {
   isBookmarked: boolean;
   commentsList: Comment[];
   aiVerified?: boolean;
+}
+
+export interface PricingTier {
+  pax: number;
+  price: number;
+}
+
+export interface PackageItineraryDay {
+  day: number | string;
+  title: string;
+  activities: string[];
+  meals?: string;
+  overnight?: string;
+}
+
+export interface DestinationRecord {
+  id: string;
+  name: string;
+  country: string;
+  description: string;
+  image: string;
+  active: boolean;
+  packageCount?: number;
+}
+
+export interface TourPackage {
+  id: string;
+  destination_id: string;
+  destination_name: string;
+  country: string;
+  package_name: string;
+  duration: string;
+  price: number; // Starting price
+  currency: string;
+  pricing_tiers: PricingTier[];
+  description: string;
+  itinerary: PackageItineraryDay[];
+  hotel: string;
+  meals: string;
+  transportation: string;
+  inclusions: string[];
+  exclusions: string[];
+  visa_information: string;
+  required_documents: string[];
+  important_notes: string[];
+  terms_conditions: string[];
+  source_pdf: string;
+  status: 'published' | 'draft' | 'archived';
+  created_at: string;
+  updated_at: string;
+  images: string[];
+  highlights: string[];
+  departure_info?: string;
+  number_of_travelers?: string;
+  contact_info?: string;
+}
+
+export interface PackageQuoteRequest {
+  id: string;
+  type: 'package';
+  customerName: string;
+  email: string;
+  phone: string;
+  destination: string;
+  package_id: string;
+  package_name: string;
+  travelDate: string;
+  adults: number;
+  children: number;
+  specialRequirements?: string;
+  message?: string;
+  status: QuoteStatus;
+  createdAt: string;
+  staffNote?: string;
+  quotedPrice?: string;
 }
 
 export interface Destination {

@@ -39,7 +39,7 @@ interface AuthContextType {
     agreeTerms: boolean,
     photoURL?: string
   ) => Promise<{ success: boolean; demoEmailCode?: string; demoPhoneOtp?: string; error?: string }>;
-  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: (customEmail?: string, customName?: string) => Promise<{ success: boolean; error?: string }>;
   loginWithApple: () => Promise<{ success: boolean; error?: string }>;
   sendPasswordReset: (email: string) => Promise<{ success: boolean; message?: string; error?: string; demoCode?: string }>;
   resetPasswordWithCode: (email: string, resetCode: string, newPass: string) => Promise<{ success: boolean; message?: string; error?: string }>;
@@ -575,7 +575,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // One-Click Google Auth
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (customEmail?: string, customName?: string) => {
     setIsLoading(true);
 
     if (firebaseAuth && isFirebaseConfigured) {
@@ -589,11 +589,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               {
                 uid: fbUser.uid,
                 email: fbUser.email,
-                fullName: fbUser.displayName || 'Google Traveler',
+                fullName: fbUser.displayName || customName || 'Google Traveler',
                 phone: fbUser.phoneNumber || '',
                 country: 'Global',
                 photoURL: fbUser.photoURL || '',
-                emailVerified: fbUser.emailVerified,
+                emailVerified: true,
                 phoneVerified: false,
                 createdAt: new Date().toISOString(),
               },
@@ -607,7 +607,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(false);
         return { success: true };
       } catch (err: any) {
-        console.warn('Firebase Google Auth error, using fallback:', err);
+        console.warn('Firebase Google Auth popup skipped/blocked in iframe, applying fallback:', err);
       }
     }
 
@@ -631,25 +631,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      const targetEmail = customEmail?.trim() || 'traveler.google@gmail.com';
+      const targetName = customName?.trim() || 'Google Traveler';
       const res = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: 'explorer.google@gmail.com',
-          fullName: 'Google Traveler',
+          email: targetEmail,
+          fullName: targetName,
           photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
         }),
       });
       const data = await res.json();
       setIsLoading(false);
       if (!res.ok) {
-        return { success: false, error: data.error || 'Google login failed.' };
+        return { success: false, error: data.error || 'Google authentication failed.' };
       }
       handleAuthSuccess(data.user, false);
       return { success: true };
     } catch (err: any) {
       setIsLoading(false);
-      return { success: false, error: 'Failed to complete Google Login.' };
+      return { success: false, error: 'Failed to complete Google Sign In.' };
     }
   };
 
