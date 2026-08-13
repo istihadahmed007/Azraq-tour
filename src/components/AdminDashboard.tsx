@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { QuoteRequest, QuoteStatus, TourPackage } from '../types';
 import { usePackages } from '../context/PackageContext';
 import { geminiPdfService } from '../services/geminiPdfService';
+import { getVisaRequirement, getVisaFeeForDestination } from '../data/visaRequirementsData';
 import { ExtractionPreview } from './ExtractionPreview';
 import { FileUp, Sparkles, CheckCircle2, Trash2, Globe, Eye, EyeOff, FileText, Send } from 'lucide-react';
 
@@ -1194,6 +1195,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     onChange={(e) => setEditFlightOptions(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-2xl bg-slate-800 border border-white/10 text-white text-sm focus:outline-none"
                   />
+                </div>
+              )}
+
+              {selectedQuote.type === 'visa' && (
+                <div className="p-3 rounded-2xl bg-teal-950/40 border border-teal-500/20 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-teal-300">
+                      Official Visa Requirements Checklist ({selectedQuote.destinationCountry})
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 text-xs font-bold border border-teal-400/30">
+                      Visa Fee: {(selectedQuote as any).visaFee || getVisaFeeForDestination(selectedQuote.destinationCountry)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <p className="text-[11px] text-slate-300">
+                      Auto-populate official Embassy document requirements and visa costs into your customer quote.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const req = getVisaRequirement(selectedQuote.destinationCountry, (selectedQuote as any).visaType);
+                        if (req) {
+                          const checklistText = `Official ${req.country} (${req.entryType}) Requirements:\n- Visa Fee: ${req.totalEstimatedBDT || 'BDT 6,000'}\n- Photo: ${req.photoSpec || 'Standard'}\n- Passport: ${req.passportValidity || '6+ months'}\n- Solvency: ${req.minBankBalance || 'Bank statement required'}\n- Processing: ${req.processingTime || 'Standard embassy timeframe'}\n\nKey Documents:\n${req.generalRequirements.map(g => '• ' + g).join('\n')}`;
+                          setEditStaffNote(checklistText);
+                          if (!editPrice) {
+                            setEditPrice(req.totalEstimatedBDT || 'BDT 6,000');
+                          }
+                        } else {
+                          setEditStaffNote(`Requirements for ${selectedQuote.destinationCountry}: Valid Passport, Recent Photographs, 6-Month Bank Statement & Solvency Certificate, NOC/Trade License.`);
+                        }
+                      }}
+                      className="px-3 py-1 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-xs font-bold transition-all border border-teal-400/30 flex items-center gap-1 cursor-pointer shrink-0"
+                    >
+                      <span>📋 Insert Checklist & Fee</span>
+                    </button>
+                  </div>
                 </div>
               )}
 

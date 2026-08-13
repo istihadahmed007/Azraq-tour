@@ -4,6 +4,7 @@ import { POPULAR_BANGLADESHI_DESTINATIONS } from '../data/popularBangladeshiDest
 import { VisaQuoteModal } from './VisaQuoteModal';
 import { FlightQuoteModal } from './FlightQuoteModal';
 import { useAuth } from '../context/AuthContext';
+import { getVisaFeeForDestination } from '../data/visaRequirementsData';
 
 interface PopularBDDestinationsSectionProps {
   onSelectDestination: (destination: Destination) => void;
@@ -123,9 +124,9 @@ export const PopularBDDestinationsSection: React.FC<PopularBDDestinationsSection
                     <span className="material-symbols-outlined text-sm text-sky-400">calendar_today</span>
                     <span className="truncate">{dest.bestTimeToVisit}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-300">
-                    <span className="material-symbols-outlined text-sm text-amber-400">payments</span>
-                    <span className="truncate">{dest.estimatedBudget}</span>
+                  <div className="flex items-center gap-1.5 text-teal-300 font-bold">
+                    <span className="material-symbols-outlined text-sm text-teal-400">verified_user</span>
+                    <span className="truncate">Visa: {dest.visaFee || getVisaFeeForDestination(dest.country || dest.name)}</span>
                   </div>
                 </div>
 

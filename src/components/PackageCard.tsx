@@ -1,6 +1,7 @@
 import React from 'react';
 import { TourPackage } from '../types';
-import { Calendar, Users, MapPin, ArrowRight, FileText, CheckCircle2, DollarSign } from 'lucide-react';
+import { getVisaFeeForDestination } from '../data/visaRequirementsData';
+import { Calendar, Users, MapPin, ArrowRight, FileText, CheckCircle2, DollarSign, FileCheck } from 'lucide-react';
 
 interface PackageCardProps {
   pkg: TourPackage;
@@ -70,17 +71,15 @@ export const PackageCard: React.FC<PackageCardProps> = ({
           </h3>
 
           {/* Meta Bar */}
-          <div className="mt-2.5 flex items-center gap-3 text-xs sm:text-sm font-semibold text-sky-200/90">
+          <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs font-semibold text-sky-200/90">
             <span className="flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/50">
               <Calendar className="w-3.5 h-3.5 text-sky-400" />
               {pkg.duration}
             </span>
-            {pkg.number_of_travelers && (
-              <span className="flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/50">
-                <Users className="w-3.5 h-3.5 text-emerald-400" />
-                {pkg.number_of_travelers}
-              </span>
-            )}
+            <span className="flex items-center gap-1 bg-teal-950/80 text-teal-300 px-2.5 py-1 rounded-lg border border-teal-500/30 font-bold">
+              <FileCheck className="w-3.5 h-3.5 text-teal-400" />
+              Visa: {pkg.visa_fee || getVisaFeeForDestination(pkg.country || pkg.destination_name)}
+            </span>
           </div>
 
           {/* Description - Minimum 14px on mobile */}

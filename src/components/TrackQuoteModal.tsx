@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { QuoteRequest, QuoteStatus } from '../types';
+import { getVisaFeeForDestination } from '../data/visaRequirementsData';
 
 interface TrackQuoteModalProps {
   isOpen: boolean;
@@ -256,6 +257,7 @@ export const TrackQuoteModal: React.FC<TrackQuoteModalProps> = ({
                         <>
                           <div><span className="text-slate-400">Destination Country:</span> <strong className="text-white">{(q as any).destinationCountry}</strong></div>
                           <div><span className="text-slate-400">Visa Type:</span> <strong className="text-white">{(q as any).visaType}</strong></div>
+                          <div><span className="text-slate-400">Destination Visa Fee:</span> <strong className="text-teal-300">{(q as any).visaFee || getVisaFeeForDestination((q as any).destinationCountry)}</strong></div>
                           <div><span className="text-slate-400">Travel Date:</span> <strong className="text-white">{(q as any).intendedTravelDate}</strong></div>
                           <div><span className="text-slate-400">Applicants:</span> <strong className="text-white">{(q as any).applicantsCount} person(s)</strong></div>
                           <div><span className="text-slate-400">Nationality:</span> <strong className="text-white">{(q as any).applicantNationality}</strong></div>

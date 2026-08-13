@@ -3,6 +3,7 @@ import { Destination } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { VisaQuoteModal } from './VisaQuoteModal';
 import { FlightQuoteModal } from './FlightQuoteModal';
+import { getVisaFeeForDestination } from '../data/visaRequirementsData';
 
 interface DestinationModalProps {
   destination: Destination | null;
@@ -136,15 +137,20 @@ export const DestinationModal: React.FC<DestinationModalProps> = ({
             </div>
 
             {/* Visa Info Box */}
-            {destination.visaInfo && (
-              <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-400/20 flex items-start gap-3">
-                <span className="material-symbols-outlined text-sky-400 text-xl shrink-0 mt-0.5">verified_user</span>
-                <div className="text-xs space-y-0.5">
-                  <span className="font-bold text-sky-300 uppercase tracking-wide block">Visa Information</span>
-                  <p className="text-slate-200">{destination.visaInfo}</p>
+            <div className="p-4 rounded-2xl bg-teal-950/40 border border-teal-500/30 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-teal-400 text-xl">verified_user</span>
+                  <span className="font-bold text-teal-300 uppercase tracking-wide text-xs">Visa Information & Fee</span>
                 </div>
+                <span className="px-3 py-1 rounded-xl bg-teal-500/20 text-teal-300 border border-teal-400/30 font-bold text-xs">
+                  Visa Fee: {destination.visaFee || getVisaFeeForDestination(destination.country || destination.name)}
+                </span>
               </div>
-            )}
+              {destination.visaInfo && (
+                <p className="text-xs text-slate-200">{destination.visaInfo}</p>
+              )}
+            </div>
 
             {/* Attractions & Activities Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

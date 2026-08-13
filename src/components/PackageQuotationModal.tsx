@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { TourPackage } from '../types';
 import { usePackages } from '../context/PackageContext';
-import { X, Send, MapPin, Calendar, Users, FileText, CheckCircle2 } from 'lucide-react';
+import { getVisaFeeForDestination } from '../data/visaRequirementsData';
+import { X, Send, MapPin, Calendar, Users, FileText, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 interface PackageQuotationModalProps {
   pkg: TourPackage | null;
@@ -98,6 +99,10 @@ export const PackageQuotationModal: React.FC<PackageQuotationModalProps> = ({ pk
             <span className="flex items-center gap-1 bg-emerald-950/60 text-emerald-400 font-extrabold px-2.5 py-1 rounded-lg border border-emerald-500/30">
               Starting from {pkg.currency === 'BDT' ? '৳' : pkg.currency} {pkg.price.toLocaleString()} / pax
             </span>
+            <span className="flex items-center gap-1 bg-teal-950/80 text-teal-300 font-bold px-2.5 py-1 rounded-lg border border-teal-500/30">
+              <span>🛂 Visa Fee:</span>
+              <span className="text-white font-extrabold">{pkg.visa_fee || getVisaFeeForDestination(pkg.country || pkg.destination_name)}</span>
+            </span>
           </div>
         </div>
 
@@ -111,6 +116,31 @@ export const PackageQuotationModal: React.FC<PackageQuotationModalProps> = ({ pk
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Destination Costs Breakdown Card */}
+              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-teal-500/30 space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-teal-300">
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-teal-400" />
+                    <span>Cost & Visa Fee Transparency</span>
+                  </span>
+                  <span className="text-emerald-400 font-mono text-xs">Verified DB Rates</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs pt-2 border-t border-white/10">
+                  <div>
+                    <span className="text-slate-400 text-[11px] block">Tour Package Rate:</span>
+                    <span className="font-extrabold text-slate-100">
+                      {pkg.currency === 'BDT' ? '৳' : pkg.currency} {pkg.price.toLocaleString()} / person
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[11px] block">Destination Visa Fee ({pkg.country}):</span>
+                    <span className="font-extrabold text-teal-300">
+                      {pkg.visa_fee || getVisaFeeForDestination(pkg.country || pkg.destination_name)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {errorMessage && (
                 <div className="p-3.5 rounded-xl bg-rose-950/50 border border-rose-500/40 text-rose-200 text-xs font-semibold">
                   {errorMessage}

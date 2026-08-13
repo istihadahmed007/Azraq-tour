@@ -50,6 +50,7 @@ export interface VisaQuoteRequest {
   updatedAt?: string;
   staffNote?: string;
   quotedPrice?: string;
+  visaFee?: string;
 }
 
 export type QuoteRequest = FlightQuoteRequest | VisaQuoteRequest;
@@ -172,6 +173,7 @@ export interface TourPackage {
   departure_info?: string;
   number_of_travelers?: string;
   contact_info?: string;
+  visa_fee?: string;
 }
 
 export interface PackageQuoteRequest {
@@ -192,6 +194,7 @@ export interface PackageQuoteRequest {
   createdAt: string;
   staffNote?: string;
   quotedPrice?: string;
+  visaFee?: string;
 }
 
 export interface Destination {
@@ -217,6 +220,7 @@ export interface Destination {
   localFood?: string[];
   currency?: string;
   visaInfo?: string;
+  visaFee?: string;
   travelTips?: string[];
   lat?: number;
   lng?: number;

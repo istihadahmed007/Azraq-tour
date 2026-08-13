@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { VisaQuoteRequest } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { getVisaRequirement, OFFICIAL_VISA_REQUIREMENTS } from '../data/visaRequirementsData';
 
 interface VisaQuoteModalProps {
   isOpen: boolean;
@@ -56,6 +57,14 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [submittedQuote, setSubmittedQuote] = useState<VisaQuoteRequest | null>(null);
   const [copied, setCopied] = useState(false);
+  const [activeOccupationTab, setActiveOccupationTab] = useState<'all' | 'business' | 'job' | 'student'>('all');
+  const [showAllPricesTable, setShowAllPricesTable] = useState(false);
+  const [priceSearchQuery, setPriceSearchQuery] = useState('');
+
+  // Match official requirement data for selected country & visa type
+  const activeVisaReq = useMemo(() => {
+    return getVisaRequirement(destinationCountry, visaType);
+  }, [destinationCountry, visaType]);
 
   if (!isOpen) return null;
 
@@ -234,16 +243,227 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
             <div className="space-y-5 animate-fade-in">
               {/* Destination Country */}
               <div>
-                <label className="block text-xs font-semibold text-teal-200 mb-1">Destination Country *</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-semibold text-teal-200">Destination Country *</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllPricesTable(true)}
+                    className="text-[11px] text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-full border border-amber-500/30 font-bold flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <span>💵</span>
+                    <span>View All Visa Prices Directory</span>
+                  </button>
+                </div>
+                
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Japan, Schengen Area (France), United Kingdom, UAE"
+                  placeholder="e.g. Malaysia, Thailand, China, Singapore, India, Sri Lanka, Indonesia"
                   value={destinationCountry}
                   onChange={(e) => setDestinationCountry(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400 mb-2"
                 />
+
+                {/* Quick Country Selector Chips */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['Malaysia', 'Thailand', 'China', 'Singapore', 'India', 'Sri Lanka', 'Indonesia', 'Dubai', 'Vietnam', 'Japan'].map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setDestinationCountry(c)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        destinationCountry.toLowerCase() === c.toLowerCase()
+                          ? 'bg-teal-400 text-slate-950 font-bold shadow-md'
+                          : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-white/10'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Official Visa Requirement Card Preview */}
+              {activeVisaReq && (
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-teal-950/60 via-slate-900 to-slate-950 border border-teal-400/30 shadow-xl space-y-3 animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-teal-500/20 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">📋</span>
+                      <div>
+                        <h4 className="text-sm font-serif-display font-bold text-white flex items-center gap-1.5">
+                          <span>{activeVisaReq.country}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-400/30">
+                            {activeVisaReq.entryType}
+                          </span>
+                        </h4>
+                        <div className="text-[11px] text-teal-200/80">
+                          Official Embassy Visa Checklist & Solvency Rules
+                        </div>
+                      </div>
+                    </div>
+
+                    {activeVisaReq.validity && (
+                      <span className="text-[11px] font-semibold text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                        {activeVisaReq.validity}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Visa Fee & Price Breakdown Box */}
+                  {(activeVisaReq.embassyFeeBDT || activeVisaReq.totalEstimatedBDT) && (
+                    <div className="p-3 rounded-xl bg-slate-950/80 border border-teal-500/30 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-bold text-teal-300">
+                        <span className="flex items-center gap-1">
+                          <span>🏷️</span>
+                          <span>Estimated Visa Pricing Breakdown</span>
+                        </span>
+                        <span className="text-emerald-400 text-sm font-extrabold">{activeVisaReq.totalEstimatedBDT}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[11px] pt-1 border-t border-white/10">
+                        <div>
+                          <span className="text-slate-400 block">Embassy Fee:</span>
+                          <span className="font-semibold text-slate-200">{activeVisaReq.embassyFeeBDT || 'Included'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block">Agency Processing:</span>
+                          <span className="font-semibold text-slate-200">{activeVisaReq.serviceChargeBDT || 'BDT 1,500'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block">Total Est. Price:</span>
+                          <span className="font-bold text-teal-300">{activeVisaReq.totalEstimatedBDT}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Highlights Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+                    {activeVisaReq.processingTime && (
+                      <div className="p-2 rounded-xl bg-slate-800/70 border border-white/5 space-y-0.5">
+                        <div className="text-slate-400">Processing Time</div>
+                        <div className="font-semibold text-amber-300">{activeVisaReq.processingTime}</div>
+                      </div>
+                    )}
+                    {activeVisaReq.minBankBalance && (
+                      <div className="p-2 rounded-xl bg-slate-800/70 border border-white/5 space-y-0.5">
+                        <div className="text-slate-400">Min Bank Balance</div>
+                        <div className="font-semibold text-emerald-300">{activeVisaReq.minBankBalance}</div>
+                      </div>
+                    )}
+                    {activeVisaReq.photoSpec && (
+                      <div className="p-2 rounded-xl bg-slate-800/70 border border-white/5 space-y-0.5 col-span-2 sm:col-span-1">
+                        <div className="text-slate-400">Photo Format</div>
+                        <div className="font-semibold text-sky-300 truncate" title={activeVisaReq.photoSpec}>
+                          {activeVisaReq.photoSpec}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Occupation Tabs for Checklist */}
+                  {activeVisaReq.occupationRequirements && (
+                    <div className="pt-1">
+                      <div className="text-[11px] font-semibold text-teal-200 mb-1.5">Filter Requirements by Occupation:</div>
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                        <button
+                          type="button"
+                          onClick={() => setActiveOccupationTab('all')}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                            activeOccupationTab === 'all'
+                              ? 'bg-teal-400 text-slate-950'
+                              : 'bg-slate-800 text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          All General Docs
+                        </button>
+                        {activeVisaReq.occupationRequirements.businessPerson && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveOccupationTab('business')}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                              activeOccupationTab === 'business'
+                                ? 'bg-teal-400 text-slate-950'
+                                : 'bg-slate-800 text-slate-300 hover:text-white'
+                            }`}
+                          >
+                            Business Person
+                          </button>
+                        )}
+                        {activeVisaReq.occupationRequirements.jobHolder && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveOccupationTab('job')}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                              activeOccupationTab === 'job'
+                                ? 'bg-teal-400 text-slate-950'
+                                : 'bg-slate-800 text-slate-300 hover:text-white'
+                            }`}
+                          >
+                            Job Holder
+                          </button>
+                        )}
+                        {activeVisaReq.occupationRequirements.student && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveOccupationTab('student')}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                              activeOccupationTab === 'student'
+                                ? 'bg-teal-400 text-slate-950'
+                                : 'bg-slate-800 text-slate-300 hover:text-white'
+                            }`}
+                          >
+                            Student / Minor
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Checklist List */}
+                  <div className="space-y-1 pt-1 max-h-48 overflow-y-auto pr-1 text-xs">
+                    {(activeOccupationTab === 'all' ? activeVisaReq.generalRequirements : []).map((req, i) => (
+                      <div key={`gen-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-slate-800/40 text-slate-200">
+                        <span className="text-teal-400 mt-0.5">•</span>
+                        <span>{req}</span>
+                      </div>
+                    ))}
+
+                    {activeOccupationTab === 'business' && activeVisaReq.occupationRequirements?.businessPerson?.map((req, i) => (
+                      <div key={`biz-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-slate-800/40 text-slate-200">
+                        <span className="text-teal-400 mt-0.5">•</span>
+                        <span>{req}</span>
+                      </div>
+                    ))}
+
+                    {activeOccupationTab === 'job' && activeVisaReq.occupationRequirements?.jobHolder?.map((req, i) => (
+                      <div key={`job-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-slate-800/40 text-slate-200">
+                        <span className="text-teal-400 mt-0.5">•</span>
+                        <span>{req}</span>
+                      </div>
+                    ))}
+
+                    {activeOccupationTab === 'student' && activeVisaReq.occupationRequirements?.student?.map((req, i) => (
+                      <div key={`stud-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-slate-800/40 text-slate-200">
+                        <span className="text-teal-400 mt-0.5">•</span>
+                        <span>{req}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Important Notes */}
+                  {activeVisaReq.notes && activeVisaReq.notes.length > 0 && (
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200 space-y-1">
+                      <div className="font-bold flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-amber-400">info</span>
+                        <span>Important Embassy Note:</span>
+                      </div>
+                      {activeVisaReq.notes.map((n, idx) => (
+                        <p key={idx}>• {n}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Visa Type */}
               <div>
@@ -608,6 +828,137 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* ALL DESTINATIONS VISA PRICES DIRECTORY OVERLAY MODAL */}
+      {showAllPricesTable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-lg animate-fade-in">
+          <div className="relative w-full max-w-4xl max-h-[85vh] bg-slate-900 border border-teal-400/40 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
+            {/* Header */}
+            <div className="p-5 bg-gradient-to-r from-teal-950 via-slate-900 to-sky-950 border-b border-teal-500/30 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-xl">
+                  💵
+                </div>
+                <div>
+                  <h3 className="text-lg font-serif-display font-bold text-white flex items-center gap-2">
+                    <span>Official Visa Fee & Price Directory</span>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-400/30">
+                      2026 Embassy Rates
+                    </span>
+                  </h3>
+                  <p className="text-xs text-teal-200/80">
+                    Standard Embassy Fees, Agency Processing Charges & Total Estimated Prices for Bangladeshi Applicants
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowAllPricesTable(false)}
+                className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            {/* Search Filter Bar */}
+            <div className="p-4 bg-slate-950/60 border-b border-white/5 flex items-center justify-between gap-4">
+              <div className="relative flex-1">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                <input
+                  type="text"
+                  placeholder="Search destination country or visa type..."
+                  value={priceSearchQuery}
+                  onChange={(e) => setPriceSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-800/80 border border-teal-300/20 text-white text-xs focus:outline-none focus:border-teal-400"
+                />
+              </div>
+              <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+                Showing {OFFICIAL_VISA_REQUIREMENTS.filter(v => !priceSearchQuery || v.country.toLowerCase().includes(priceSearchQuery.toLowerCase()) || v.visaType.toLowerCase().includes(priceSearchQuery.toLowerCase())).length} Visas
+              </span>
+            </div>
+
+            {/* Table Content */}
+            <div className="p-4 overflow-y-auto flex-1 space-y-3">
+              <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/40">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-800/80 text-teal-200 text-[11px] font-bold uppercase tracking-wider border-b border-white/10">
+                    <tr>
+                      <th className="p-3.5">Country & Visa Type</th>
+                      <th className="p-3.5">Processing Time</th>
+                      <th className="p-3.5">Min Bank Balance</th>
+                      <th className="p-3.5">Embassy Fee</th>
+                      <th className="p-3.5">Agency Fee</th>
+                      <th className="p-3.5 text-right">Est. Total Price</th>
+                      <th className="p-3.5 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 font-sans">
+                    {OFFICIAL_VISA_REQUIREMENTS.filter((v) => {
+                      const q = priceSearchQuery.toLowerCase().trim();
+                      return !q || v.country.toLowerCase().includes(q) || v.visaType.toLowerCase().includes(q) || v.entryType.toLowerCase().includes(q);
+                    }).map((req) => (
+                      <tr key={req.id} className="hover:bg-slate-800/50 transition-colors">
+                        <td className="p-3.5">
+                          <div className="font-bold text-white text-sm">{req.country}</div>
+                          <div className="text-[11px] text-teal-300 font-medium">{req.entryType}</div>
+                        </td>
+                        <td className="p-3.5 text-amber-300 font-medium">
+                          {req.processingTime || '3–5 Working Days'}
+                        </td>
+                        <td className="p-3.5 text-emerald-300 font-medium">
+                          {req.minBankBalance || 'Standard'}
+                        </td>
+                        <td className="p-3.5 text-slate-300">
+                          {req.embassyFeeBDT || 'Included'}
+                        </td>
+                        <td className="p-3.5 text-slate-300">
+                          {req.serviceChargeBDT || 'BDT 1,500'}
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <span className="font-extrabold text-teal-300 text-sm px-2.5 py-1 rounded-xl bg-teal-500/10 border border-teal-400/20 inline-block">
+                            {req.totalEstimatedBDT || 'Quote Required'}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDestinationCountry(req.country);
+                              setVisaType(req.visaType);
+                              setShowAllPricesTable(false);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-xs transition-all shadow-md cursor-pointer"
+                          >
+                            Select
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Note banner */}
+              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 flex items-center gap-2">
+                <span className="material-symbols-outlined text-amber-400 text-base">info</span>
+                <span>
+                  All visa fees are estimated in Bangladeshi Taka (BDT) based on standard Embassy & Government exchange rates. Final price quotes are verified upon submitting document details.
+                </span>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-slate-950 border-t border-white/10 flex justify-end">
+              <button
+                onClick={() => setShowAllPricesTable(false)}
+                className="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition-all"
+              >
+                Close Directory
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

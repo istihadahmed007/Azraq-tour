@@ -124,11 +124,16 @@ export const QuotationSection: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="text-2xl font-serif-display font-bold text-white group-hover:text-teal-300 transition-colors">
-                  Visa Quotation
-                </h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-2xl font-serif-display font-bold text-white group-hover:text-teal-300 transition-colors">
+                    Visa Quotation
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 text-xs font-bold border border-teal-400/30">
+                    From BDT 2,000
+                  </span>
+                </div>
                 <p className="text-sm text-slate-300 mt-2 leading-relaxed font-normal">
-                  Get personalized visa assistance, document guidance and service quotations for your destination.
+                  Get personalized visa assistance, transparent embassy fee breakdowns, document guidance & service quotes for 50+ countries.
                 </p>
               </div>
 

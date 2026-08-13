@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TourPackage } from '../types';
+import { getVisaFeeForDestination } from '../data/visaRequirementsData';
 import {
   X,
   MapPin,
@@ -89,13 +90,17 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
 
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white">{pkg.package_name}</h1>
 
-              <div className="flex items-center gap-4 text-xs font-semibold text-sky-200">
+              <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-sky-200">
                 <span className="flex items-center gap-1.5 bg-slate-900/80 px-3 py-1 rounded-lg border border-slate-700">
                   <Clock className="w-4 h-4 text-sky-400" />
                   {pkg.duration}
                 </span>
                 <span className="flex items-center gap-1.5 bg-slate-900/80 px-3 py-1 rounded-lg border border-slate-700 text-emerald-400 font-extrabold font-mono text-sm">
                   From {pkg.currency === 'BDT' ? '৳' : pkg.currency} {pkg.price.toLocaleString()} / person
+                </span>
+                <span className="flex items-center gap-1.5 bg-teal-950/90 px-3 py-1 rounded-lg border border-teal-500/40 text-teal-300 font-bold text-xs">
+                  <FileCheck className="w-4 h-4 text-teal-400" />
+                  Visa Fee: <span className="text-white font-extrabold">{pkg.visa_fee || getVisaFeeForDestination(pkg.country || pkg.destination_name)}</span>
                 </span>
               </div>
             </div>
@@ -273,10 +278,27 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
 
             {/* Visa & Document Requirements */}
             <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700/50 space-y-4">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-sky-400 flex items-center gap-2">
-                <FileCheck className="w-4 h-4" />
-                Visa & Required Documents
-              </h4>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 pb-3">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-sky-400 flex items-center gap-2">
+                  <FileCheck className="w-4 h-4" />
+                  Visa & Required Documents
+                </h4>
+                <div className="px-3 py-1 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-bold flex items-center gap-1.5">
+                  <span>🛂 Visa Fee:</span>
+                  <span className="text-white font-extrabold">{pkg.visa_fee || getVisaFeeForDestination(pkg.country || pkg.destination_name)}</span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-teal-500/20 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <span className="text-slate-400 text-xs block">Estimated Visa Processing Cost for {pkg.country}:</span>
+                  <span className="text-teal-300 font-extrabold text-sm">{pkg.visa_fee || getVisaFeeForDestination(pkg.country || pkg.destination_name)}</span>
+                </div>
+                <span className="text-[11px] text-teal-400/80 bg-teal-500/10 px-2.5 py-1 rounded-lg border border-teal-500/20">
+                  Official Embassy & Processing Charge Included
+                </span>
+              </div>
+
               <div className="space-y-2 text-xs sm:text-sm text-slate-200">
                 <p>
                   <strong className="text-sky-300">Visa Info:</strong> {pkg.visa_information || 'Information not provided in the package document.'}
