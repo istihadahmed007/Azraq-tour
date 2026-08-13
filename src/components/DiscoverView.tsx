@@ -35,6 +35,8 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     'Luxury',
   ];
 
+  const [visibleCount, setVisibleCount] = useState<number>(12);
+
   // Extract list of all unique countries sorted alphabetically
   const countries = useMemo(() => {
     const set = new Set<string>();
@@ -79,6 +81,15 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
 
     return result;
   }, [destinations, selectedCategory, selectedCountry, searchQuery, sortBy]);
+
+  // Reset pagination when filters change
+  React.useEffect(() => {
+    setVisibleCount(12);
+  }, [selectedCategory, selectedCountry, searchQuery, sortBy]);
+
+  const visibleDestinations = useMemo(() => {
+    return filteredDestinations.slice(0, visibleCount);
+  }, [filteredDestinations, visibleCount]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,7 +239,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             </div>
 
             <span className="text-xs text-sky-300 font-bold bg-sky-500/10 border border-sky-400/20 px-3 py-1.5 rounded-xl">
-              {filteredDestinations.length} Destinations
+              Showing {Math.min(visibleCount, filteredDestinations.length)} of {filteredDestinations.length} Destinations
             </span>
           </div>
         </div>
@@ -241,7 +252,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             <span className="material-symbols-outlined text-4xl text-outline">travel_explore</span>
             <h3 className="text-lg font-bold text-white">No destinations found</h3>
             <p className="text-xs text-outline max-w-sm mx-auto">
-              Try adjusting your search criteria or clear category filters to view all 100 Asian destinations.
+              Try adjusting your search criteria or clear category filters to view all Asian destinations.
             </p>
             <button
               onClick={() => {
@@ -249,110 +260,129 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                 setSelectedCategory('All');
                 setSelectedCountry('All');
               }}
-              className="text-xs font-semibold text-primary underline pt-2"
+              className="text-xs font-semibold text-primary underline pt-2 cursor-pointer"
             >
               Reset Filters
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDestinations.map((dest) => (
-              <div
-                key={dest.id}
-                onClick={() => onSelectDestination(dest)}
-                className="rounded-3xl overflow-hidden relative group cursor-pointer glass-card border border-white/15 shadow-xl transition-all duration-300 hover:border-sky-400/50 hover:shadow-2xl hover:shadow-sky-500/10 flex flex-col h-[380px]"
-              >
-                {/* Image Container */}
-                <div className="relative h-48 w-full overflow-hidden shrink-0">
-                  <img
-                    src={dest.imageUrl}
-                    alt={dest.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {visibleDestinations.map((dest) => (
+                <div
+                  key={dest.id}
+                  onClick={() => onSelectDestination(dest)}
+                  className="rounded-3xl overflow-hidden relative group cursor-pointer glass-card border border-white/15 shadow-xl transition-all duration-300 hover:border-sky-400/50 hover:shadow-2xl hover:shadow-sky-500/10 flex flex-col h-[380px]"
+                >
+                  {/* Image Container */}
+                  <div className="relative h-48 w-full overflow-hidden shrink-0">
+                    <img
+                      src={dest.imageUrl}
+                      alt={dest.name}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
 
-                  {/* Top Flag & Category Badges */}
-                  <div className="absolute top-3 left-3 right-3 flex justify-between items-center z-10">
-                    <span className="bg-black/60 backdrop-blur-md border border-white/20 text-white font-semibold text-xs px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md">
-                      <span>{dest.flag}</span>
-                      <span>{dest.country}</span>
-                    </span>
-
-                    <span className="bg-sky-500/80 backdrop-blur-md text-slate-950 font-bold text-[11px] px-2.5 py-1 rounded-full shadow-md">
-                      {dest.category}
-                    </span>
-                  </div>
-
-                  {/* Rating Badge */}
-                  <div className="absolute bottom-3 right-3 z-10">
-                    <span className="bg-black/70 backdrop-blur-md text-amber-400 font-bold text-xs px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-0.5">
-                      <span className="material-symbols-outlined text-xs">star</span>
-                      {dest.rating}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Content Area */}
-                <div className="p-5 flex flex-col justify-between flex-1 bg-slate-900/90 text-on-surface">
-                  <div className="space-y-1.5">
-                    <div className="text-[11px] font-semibold text-sky-400 uppercase tracking-wider">
-                      {dest.cityRegion}
-                    </div>
-
-                    <h3 className="font-serif-display font-bold text-xl text-white group-hover:text-sky-300 transition-colors line-clamp-1">
-                      {dest.name}
-                    </h3>
-
-                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed font-normal">
-                      {dest.description}
-                    </p>
-                  </div>
-
-                  {/* Quick Specs & Actions */}
-                  <div className="pt-3 border-t border-white/10 space-y-2">
-                    <div className="flex items-center justify-between text-[11px] text-slate-300 font-medium">
-                      <span className="flex items-center gap-1 text-emerald-300">
-                        <span className="material-symbols-outlined text-xs">calendar_month</span>
-                        {dest.bestTimeToVisit || 'Best: Nov - Mar'}
+                    {/* Top Flag & Category Badges */}
+                    <div className="absolute top-3 left-3 right-3 flex justify-between items-center z-10">
+                      <span className="bg-black/60 backdrop-blur-md border border-white/20 text-white font-semibold text-xs px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md">
+                        <span>{dest.flag}</span>
+                        <span>{dest.country}</span>
                       </span>
 
-                      <span className="flex items-center gap-1 text-amber-300 font-semibold">
-                        <span className="material-symbols-outlined text-xs">payments</span>
-                        {dest.estimatedBudget || '$200 - $500'}
+                      <span className="bg-sky-500/80 backdrop-blur-md text-slate-950 font-bold text-[11px] px-2.5 py-1 rounded-full shadow-md">
+                        {dest.category}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectDestination(dest);
-                        }}
-                        className="text-xs text-sky-300 font-bold hover:underline flex items-center gap-1"
-                      >
-                        <span>Explore Details</span>
-                        <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                      </button>
+                    {/* Rating Badge */}
+                    <div className="absolute bottom-3 right-3 z-10">
+                      <span className="bg-black/70 backdrop-blur-md text-amber-400 font-bold text-xs px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-0.5">
+                        <span className="material-symbols-outlined text-xs">star</span>
+                        {dest.rating}
+                      </span>
+                    </div>
+                  </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          requireAuth(
-                            { type: 'generate_itinerary', label: `Itinerary for ${dest.name}` },
-                            () => onQuickGenerateItinerary(dest.name)
-                          );
-                        }}
-                        className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary/20 hover:bg-primary text-primary hover:text-on-primary transition-all border border-primary/30 flex items-center gap-1"
-                      >
-                        <span className="material-symbols-outlined text-xs">auto_awesome</span>
-                        <span>Itinerary</span>
-                      </button>
+                  {/* Content Area */}
+                  <div className="p-5 flex flex-col justify-between flex-1 bg-slate-900/90 text-on-surface">
+                    <div className="space-y-1.5">
+                      <div className="text-[11px] font-semibold text-sky-400 uppercase tracking-wider">
+                        {dest.cityRegion}
+                      </div>
+
+                      <h3 className="font-serif-display font-bold text-xl text-white group-hover:text-sky-300 transition-colors line-clamp-1">
+                        {dest.name}
+                      </h3>
+
+                      <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed font-normal">
+                        {dest.description}
+                      </p>
+                    </div>
+
+                    {/* Quick Specs & Actions */}
+                    <div className="pt-3 border-t border-white/10 space-y-2">
+                      <div className="flex items-center justify-between text-[11px] text-slate-300 font-medium">
+                        <span className="flex items-center gap-1 text-emerald-300">
+                          <span className="material-symbols-outlined text-xs">calendar_month</span>
+                          {dest.bestTimeToVisit || 'Best: Nov - Mar'}
+                        </span>
+
+                        <span className="flex items-center gap-1 text-amber-300 font-semibold">
+                          <span className="material-symbols-outlined text-xs">payments</span>
+                          {dest.estimatedBudget || '$200 - $500'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectDestination(dest);
+                          }}
+                          className="text-xs text-sky-300 font-bold hover:underline flex items-center gap-1"
+                        >
+                          <span>Explore Details</span>
+                          <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            requireAuth(
+                              { type: 'generate_itinerary', label: `Itinerary for ${dest.name}` },
+                              () => onQuickGenerateItinerary(dest.name)
+                            );
+                          }}
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary/20 hover:bg-primary text-primary hover:text-on-primary transition-all border border-primary/30 flex items-center gap-1"
+                        >
+                          <span className="material-symbols-outlined text-xs">auto_awesome</span>
+                          <span>Itinerary</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {/* Load More Button */}
+            {filteredDestinations.length > visibleCount && (
+              <div className="flex flex-col items-center justify-center pt-8 gap-3">
+                <button
+                  onClick={() => setVisibleCount((prev) => prev + 12)}
+                  className="px-8 py-3.5 rounded-full bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-slate-950 font-bold text-sm shadow-xl hover:shadow-sky-500/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <span>Show More Destinations ({filteredDestinations.length - visibleCount} remaining)</span>
+                  <span className="material-symbols-outlined text-base">expand_more</span>
+                </button>
+                <span className="text-xs text-slate-400 font-medium">
+                  Displaying {visibleCount} of {filteredDestinations.length} total destinations
+                </span>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </section>
     </div>
