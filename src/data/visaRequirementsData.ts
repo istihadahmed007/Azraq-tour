@@ -360,6 +360,12 @@ export function getVisaRequirement(countryName: string, visaType?: string): Visa
   );
   if (exact) return exact;
 
+  // Partial match by country AND type
+  const countryAndTypeMatch = OFFICIAL_VISA_REQUIREMENTS.find(
+    (v) => (v.country.toLowerCase().includes(targetCountry) || targetCountry.includes(v.country.toLowerCase())) && v.visaType.toLowerCase() === targetType
+  );
+  if (countryAndTypeMatch) return countryAndTypeMatch;
+
   // Partial match by country
   const countryMatch = OFFICIAL_VISA_REQUIREMENTS.find(
     (v) => v.country.toLowerCase() === targetCountry || targetCountry.includes(v.country.toLowerCase()) || v.country.toLowerCase().includes(targetCountry)

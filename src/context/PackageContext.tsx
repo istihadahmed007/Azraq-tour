@@ -87,12 +87,13 @@ interface PackageContextType {
 
 const PackageContext = createContext<PackageContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'globetrotter_tour_packages_v37';
+const LOCAL_STORAGE_KEY = 'globetrotter_tour_packages_v38';
 
 export const PackageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [packages, setPackages] = useState<TourPackage[]>(() => {
     try {
-      // Clean up old keys
+      // Clean up old keys to prevent stale cached data
+      localStorage.removeItem('globetrotter_tour_packages_v37');
       localStorage.removeItem('globetrotter_tour_packages_v2');
       localStorage.removeItem('globetrotter_tour_packages_v1');
       

@@ -22,15 +22,19 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Form Fields
-  const [destinationCountry, setDestinationCountry] = useState(initialCountry || '');
+  const [destinationCountry, setDestinationCountry] = useState(initialCountry || 'Malaysia');
   const [visaType, setVisaType] = useState<'Tourist' | 'Business' | 'Student' | 'Transit' | 'Medical' | 'Other'>('Tourist');
-  const [intendedTravelDate, setIntendedTravelDate] = useState('');
+  const [intendedTravelDate, setIntendedTravelDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  });
   const [applicantsCount, setApplicantsCount] = useState<number>(1);
-  const [applicantNationality, setApplicantNationality] = useState('');
+  const [applicantNationality, setApplicantNationality] = useState('Bangladeshi');
   const [passportValidity, setPassportValidity] = useState('More than 6 months');
   const [previousVisa, setPreviousVisa] = useState<'Yes' | 'No'>('No');
   const [previousRefusal, setPreviousRefusal] = useState<'Yes' | 'No'>('No');
-  const [currentResidence, setCurrentResidence] = useState('');
+  const [currentResidence, setCurrentResidence] = useState('Bangladesh');
   const [requiredService, setRequiredService] = useState<'Visa Processing' | 'Consultation' | 'Document Assistance' | 'Full Package'>('Visa Processing');
   const [additionalInfo, setAdditionalInfo] = useState('');
 
@@ -70,15 +74,17 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
 
   const resetForm = () => {
     setStep(1);
-    setDestinationCountry('');
+    setDestinationCountry(initialCountry || 'Malaysia');
     setVisaType('Tourist');
-    setIntendedTravelDate('');
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    setIntendedTravelDate(d.toISOString().split('T')[0]);
     setApplicantsCount(1);
-    setApplicantNationality('');
+    setApplicantNationality('Bangladeshi');
     setPassportValidity('More than 6 months');
     setPreviousVisa('No');
     setPreviousRefusal('No');
-    setCurrentResidence('');
+    setCurrentResidence('Bangladesh');
     setRequiredService('Visa Processing');
     setAdditionalInfo('');
     setErrorMessage('');
@@ -184,60 +190,87 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-teal-400/30 rounded-3xl shadow-2xl overflow-hidden my-8 text-slate-100">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/85 backdrop-blur-md animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+    >
+      <div className="relative w-full max-w-2xl max-h-[92vh] sm:max-h-[88vh] bg-slate-900 border border-teal-400/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
         
-        {/* Header */}
-        <div className="relative px-6 py-5 bg-gradient-to-r from-teal-950/90 via-slate-900 to-sky-950/90 border-b border-teal-500/20 flex items-center justify-between">
+        {/* Fixed Header */}
+        <div className="shrink-0 relative px-5 sm:px-6 py-4 bg-gradient-to-r from-teal-950/90 via-slate-900 to-sky-950/90 border-b border-teal-500/20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-xl shadow-inner">
+            <div className="w-10 h-10 rounded-2xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-xl shadow-inner shrink-0">
               🛂
             </div>
             <div>
-              <h2 className="text-xl font-serif-display font-bold text-white tracking-tight">
+              <h2 className="text-lg sm:text-xl font-serif-display font-bold text-white tracking-tight">
                 Visa Quotation & Guidance
               </h2>
-              <p className="text-xs text-teal-200/80">
-                Customized visa assistance, document checklists & processing fee quotes
+              <p className="text-[11px] sm:text-xs text-teal-200/80">
+                Customized visa assistance, document checklists & fee quotes
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={handleClose}
-            className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white transition-all border border-white/10 flex items-center gap-1.5 text-xs font-bold cursor-pointer shrink-0"
+            title="Close Modal & Return to Website"
           >
+            <span className="hidden sm:inline">Close</span>
             <span className="material-symbols-outlined text-lg">close</span>
           </button>
         </div>
 
-        {/* Step Indicator */}
+        {/* Fixed Step Indicator */}
         {step < 4 && (
-          <div className="px-6 pt-4 bg-slate-900/60 border-b border-white/5 flex items-center justify-between text-xs font-medium text-teal-200/70">
-            <div className={`flex items-center gap-2 pb-2 border-b-2 transition-all ${step === 1 ? 'border-teal-400 text-teal-400 font-bold' : 'border-transparent'}`}>
+          <div className="shrink-0 px-5 sm:px-6 py-3 bg-slate-900/95 border-b border-white/5 flex items-center justify-between text-xs font-medium text-teal-200/70 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className={`flex items-center gap-2 pb-1 border-b-2 transition-all cursor-pointer shrink-0 ${step === 1 ? 'border-teal-400 text-teal-400 font-bold' : 'border-transparent hover:text-white'}`}
+            >
               <span className="w-5 h-5 rounded-full bg-teal-500/20 flex items-center justify-center text-[10px]">1</span>
               <span>Destination & Visa</span>
-            </div>
-            <div className={`flex items-center gap-2 pb-2 border-b-2 transition-all ${step === 2 ? 'border-teal-400 text-teal-400 font-bold' : 'border-transparent'}`}>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (validateStep1()) setStep(2);
+              }}
+              className={`flex items-center gap-2 pb-1 border-b-2 transition-all cursor-pointer shrink-0 ${step === 2 ? 'border-teal-400 text-teal-400 font-bold' : 'border-transparent hover:text-white'}`}
+            >
               <span className="w-5 h-5 rounded-full bg-teal-500/20 flex items-center justify-center text-[10px]">2</span>
               <span>Applicant Profile</span>
-            </div>
-            <div className={`flex items-center gap-2 pb-2 border-b-2 transition-all ${step === 3 ? 'border-teal-400 text-teal-400 font-bold' : 'border-transparent'}`}>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (validateStep1() && validateStep2()) setStep(3);
+              }}
+              className={`flex items-center gap-2 pb-1 border-b-2 transition-all cursor-pointer shrink-0 ${step === 3 ? 'border-teal-400 text-teal-400 font-bold' : 'border-transparent hover:text-white'}`}
+            >
               <span className="w-5 h-5 rounded-full bg-teal-500/20 flex items-center justify-center text-[10px]">3</span>
               <span>Contact Details</span>
-            </div>
+            </button>
           </div>
         )}
 
         {/* Error Banner */}
         {errorMessage && (
-          <div className="mx-6 mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
+          <div className="shrink-0 mx-5 sm:mx-6 mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
             <span className="material-symbols-outlined text-base text-red-400">error</span>
             <span>{errorMessage}</span>
           </div>
         )}
 
-        <div className="p-6">
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
           {/* STEP 1: Destination & Visa Requirements */}
           {step === 1 && (
             <div className="space-y-5 animate-fade-in">
@@ -255,14 +288,44 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                   </button>
                 </div>
                 
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Malaysia, Thailand, China, Singapore, India, Sri Lanka, Indonesia"
-                  value={destinationCountry}
-                  onChange={(e) => setDestinationCountry(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400 mb-2"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                  <select
+                    value={destinationCountry}
+                    onChange={(e) => {
+                      setDestinationCountry(e.target.value);
+                      setErrorMessage('');
+                    }}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400 cursor-pointer"
+                  >
+                    <option value="">Select Popular Country...</option>
+                    <option value="Malaysia">Malaysia (E-Visa - BDT 6,000)</option>
+                    <option value="Thailand">Thailand (E-Visa / Sticker - BDT 7,000)</option>
+                    <option value="China">China (Sticker Visa - BDT 10,000)</option>
+                    <option value="Singapore">Singapore (E-Visa - BDT 6,000)</option>
+                    <option value="India">India (Medical / Tourist - BDT 2,000)</option>
+                    <option value="Sri Lanka">Sri Lanka (ETA / E-Visa - BDT 7,500)</option>
+                    <option value="Indonesia">Indonesia (Sticker / E-Visa - BDT 23,000)</option>
+                    <option value="United Arab Emirates (Dubai)">Dubai / UAE (30-Day E-Visa - BDT 11,500)</option>
+                    <option value="Vietnam">Vietnam (E-Visa - BDT 5,500)</option>
+                    <option value="Japan">Japan (Sticker Visa - BDT 4,500)</option>
+                    <option value="Maldives">Maldives (Visa on Arrival - Free)</option>
+                    <option value="Nepal">Nepal (Visa on Arrival - Free)</option>
+                    <option value="Saudi Arabia">Saudi Arabia (Umrah / Tourist)</option>
+                    <option value="Turkey">Turkey (E-Visa / Sticker)</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    required
+                    placeholder="Or type custom country..."
+                    value={destinationCountry}
+                    onChange={(e) => {
+                      setDestinationCountry(e.target.value);
+                      setErrorMessage('');
+                    }}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400"
+                  />
+                </div>
 
                 {/* Quick Country Selector Chips */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
@@ -270,9 +333,12 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                     <button
                       key={c}
                       type="button"
-                      onClick={() => setDestinationCountry(c)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                        destinationCountry.toLowerCase() === c.toLowerCase()
+                      onClick={() => {
+                        setDestinationCountry(c);
+                        setErrorMessage('');
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                        destinationCountry.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(destinationCountry.toLowerCase()) && destinationCountry.length > 2
                           ? 'bg-teal-400 text-slate-950 font-bold shadow-md'
                           : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-white/10'
                       }`}
@@ -420,31 +486,35 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                   )}
 
                   {/* Checklist List */}
-                  <div className="space-y-1 pt-1 max-h-48 overflow-y-auto pr-1 text-xs">
-                    {(activeOccupationTab === 'all' ? activeVisaReq.generalRequirements : []).map((req, i) => (
+                  <div className="space-y-1 pt-1 max-h-52 overflow-y-auto pr-1 text-xs">
+                    {/* General Requirements always shown */}
+                    {activeVisaReq.generalRequirements.map((req, i) => (
                       <div key={`gen-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-slate-800/40 text-slate-200">
                         <span className="text-teal-400 mt-0.5">•</span>
                         <span>{req}</span>
                       </div>
                     ))}
 
-                    {activeOccupationTab === 'business' && activeVisaReq.occupationRequirements?.businessPerson?.map((req, i) => (
-                      <div key={`biz-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-slate-800/40 text-slate-200">
-                        <span className="text-teal-400 mt-0.5">•</span>
+                    {/* Business Person Specific */}
+                    {(activeOccupationTab === 'business' || activeOccupationTab === 'all') && activeVisaReq.occupationRequirements?.businessPerson?.map((req, i) => (
+                      <div key={`biz-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200">
+                        <span className="text-amber-400 font-bold mt-0.5">[Business]</span>
                         <span>{req}</span>
                       </div>
                     ))}
 
-                    {activeOccupationTab === 'job' && activeVisaReq.occupationRequirements?.jobHolder?.map((req, i) => (
-                      <div key={`job-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-slate-800/40 text-slate-200">
-                        <span className="text-teal-400 mt-0.5">•</span>
+                    {/* Job Holder Specific */}
+                    {(activeOccupationTab === 'job' || activeOccupationTab === 'all') && activeVisaReq.occupationRequirements?.jobHolder?.map((req, i) => (
+                      <div key={`job-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-200">
+                        <span className="text-sky-400 font-bold mt-0.5">[Job Holder]</span>
                         <span>{req}</span>
                       </div>
                     ))}
 
-                    {activeOccupationTab === 'student' && activeVisaReq.occupationRequirements?.student?.map((req, i) => (
-                      <div key={`stud-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-slate-800/40 text-slate-200">
-                        <span className="text-teal-400 mt-0.5">•</span>
+                    {/* Student Specific */}
+                    {(activeOccupationTab === 'student' || activeOccupationTab === 'all') && activeVisaReq.occupationRequirements?.student?.map((req, i) => (
+                      <div key={`stud-${i}`} className="flex items-start gap-2 p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-200">
+                        <span className="text-purple-400 font-bold mt-0.5">[Student]</span>
                         <span>{req}</span>
                       </div>
                     ))}
@@ -552,14 +622,23 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                 </div>
               </div>
 
-              {/* Next Button */}
-              <div className="pt-2 flex justify-end">
+              {/* Step 1 Actions */}
+              <div className="pt-3 flex items-center justify-between gap-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="px-5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">arrow_back</span>
+                  <span>Back / Exit</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
                     if (validateStep1()) setStep(2);
                   }}
-                  className="px-6 py-3 rounded-2xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2"
+                  className="px-6 py-3 rounded-2xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2 cursor-pointer"
                 >
                   <span>Continue to Applicant Info</span>
                   <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -577,11 +656,33 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. United States, India, Philippines"
+                    placeholder="e.g. Bangladeshi, Indian, American"
                     value={applicantNationality}
-                    onChange={(e) => setApplicantNationality(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400"
+                    onChange={(e) => {
+                      setApplicantNationality(e.target.value);
+                      setErrorMessage('');
+                    }}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400 mb-2"
                   />
+                  <div className="flex flex-wrap gap-1">
+                    {['Bangladeshi', 'Indian', 'American', 'British', 'Canadian', 'Malaysian'].map((nat) => (
+                      <button
+                        key={nat}
+                        type="button"
+                        onClick={() => {
+                          setApplicantNationality(nat);
+                          setErrorMessage('');
+                        }}
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+                          applicantNationality.toLowerCase() === nat.toLowerCase()
+                            ? 'bg-teal-400 text-slate-950 font-bold'
+                            : 'bg-slate-800 text-slate-300 hover:text-white border border-white/10'
+                        }`}
+                      >
+                        {nat}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
