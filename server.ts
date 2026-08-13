@@ -43,6 +43,17 @@ function verifyPassword(password: string, storedHash?: string, salt?: string): b
   return hash === storedHash;
 }
 
+// --- System Security Settings Store ---
+interface SystemSettings {
+  requireEmailVerification: boolean;
+  requirePhoneOtp: boolean;
+}
+
+let systemSettings: SystemSettings = {
+  requireEmailVerification: true,
+  requirePhoneOtp: false,
+};
+
 // --- Persistent File-Backed Auth User Store ---
 interface ServerUser {
   uid: string;
@@ -53,8 +64,19 @@ interface ServerUser {
   passwordHash?: string;
   passwordSalt?: string;
   photoURL?: string;
+  bio?: string;
+  languages?: string[];
   emailVerified: boolean;
-  provider: 'email' | 'google' | 'apple';
+  emailVerificationCode?: string;
+  emailCodeExpiry?: number;
+  phoneVerified?: boolean;
+  phoneOtpCode?: string;
+  phoneOtpExpiry?: number;
+  otpFailedAttempts?: number;
+  failedLoginAttempts?: number;
+  lockoutUntil?: number;
+  isSuspended?: boolean;
+  provider: 'email' | 'google' | 'apple' | 'facebook';
   createdAt: string;
   updatedAt?: string;
   homeLocation?: string;
@@ -72,6 +94,18 @@ function isOwnerEmail(email: string): boolean {
   const norm = (email || '').toLowerCase().trim();
   const owners = ['istihadahmed1163@gmail.com', 'alex@globetrotter.ai', 'admin@globetrotter.ai', 'owner@globetrotter.ai'];
   return owners.includes(norm) || norm.startsWith('admin') || norm.startsWith('owner');
+}
+
+// Password Validator helper
+function validatePasswordRequirements(password: string): { valid: boolean; error?: string } {
+  if (password.length < 8) return { valid: false, error: "Password must be at least 8 characters long." };
+  if (!/[A-Z]/.test(password)) return { valid: false, error: "Password must contain at least 1 uppercase letter." };
+  if (!/[a-z]/.test(password)) return { valid: false, error: "Password must contain at least 1 lowercase letter." };
+  if (!/[0-9]/.test(password)) return { valid: false, error: "Password must contain at least 1 number." };
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return { valid: false, error: "Password must contain at least 1 special character." };
+  }
+  return { valid: true };
 }
 
 function loadUsersFromDisk(): Map<string, ServerUser> {
@@ -102,7 +136,10 @@ function loadUsersFromDisk(): Map<string, ServerUser> {
         passwordHash: alexSaltHash.hash,
         passwordSalt: alexSaltHash.salt,
         photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+        bio: "Avid explorer, photography enthusiast, and chief architect of GlobeTrotter AI.",
+        languages: ["English", "French", "Spanish"],
         emailVerified: true,
+        phoneVerified: true,
         provider: "email",
         createdAt: new Date().toISOString(),
         homeLocation: "San Francisco, CA",
@@ -129,9 +166,52 @@ function saveUsersToDisk() {
   }
 }
 
+// Helper to strip sensitive user properties before returning to client
+function sanitizeUserPayload(user: ServerUser) {
+  const {
+    passwordHash,
+    passwordSalt,
+    resetToken,
+    resetTokenExpiry,
+    emailVerificationCode,
+    emailCodeExpiry,
+    phoneOtpCode,
+    phoneOtpExpiry,
+    otpFailedAttempts,
+    failedLoginAttempts,
+    lockoutUntil,
+    ...userPayload
+  } = user;
+  return userPayload;
+}
+
+// Helper to find user by email or phone
+function findUserByEmailOrPhone(identifier: string): ServerUser | undefined {
+  if (!identifier) return undefined;
+  const norm = identifier.trim().toLowerCase();
+  
+  // Try direct email match
+  if (usersStore.has(norm)) {
+    return usersStore.get(norm);
+  }
+
+  // Search by email or phone across map values
+  const cleanPhone = norm.replace(/[^0-9]/g, '');
+  for (const user of usersStore.values()) {
+    if (user.email.toLowerCase() === norm) return user;
+    if (user.phone) {
+      const userCleanPhone = user.phone.replace(/[^0-9]/g, '');
+      if (userCleanPhone && userCleanPhone === cleanPhone && cleanPhone.length >= 6) {
+        return user;
+      }
+    }
+  }
+  return undefined;
+}
+
 // --- Authentication Endpoints ---
 
-// Register Endpoint
+// 1. Register Endpoint
 app.post("/api/auth/register", (req, res) => {
   try {
     const { fullName, email, phone, country, password, agreeTerms, photoURL } = req.body;
@@ -148,11 +228,14 @@ app.post("/api/auth/register", (req, res) => {
     if (!country || !country.trim()) {
       return res.status(400).json({ error: "Please select or enter your Country." });
     }
-    if (!password || password.length < 8) {
-      return res.status(400).json({ error: "Password must be at least 8 characters long." });
-    }
     if (!agreeTerms) {
       return res.status(400).json({ error: "You must agree to the Terms of Service & Privacy Policy to register." });
+    }
+
+    // Strict Password Rules Validation
+    const passCheck = validatePasswordRequirements(password || "");
+    if (!passCheck.valid) {
+      return res.status(400).json({ error: passCheck.error });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -163,6 +246,10 @@ app.post("/api/auth/register", (req, res) => {
     // Secure salt + PBKDF2 password hashing
     const { hash, salt } = hashPassword(password);
 
+    // Generate 6-digit email verification code & 6-digit phone OTP
+    const emailVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const phoneOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
     const newUser: ServerUser = {
       uid: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       fullName: fullName.trim(),
@@ -172,7 +259,14 @@ app.post("/api/auth/register", (req, res) => {
       passwordHash: hash,
       passwordSalt: salt,
       photoURL: photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
-      emailVerified: true, // Mark verified for registered user
+      bio: `Hello! I am ${fullName.trim()}, excited to discover amazing travel destinations.`,
+      languages: ["English"],
+      emailVerified: false, // Starts false, needs verification!
+      emailVerificationCode,
+      emailCodeExpiry: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+      phoneVerified: false,
+      phoneOtpCode,
+      phoneOtpExpiry: Date.now() + 10 * 60 * 1000, // 10 mins
       provider: "email",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -184,12 +278,12 @@ app.post("/api/auth/register", (req, res) => {
     usersStore.set(normalizedEmail, newUser);
     saveUsersToDisk();
 
-    // Return user object without sensitive password credentials
-    const { passwordHash, passwordSalt, resetToken, resetTokenExpiry, ...userPayload } = newUser;
     res.json({
       success: true,
-      message: "Registration successful! Welcome to GlobeTrotter AI.",
-      user: userPayload,
+      message: "Account created! We've sent a 6-digit verification code to your email.",
+      user: sanitizeUserPayload(newUser),
+      demoEmailCode: emailVerificationCode,
+      demoPhoneOtp: phoneOtpCode,
       token: `token_${newUser.uid}_${Date.now()}`,
     });
   } catch (err: any) {
@@ -198,41 +292,74 @@ app.post("/api/auth/register", (req, res) => {
   }
 });
 
-// Login Endpoint
+// 2. Login Endpoint (Supports Email or Phone identifier + Lockout + Suspension check)
 app.post("/api/auth/login", (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and Password are required." });
+      return res.status(400).json({ error: "Email/Phone and Password are required." });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const existingUser = usersStore.get(normalizedEmail);
+    const existingUser = findUserByEmailOrPhone(email);
 
     if (!existingUser) {
-      return res.status(400).json({ error: "No account found with this email address. Please sign up." });
+      return res.status(400).json({ error: "No account found with those credentials. Please check your email/phone or sign up." });
+    }
+
+    // Check Account Suspension
+    if (existingUser.isSuspended) {
+      return res.status(403).json({
+        error: "Your account has been suspended by an administrator. Please contact support at support@globetrotter.ai.",
+      });
+    }
+
+    // Check Rate Limiting / Lockout Cooldown
+    if (existingUser.lockoutUntil && Date.now() < existingUser.lockoutUntil) {
+      const remainingSeconds = Math.ceil((existingUser.lockoutUntil - Date.now()) / 1000);
+      const remainingMins = Math.ceil(remainingSeconds / 60);
+      return res.status(429).json({
+        error: `Account temporarily locked due to repeated failed login attempts. Please try again in ${remainingMins} minute(s).`,
+      });
     }
 
     const isMatch = verifyPassword(password, existingUser.passwordHash, existingUser.passwordSalt);
     if (!isMatch) {
-      return res.status(400).json({ error: "Incorrect password. Please try again or click 'Forgot password?'." });
+      // Increment failed login attempt counter
+      existingUser.failedLoginAttempts = (existingUser.failedLoginAttempts || 0) + 1;
+      if (existingUser.failedLoginAttempts >= 5) {
+        existingUser.lockoutUntil = Date.now() + 10 * 60 * 1000; // 10 mins lockout
+        saveUsersToDisk();
+        return res.status(429).json({
+          error: "Too many failed login attempts. Your account has been temporarily locked for 10 minutes.",
+        });
+      }
+      saveUsersToDisk();
+      const remainingTries = 5 - existingUser.failedLoginAttempts;
+      return res.status(400).json({
+        error: `Incorrect password. ${remainingTries} attempt(s) remaining before temporary lockout.`,
+      });
     }
+
+    // Reset lockout counters on successful login
+    existingUser.failedLoginAttempts = 0;
+    delete existingUser.lockoutUntil;
 
     // Upgrade legacy password format to salt+hash if necessary
     if (!existingUser.passwordSalt) {
       const { hash, salt } = hashPassword(password);
       existingUser.passwordHash = hash;
       existingUser.passwordSalt = salt;
-      usersStore.set(normalizedEmail, existingUser);
-      saveUsersToDisk();
     }
+    existingUser.updatedAt = new Date().toISOString();
 
-    const { passwordHash, passwordSalt, resetToken, resetTokenExpiry, ...userPayload } = existingUser;
+    usersStore.set(existingUser.email, existingUser);
+    saveUsersToDisk();
+
     res.json({
       success: true,
       message: "Logged in successfully!",
-      user: userPayload,
+      user: sanitizeUserPayload(existingUser),
       token: `token_${existingUser.uid}_${Date.now()}`,
     });
   } catch (err: any) {
@@ -241,7 +368,169 @@ app.post("/api/auth/login", (req, res) => {
   }
 });
 
-// Google One-Click Auth Endpoint
+// 3. Email Code Verification Endpoint
+app.post("/api/auth/verify-email-code", (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ error: "Email and Verification Code are required." });
+    }
+
+    const user = findUserByEmailOrPhone(email);
+    if (!user) {
+      return res.status(400).json({ error: "Account not found." });
+    }
+
+    if (user.emailVerified) {
+      return res.json({ success: true, message: "Email is already verified!", user: sanitizeUserPayload(user) });
+    }
+
+    const cleanCode = code.toString().trim();
+    if (!user.emailVerificationCode || user.emailVerificationCode !== cleanCode) {
+      return res.status(400).json({ error: "Invalid verification code. Please check your email and try again." });
+    }
+
+    user.emailVerified = true;
+    delete user.emailVerificationCode;
+    delete user.emailCodeExpiry;
+    user.updatedAt = new Date().toISOString();
+
+    usersStore.set(user.email, user);
+    saveUsersToDisk();
+
+    res.json({
+      success: true,
+      message: "Email verified successfully! 🎉",
+      user: sanitizeUserPayload(user),
+    });
+  } catch (err: any) {
+    console.error("Verify Email Code Error:", err);
+    res.status(500).json({ error: "Failed to verify email code." });
+  }
+});
+
+// 4. Resend Email Verification Code
+app.post("/api/auth/resend-email-verification", (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required." });
+    }
+
+    const user = findUserByEmailOrPhone(email);
+    if (!user) {
+      return res.status(400).json({ error: "User account not found." });
+    }
+
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    user.emailVerificationCode = newCode;
+    user.emailCodeExpiry = Date.now() + 24 * 60 * 60 * 1000;
+    usersStore.set(user.email, user);
+    saveUsersToDisk();
+
+    res.json({
+      success: true,
+      message: `A new 6-digit verification code has been sent to ${user.email}.`,
+      demoEmailCode: newCode,
+    });
+  } catch (err: any) {
+    console.error("Resend Email Verification Error:", err);
+    res.status(500).json({ error: "Failed to resend verification email." });
+  }
+});
+
+// 5. Send Phone OTP Endpoint
+app.post("/api/auth/send-phone-otp", (req, res) => {
+  try {
+    const { phone, email } = req.body;
+    const identifier = email || phone;
+    if (!identifier) {
+      return res.status(400).json({ error: "Phone number or Email is required to send OTP." });
+    }
+
+    const user = findUserByEmailOrPhone(identifier);
+    if (!user) {
+      return res.status(400).json({ error: "User account not found." });
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    user.phoneOtpCode = otpCode;
+    user.phoneOtpExpiry = Date.now() + 5 * 60 * 1000; // 5 mins
+    user.otpFailedAttempts = 0;
+
+    usersStore.set(user.email, user);
+    saveUsersToDisk();
+
+    res.json({
+      success: true,
+      message: `6-Digit OTP code sent to ${user.phone || 'your mobile number'}. Valid for 5 minutes.`,
+      demoOtp: otpCode,
+    });
+  } catch (err: any) {
+    console.error("Send Phone OTP Error:", err);
+    res.status(500).json({ error: "Failed to send phone OTP." });
+  }
+});
+
+// 6. Verify Phone OTP Endpoint
+app.post("/api/auth/verify-phone-otp", (req, res) => {
+  try {
+    const { email, phone, otp } = req.body;
+    const identifier = email || phone;
+    if (!identifier || !otp) {
+      return res.status(400).json({ error: "Identifier and OTP code are required." });
+    }
+
+    const user = findUserByEmailOrPhone(identifier);
+    if (!user) {
+      return res.status(400).json({ error: "User account not found." });
+    }
+
+    if (user.phoneVerified) {
+      return res.json({ success: true, message: "Phone number is already verified!", user: sanitizeUserPayload(user) });
+    }
+
+    // Check rate limit on OTP attempts
+    if ((user.otpFailedAttempts || 0) >= 3) {
+      return res.status(429).json({
+        error: "Maximum OTP verification attempts exceeded. Please request a new OTP code.",
+      });
+    }
+
+    if (user.phoneOtpExpiry && Date.now() > user.phoneOtpExpiry) {
+      return res.status(400).json({ error: "OTP code has expired. Please request a new OTP code." });
+    }
+
+    if (!user.phoneOtpCode || user.phoneOtpCode !== otp.toString().trim()) {
+      user.otpFailedAttempts = (user.otpFailedAttempts || 0) + 1;
+      saveUsersToDisk();
+      const remaining = 3 - user.otpFailedAttempts;
+      return res.status(400).json({
+        error: `Invalid OTP code. ${remaining} attempt(s) remaining.`,
+      });
+    }
+
+    user.phoneVerified = true;
+    delete user.phoneOtpCode;
+    delete user.phoneOtpExpiry;
+    user.otpFailedAttempts = 0;
+    user.updatedAt = new Date().toISOString();
+
+    usersStore.set(user.email, user);
+    saveUsersToDisk();
+
+    res.json({
+      success: true,
+      message: "Mobile phone number verified successfully! 📱",
+      user: sanitizeUserPayload(user),
+    });
+  } catch (err: any) {
+    console.error("Verify Phone OTP Error:", err);
+    res.status(500).json({ error: "Failed to verify phone OTP." });
+  }
+});
+
+// 7. Google One-Click Auth Endpoint
 app.post("/api/auth/google", (req, res) => {
   try {
     const { email, fullName, photoURL } = req.body;
@@ -259,7 +548,10 @@ app.post("/api/auth/google", (req, res) => {
         phone: "+1 (555) 019-2834",
         country: "United States",
         photoURL: photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-        emailVerified: true, // Google accounts are pre-verified
+        bio: "Google authenticated travel enthusiast.",
+        languages: ["English"],
+        emailVerified: true, // Google accounts pre-verified
+        phoneVerified: true,
         provider: "google",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -271,11 +563,10 @@ app.post("/api/auth/google", (req, res) => {
       saveUsersToDisk();
     }
 
-    const { passwordHash, passwordSalt, resetToken, resetTokenExpiry, ...userPayload } = existingUser;
     res.json({
       success: true,
       message: "Google login successful!",
-      user: userPayload,
+      user: sanitizeUserPayload(existingUser),
       token: `token_${existingUser.uid}_${Date.now()}`,
     });
   } catch (err: any) {
@@ -284,34 +575,32 @@ app.post("/api/auth/google", (req, res) => {
   }
 });
 
-// Forgot Password Endpoint (Generates 6-Digit Verification Code)
+// 8. Forgot Password Endpoint (Generates 6-Digit Reset Code)
 app.post("/api/auth/forgot-password", (req, res) => {
   try {
     const { email } = req.body;
-    if (!email || !email.includes("@")) {
-      return res.status(400).json({ error: "Please enter a valid email address." });
+    if (!email) {
+      return res.status(400).json({ error: "Please enter your registered email or phone." });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const user = usersStore.get(normalizedEmail);
-
+    const user = findUserByEmailOrPhone(email);
     if (!user) {
-      return res.status(400).json({ error: "No user account registered with this email address." });
+      return res.status(400).json({ error: "No account found registered with that email or phone number." });
     }
 
     // Generate 6-digit code valid for 15 minutes
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
     user.resetToken = resetCode;
     user.resetTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes
-    usersStore.set(normalizedEmail, user);
+    usersStore.set(user.email, user);
     saveUsersToDisk();
 
     res.json({
       success: true,
-      message: `Password reset verification code generated and sent to ${user.email}.`,
+      message: `Password reset verification code sent to ${user.email}.`,
       sent: true,
       resetCodeSent: true,
-      demoResetCode: resetCode, // Included for instant UI convenience & automated verification
+      demoResetCode: resetCode,
     });
   } catch (err: any) {
     console.error("Forgot Password Error:", err);
@@ -319,7 +608,7 @@ app.post("/api/auth/forgot-password", (req, res) => {
   }
 });
 
-// Reset Password Endpoint
+// 9. Reset Password Endpoint (Validates strict password rules + code)
 app.post("/api/auth/reset-password", (req, res) => {
   try {
     const { email, resetCode, newPassword } = req.body;
@@ -328,18 +617,18 @@ app.post("/api/auth/reset-password", (req, res) => {
       return res.status(400).json({ error: "Email, Reset Code, and New Password are required." });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ error: "New Password must be at least 8 characters long." });
+    // Strict Password Validation
+    const passCheck = validatePasswordRequirements(newPassword);
+    if (!passCheck.valid) {
+      return res.status(400).json({ error: passCheck.error });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const user = usersStore.get(normalizedEmail);
-
+    const user = findUserByEmailOrPhone(email);
     if (!user) {
       return res.status(400).json({ error: "User account not found." });
     }
 
-    if (!user.resetToken || user.resetToken !== resetCode.trim()) {
+    if (!user.resetToken || user.resetToken !== resetCode.toString().trim()) {
       return res.status(400).json({ error: "Invalid reset code. Please check your code and try again." });
     }
 
@@ -353,9 +642,11 @@ app.post("/api/auth/reset-password", (req, res) => {
     user.passwordSalt = salt;
     delete user.resetToken;
     delete user.resetTokenExpiry;
+    user.failedLoginAttempts = 0;
+    delete user.lockoutUntil;
     user.updatedAt = new Date().toISOString();
 
-    usersStore.set(normalizedEmail, user);
+    usersStore.set(user.email, user);
     saveUsersToDisk();
 
     res.json({
@@ -368,48 +659,15 @@ app.post("/api/auth/reset-password", (req, res) => {
   }
 });
 
-// Verify Email Endpoint
-app.post("/api/auth/verify-email", (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: "Email is required for verification." });
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-    const user = usersStore.get(normalizedEmail);
-
-    if (user) {
-      user.emailVerified = true;
-      usersStore.set(normalizedEmail, user);
-      saveUsersToDisk();
-      const { passwordHash, passwordSalt, resetToken, resetTokenExpiry, ...userPayload } = user;
-      return res.json({ message: "Email verified successfully!", user: userPayload });
-    }
-
-    res.json({ message: "Email verified successfully!" });
-  } catch (err: any) {
-    console.error("Email Verification Error:", err);
-    res.status(500).json({ error: "Failed to verify email." });
-  }
-});
-
-// Resend Verification Link
-app.post("/api/auth/resend-verification", (req, res) => {
-  res.json({ message: "A new verification link has been sent to your email address." });
-});
-
-// Update Profile / Onboarding Preferences
+// 10. Update Profile / Photo / Bio / Preferences Endpoint
 app.post("/api/auth/update-profile", (req, res) => {
   try {
-    const { email, fullName, phone, country, homeLocation, travelPreferences, photoURL } = req.body;
+    const { email, fullName, phone, country, bio, languages, homeLocation, travelPreferences, photoURL } = req.body;
     if (!email) {
       return res.status(400).json({ error: "User email is required." });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const user = usersStore.get(normalizedEmail);
-
+    const user = findUserByEmailOrPhone(email);
     if (!user) {
       return res.status(404).json({ error: "User not found." });
     }
@@ -417,21 +675,115 @@ app.post("/api/auth/update-profile", (req, res) => {
     if (fullName !== undefined) user.fullName = fullName.trim();
     if (phone !== undefined) user.phone = phone.trim();
     if (country !== undefined) user.country = country.trim();
+    if (bio !== undefined) user.bio = bio;
+    if (languages !== undefined) user.languages = Array.isArray(languages) ? languages : [languages];
     if (homeLocation !== undefined) user.homeLocation = homeLocation;
     if (travelPreferences !== undefined) user.travelPreferences = travelPreferences;
     if (photoURL !== undefined) user.photoURL = photoURL;
     user.updatedAt = new Date().toISOString();
     user.isProfileComplete = true;
 
-    usersStore.set(normalizedEmail, user);
+    usersStore.set(user.email, user);
     saveUsersToDisk();
 
-    const { passwordHash, passwordSalt, resetToken, resetTokenExpiry, ...userPayload } = user;
-    res.json({ message: "Profile updated successfully!", user: userPayload });
+    res.json({ message: "Profile updated successfully!", user: sanitizeUserPayload(user) });
   } catch (err: any) {
     console.error("Update Profile Error:", err);
     res.status(500).json({ error: "Failed to update profile." });
   }
+});
+
+// --- Admin Users & Verification Management Endpoints ---
+
+// 11. Admin Get All Registered Users & Metrics
+app.get("/api/admin/users", (req, res) => {
+  try {
+    const userList: any[] = [];
+    let totalUsers = 0;
+    let emailVerifiedCount = 0;
+    let phoneVerifiedCount = 0;
+    let unverifiedCount = 0;
+    let suspendedCount = 0;
+
+    usersStore.forEach((u) => {
+      totalUsers++;
+      if (u.emailVerified) emailVerifiedCount++;
+      if (u.phoneVerified) phoneVerifiedCount++;
+      if (!u.emailVerified && !u.phoneVerified) unverifiedCount++;
+      if (u.isSuspended) suspendedCount++;
+
+      userList.push(sanitizeUserPayload(u));
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        totalUsers,
+        emailVerifiedCount,
+        phoneVerifiedCount,
+        unverifiedCount,
+        suspendedCount,
+      },
+      users: userList,
+      settings: systemSettings,
+    });
+  } catch (err: any) {
+    console.error("Admin Get Users Error:", err);
+    res.status(500).json({ error: "Failed to load users for admin." });
+  }
+});
+
+// 12. Admin Toggle User Status (Suspend/Reactivate, Verification override)
+app.patch("/api/admin/users/:uid/status", (req, res) => {
+  try {
+    const { uid } = req.params;
+    const { isSuspended, emailVerified, phoneVerified, role } = req.body;
+
+    let targetUser: ServerUser | undefined;
+    for (const user of usersStore.values()) {
+      if (user.uid === uid) {
+        targetUser = user;
+        break;
+      }
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    if (isSuspended !== undefined) targetUser.isSuspended = isSuspended;
+    if (emailVerified !== undefined) targetUser.emailVerified = emailVerified;
+    if (phoneVerified !== undefined) targetUser.phoneVerified = phoneVerified;
+    if (role !== undefined) {
+      targetUser.role = role;
+      targetUser.isAdmin = role === 'admin' || role === 'owner';
+    }
+    targetUser.updatedAt = new Date().toISOString();
+
+    usersStore.set(targetUser.email, targetUser);
+    saveUsersToDisk();
+
+    res.json({
+      success: true,
+      message: `User ${targetUser.fullName} updated successfully!`,
+      user: sanitizeUserPayload(targetUser),
+    });
+  } catch (err: any) {
+    console.error("Admin Update User Status Error:", err);
+    res.status(500).json({ error: "Failed to update user status." });
+  }
+});
+
+// 13. Admin System Settings Endpoints
+app.get("/api/admin/settings", (req, res) => {
+  res.json({ success: true, settings: systemSettings });
+});
+
+app.post("/api/admin/settings", (req, res) => {
+  const { requireEmailVerification, requirePhoneOtp } = req.body;
+  if (requireEmailVerification !== undefined) systemSettings.requireEmailVerification = requireEmailVerification;
+  if (requirePhoneOtp !== undefined) systemSettings.requirePhoneOtp = requirePhoneOtp;
+  res.json({ success: true, message: "System security settings updated!", settings: systemSettings });
 });
 
 // --- API Endpoints ---

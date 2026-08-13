@@ -37,5 +37,22 @@
     "provider": "email",
     "createdAt": "2026-08-12T17:12:13.500Z",
     "isProfileComplete": false
+  },
+  "istihadahmed1163@gmail.com": {
+    "uid": "usr_1786555150609_4z2x0",
+    "fullName": "Istihad Ahmed",
+    "email": "istihadahmed1163@gmail.com",
+    "phone": "01338652463",
+    "country": "Bangladesh",
+    "passwordHash": "ec2e390f60e9849f49c9c6988b30db05bd59a04184635e425445a62baf1578590c43d68a2f63e186c093467d793a33f5e1ae8ffb08a7f87ce0b362c7d458b255",
+    "passwordSalt": "3b59a54cf7cc78ca8a1375cb8eedd3aa",
+    "photoURL": "https://api.dicebear.com/7.x/avataaars/svg?seed=Istihad%20Ahmed",
+    "emailVerified": true,
+    "provider": "email",
+    "createdAt": "2026-08-12T17:19:10.609Z",
+    "updatedAt": "2026-08-12T17:19:10.609Z",
+    "isProfileComplete": true,
+    "isAdmin": true,
+    "role": "admin"
   }
 }

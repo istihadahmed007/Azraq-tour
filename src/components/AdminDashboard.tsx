@@ -6,7 +6,9 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
+  const [activeTab, setActiveTab] = useState<'quotes' | 'users'>('quotes');
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterType, setFilterType] = useState<'all' | 'flight' | 'visa'>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -36,9 +38,64 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     }
   };
 
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/users/admin');
+      const data = await res.json();
+      if (data.users) {
+        setUsers(data.users);
+      }
+    } catch (err) {
+      console.error('Failed to load admin users:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchQuotes();
-  }, []);
+    if (activeTab === 'quotes') {
+      fetchQuotes();
+    } else {
+      fetchUsers();
+    }
+  }, [activeTab]);
+
+  const handleToggleUserStatus = async (userEmail: string) => {
+    try {
+      const res = await fetch('/api/auth/users/toggle-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers((prev) =>
+          prev.map((u) => (u.email === userEmail ? { ...u, isSuspended: data.isSuspended } : u))
+        );
+      }
+    } catch (err) {
+      console.error('Error toggling user status:', err);
+    }
+  };
+
+  const handleToggleUserVerification = async (userEmail: string, field: 'email' | 'phone') => {
+    try {
+      const res = await fetch('/api/auth/users/toggle-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, field }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers((prev) =>
+          prev.map((u) => (u.email === userEmail ? { ...u, ...data.user } : u))
+        );
+      }
+    } catch (err) {
+      console.error('Error toggling user verification:', err);
+    }
+  };
 
   const openEditModal = (q: QuoteRequest) => {
     setSelectedQuote(q);
@@ -122,20 +179,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
             <span>Travel Staff Portal</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-serif-display font-bold text-white mt-1">
-            Quotation Management Dashboard
+            {activeTab === 'quotes' ? 'Quotation Management Dashboard' : 'User Verification & Account Control'}
           </h1>
           <p className="text-xs md:text-sm text-slate-300 mt-1">
-            Review incoming flight & visa requests, prepare custom quotations, and notify customers.
+            {activeTab === 'quotes'
+              ? 'Review incoming flight & visa requests, prepare custom quotations, and notify customers.'
+              : 'Audit registered users, manage email and phone verification statuses, and toggle account suspensions.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Main Tab Switcher */}
+          <div className="flex p-1 bg-slate-800 rounded-2xl border border-white/10 text-xs">
+            <button
+              onClick={() => setActiveTab('quotes')}
+              className={`px-3 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'quotes' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <span>📋 Quotations ({quotes.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-3 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'users' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <span>👥 Users ({users.length})</span>
+            </button>
+          </div>
+
           <button
-            onClick={fetchQuotes}
+            onClick={activeTab === 'quotes' ? fetchQuotes : fetchUsers}
             className="p-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-sky-300 border border-white/10 transition-all text-xs font-semibold flex items-center gap-1.5"
           >
             <span className="material-symbols-outlined text-sm">refresh</span>
-            <span>Refresh Requests</span>
           </button>
           {onClose && (
             <button
@@ -148,8 +226,136 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         </div>
       </div>
 
-      {/* Overview Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      {/* TAB CONTENT: USER VERIFICATION & ACCOUNTS */}
+      {activeTab === 'users' && (
+        <div className="space-y-6">
+          {/* User Stat Overview */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-4 bg-slate-900/80 rounded-2xl border border-white/10">
+              <div className="text-2xl font-bold text-white">{users.length}</div>
+              <div className="text-xs text-slate-400 mt-0.5">Total Registered Users</div>
+            </div>
+            <div className="p-4 bg-emerald-950/40 rounded-2xl border border-emerald-500/30">
+              <div className="text-2xl font-bold text-emerald-300">
+                {users.filter((u) => u.emailVerified).length}
+              </div>
+              <div className="text-xs text-emerald-200/80 mt-0.5">Email Verified</div>
+            </div>
+            <div className="p-4 bg-amber-950/40 rounded-2xl border border-amber-500/30">
+              <div className="text-2xl font-bold text-amber-300">
+                {users.filter((u) => u.phoneVerified).length}
+              </div>
+              <div className="text-xs text-amber-200/80 mt-0.5">Phone Verified</div>
+            </div>
+            <div className="p-4 bg-rose-950/40 rounded-2xl border border-rose-500/30">
+              <div className="text-2xl font-bold text-rose-300">
+                {users.filter((u) => u.isSuspended).length}
+              </div>
+              <div className="text-xs text-rose-200/80 mt-0.5">Suspended Accounts</div>
+            </div>
+          </div>
+
+          {/* Users Table */}
+          {isLoading ? (
+            <div className="p-12 text-center text-slate-400 font-medium flex flex-col items-center gap-3">
+              <span className="w-8 h-8 border-3 border-sky-400 border-t-transparent rounded-full animate-spin"></span>
+              <span>Loading registered users...</span>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="p-12 text-center bg-slate-900/60 rounded-3xl border border-white/10 text-slate-400">
+              No registered users in the database yet.
+            </div>
+          ) : (
+            <div className="bg-slate-900/90 rounded-3xl border border-white/10 shadow-xl overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 bg-slate-800/80 text-sky-200 uppercase font-semibold tracking-wider text-[11px]">
+                    <th className="p-4">User Details</th>
+                    <th className="p-4">Contact Info</th>
+                    <th className="p-4">Email Verification</th>
+                    <th className="p-4">Phone Verification</th>
+                    <th className="p-4">Registered Date</th>
+                    <th className="p-4 text-right">Account Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {users.map((u) => (
+                    <tr key={u.email} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={u.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                            alt={u.fullName}
+                            className="w-9 h-9 rounded-xl object-cover border border-white/20"
+                          />
+                          <div>
+                            <div className="font-bold text-white text-sm">{u.fullName}</div>
+                            <div className="text-[11px] text-slate-400">{u.country || 'Global'}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="p-4 font-mono text-[11px]">
+                        <div className="text-slate-200">{u.email}</div>
+                        <div className="text-slate-400">{u.phone || 'No Phone'}</div>
+                      </td>
+
+                      <td className="p-4">
+                        <button
+                          onClick={() => handleToggleUserVerification(u.email, 'email')}
+                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
+                            u.emailVerified
+                              ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
+                              : 'bg-rose-500/20 border border-rose-400/40 text-rose-300'
+                          }`}
+                        >
+                          {u.emailVerified ? '✓ Email Verified' : '✕ Unverified (Click to verify)'}
+                        </button>
+                      </td>
+
+                      <td className="p-4">
+                        <button
+                          onClick={() => handleToggleUserVerification(u.email, 'phone')}
+                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
+                            u.phoneVerified
+                              ? 'bg-amber-500/20 border border-amber-400/40 text-amber-300'
+                              : 'bg-slate-800 border border-white/10 text-slate-400'
+                          }`}
+                        >
+                          {u.phoneVerified ? '✓ Phone Verified' : '✕ Unverified (Click to verify)'}
+                        </button>
+                      </td>
+
+                      <td className="p-4 text-slate-400 font-mono text-[11px]">
+                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'Recent'}
+                      </td>
+
+                      <td className="p-4 text-right">
+                        <button
+                          onClick={() => handleToggleUserStatus(u.email)}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all ${
+                            u.isSuspended
+                              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md'
+                              : 'bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/40 text-rose-300'
+                          }`}
+                        >
+                          {u.isSuspended ? 'Reactivate Account' : 'Suspend Account'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB CONTENT: QUOTATION REQUESTS */}
+      {activeTab === 'quotes' && (
+        <div className="space-y-8">
+          {/* Overview Stat Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="p-4 bg-slate-900/80 rounded-2xl border border-white/10">
           <div className="text-2xl font-bold text-white">{totalCount}</div>
           <div className="text-xs text-slate-400 mt-0.5">Total Requests</div>
@@ -341,6 +547,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               })}
             </tbody>
           </table>
+        </div>
+      )}
         </div>
       )}
 

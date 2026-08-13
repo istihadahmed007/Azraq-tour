@@ -174,8 +174,12 @@ export interface User {
   phone?: string;
   country?: string;
   photoURL?: string;
+  bio?: string;
+  languages?: string[];
   emailVerified: boolean;
-  provider: 'email' | 'google' | 'apple';
+  phoneVerified?: boolean;
+  isSuspended?: boolean;
+  provider: 'email' | 'google' | 'apple' | 'facebook';
   createdAt: string;
   updatedAt?: string;
   homeLocation?: string;
@@ -204,6 +208,7 @@ export type AuthModalView =
   | 'register'
   | 'forgot_password'
   | 'email_verification'
+  | 'phone_otp'
   | 'onboarding';
 
 export interface PendingAction {

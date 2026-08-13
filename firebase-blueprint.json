@@ -1,0 +1,37 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profiles",
+      "description": "User profile records stored in Firestore",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "fullName": { "type": "string" },
+        "phone": { "type": "string" },
+        "country": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "emailVerified": { "type": "boolean" },
+        "phoneVerified": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "homeLocation": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "quotes": {
+      "title": "Travel Quote Requests",
+      "description": "Customer flight and visa quote requests",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userEmail"]
+    }
+  }
+}
