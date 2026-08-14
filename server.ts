@@ -286,10 +286,17 @@ function findUserByEmailOrPhone(identifier: string): ServerUser | undefined {
 
 // --- Authentication Endpoints ---
 
-// Active token storage map
-const activeTokensMap = new Map<string, string>(); // token -> email
+// Active token storage map (token -> user email)
+const activeTokensMap = new Map<string, string>();
 
-// 0. Authenticated /api/auth/me Endpoint
+// Helper to issue and register a new session token for a specific user
+function issueSessionToken(user: ServerUser): string {
+  const token = `token_${user.uid}_${Date.now()}`;
+  activeTokensMap.set(token, user.email.toLowerCase());
+  return token;
+}
+
+// 0. Authenticated /api/auth/me Endpoint (STRICT logged-in user identification)
 app.get("/api/auth/me", (req, res) => {
   try {
     const authHeader = req.headers.authorization || "";
@@ -300,39 +307,42 @@ app.get("/api/auth/me", (req, res) => {
       token = String(req.headers["x-auth-token"]).trim();
     }
 
+    // Strict check: token must be present
     if (!token) {
       return res.status(401).json({ error: "Unauthorized: No session token provided." });
     }
 
     let foundUser: ServerUser | undefined;
 
-    // Check active tokens map
+    // 1. Check registered active tokens
     if (activeTokensMap.has(token)) {
       const email = activeTokensMap.get(token)!;
       foundUser = usersStore.get(email.toLowerCase());
     }
 
-    // Fallback: search by uid or email encoded in token
-    if (!foundUser) {
-      for (const u of usersStore.values()) {
-        if (token.includes(u.uid) || token.includes(u.email)) {
-          foundUser = u;
-          break;
+    // 2. Strict lookup by UID extracted from token format "token_<uid>_<timestamp>"
+    if (!foundUser && token.startsWith("token_")) {
+      const parts = token.split("_");
+      if (parts.length >= 3) {
+        const targetUid = parts.slice(1, parts.length - 1).join("_");
+        for (const u of usersStore.values()) {
+          if (u.uid === targetUid) {
+            foundUser = u;
+            // Cache token to email mapping for subsequent fast lookups
+            activeTokensMap.set(token, u.email.toLowerCase());
+            break;
+          }
         }
       }
     }
 
-    // Fallback: search by x-user-email header if provided
-    if (!foundUser && req.headers["x-user-email"]) {
-      const headerEmail = String(req.headers["x-user-email"]).trim().toLowerCase();
-      foundUser = usersStore.get(headerEmail);
-    }
-
+    // CRITICAL: If no user matches the specific token, return 401 Unauthorized.
+    // NEVER return the first user or any random fallback user.
     if (!foundUser) {
       return res.status(401).json({ error: "Unauthorized: User session not found or expired." });
     }
 
-    // Return the authenticated user object safely
+    // Return ONLY the authenticated user's data
     res.json({
       success: true,
       user: sanitizeUserPayload(foundUser),
@@ -410,13 +420,15 @@ app.post("/api/auth/register", (req, res) => {
     usersStore.set(normalizedEmail, newUser);
     saveUsersToDisk();
 
+    const token = issueSessionToken(newUser);
+
     res.json({
       success: true,
       message: "Account created! We've sent a 6-digit verification code to your email.",
       user: sanitizeUserPayload(newUser),
       demoEmailCode: emailVerificationCode,
       demoPhoneOtp: phoneOtpCode,
-      token: `token_${newUser.uid}_${Date.now()}`,
+      token,
     });
   } catch (err: any) {
     console.error("Register Error:", err);
@@ -488,11 +500,13 @@ app.post("/api/auth/login", (req, res) => {
     usersStore.set(existingUser.email, existingUser);
     saveUsersToDisk();
 
+    const token = issueSessionToken(existingUser);
+
     res.json({
       success: true,
       message: "Logged in successfully!",
       user: sanitizeUserPayload(existingUser),
-      token: `token_${existingUser.uid}_${Date.now()}`,
+      token,
     });
   } catch (err: any) {
     console.error("Login Error:", err);
@@ -695,11 +709,13 @@ app.post("/api/auth/google", (req, res) => {
       saveUsersToDisk();
     }
 
+    const token = issueSessionToken(existingUser);
+
     res.json({
       success: true,
       message: "Google login successful!",
       user: sanitizeUserPayload(existingUser),
-      token: `token_${existingUser.uid}_${Date.now()}`,
+      token,
     });
   } catch (err: any) {
     console.error("Google Auth Error:", err);

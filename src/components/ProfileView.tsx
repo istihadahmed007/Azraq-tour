@@ -63,7 +63,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onOpenVisaQuote,
   onNavigate,
 }) => {
-  const { user, isGuest, openAuthModal, loginWithGoogle, logout, updateUserProfile, showToast } = useAuth();
+  const { user, isGuest, isLoading, openAuthModal, loginWithGoogle, logout, updateUserProfile, showToast } = useAuth();
   const {
     userPosts,
     bookmarkedPosts,
@@ -110,7 +110,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     return score;
   }, [newPassword]);
 
-  // Load User Quotes from API / fallback
+  // Load User Quotes from API
   const loadUserQuotes = async () => {
     if (!user?.email) {
       setUserQuotes([]);
@@ -132,35 +132,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }
   };
 
-  // Fetch verified profile from /api/auth/me on page load
-  useEffect(() => {
-    const token = localStorage.getItem('azraq_tours_session_token') || localStorage.getItem('azraq_token');
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    if (user?.email) {
-      headers['x-user-email'] = user.email;
-    }
-
-    if (token || user?.email) {
-      fetch('/api/auth/me', { headers })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data?.user) {
-            // Update fields if updated on server
-            setEditFullName(data.user.fullName || '');
-            setEditPhone(data.user.phone || '');
-            setEditHomeLocation(data.user.homeLocation || '');
-            setEditBio(data.user.bio || '');
-          }
-        })
-        .catch((err) => {
-          console.warn('Error fetching /api/auth/me in ProfileView:', err);
-        });
-    }
-  }, [user?.email]);
-
   // Load Saved Destinations
   useEffect(() => {
     if (user?.savedDestinationIds && user.savedDestinationIds.length > 0) {
@@ -173,7 +144,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }
   }, [user]);
 
-  // Sync state with user
+  // Sync state strictly with authenticated user
   useEffect(() => {
     if (user) {
       setEditFullName(user.fullName || '');
@@ -181,6 +152,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       setEditHomeLocation(user.homeLocation || '');
       setEditBio(user.bio || '');
       loadUserQuotes();
+    } else {
+      setEditFullName('');
+      setEditPhone('');
+      setEditHomeLocation('');
+      setEditBio('');
+      setUserQuotes([]);
     }
   }, [user]);
 
@@ -342,6 +319,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </span>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-28 pb-28 flex flex-col items-center justify-center min-h-[50vh] gap-5">
+        <div className="w-12 h-12 rounded-full border-3 border-sky-400/20 border-t-sky-400 animate-spin" />
+        <div className="text-center space-y-1">
+          <p className="text-base font-semibold text-white">Loading your Profile...</p>
+          <p className="text-xs text-sky-200/60">Verifying authenticated session credentials</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-20 md:pt-8 pb-28 flex flex-col gap-8">

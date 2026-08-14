@@ -131,29 +131,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Fetch verified profile from /api/auth/me on mount
+  // Fetch verified profile from /api/auth/me on mount using session token
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (token || saved) {
-      const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed?.email) headers['x-user-email'] = parsed.email;
-        } catch {}
-      }
-      fetch('/api/auth/me', { headers })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data?.user) {
-            setUser(data.user);
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data.user));
-          }
-        })
-        .catch(() => {});
+    if (!token) {
+      // If no token exists, ensure local session is cleared
+      setUser(null);
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      return;
     }
+
+    setIsLoading(true);
+    fetch('/api/auth/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (res.ok) {
+          return res.json();
+        }
+        // If token is invalid or 401, invalidate session completely
+        throw new Error('Session invalid');
+      })
+      .then((data) => {
+        if (data?.user) {
+          setUser(data.user);
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data.user));
+        } else {
+          setUser(null);
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          localStorage.removeItem(TOKEN_STORAGE_KEY);
+        }
+      })
+      .catch(() => {
+        // Clear invalid token/session
+        setUser(null);
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   // Sync with Firebase Auth state listener
@@ -348,87 +367,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let loggedUser: User | null = null;
       let userToken: string | undefined = undefined;
 
-      // 1. Try Firebase Auth with strict 2.5s timeout
-      try {
-        const userCred = await withTimeout(
-          signInWithEmailAndPassword(auth, cleanEmail, pass),
-          2500,
-          'Firebase auth timeout'
-        );
-        if (userCred?.user) {
-          try {
-            const userDoc = await withTimeout(getDoc(doc(db, 'users', userCred.user.uid)), 2000, 'Firestore timeout');
-            if (userDoc?.exists()) {
-              loggedUser = userDoc.data() as User;
+      // 1. Authenticate with Server API (Primary source of truth)
+      const apiRes = await safeFetchJson('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, password: pass }),
+      });
+
+      if (apiRes.ok && apiRes.data?.user && apiRes.data?.token) {
+        loggedUser = apiRes.data.user;
+        userToken = apiRes.data.token;
+      } else if (!apiRes.ok && apiRes.data?.error) {
+        return {
+          success: false,
+          error: apiRes.data.error,
+        };
+      }
+
+      // 2. If server API returned error or was unavailable, try Firebase Auth
+      if (!loggedUser) {
+        try {
+          const userCred = await withTimeout(
+            signInWithEmailAndPassword(auth, cleanEmail, pass),
+            2500,
+            'Firebase auth timeout'
+          );
+          if (userCred?.user) {
+            try {
+              const userDoc = await withTimeout(getDoc(doc(db, 'users', userCred.user.uid)), 2000, 'Firestore timeout');
+              if (userDoc?.exists()) {
+                loggedUser = userDoc.data() as User;
+              }
+            } catch (dbErr) {
+              console.warn('Firestore doc read error:', dbErr);
             }
-          } catch (dbErr) {
-            console.warn('Firestore doc read error:', dbErr);
+
+            if (!loggedUser) {
+              loggedUser = {
+                uid: userCred.user.uid,
+                fullName: userCred.user.displayName || cleanEmail.split('@')[0].replace('.', ' '),
+                email: cleanEmail,
+                phone: '',
+                photoURL: userCred.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanEmail)}`,
+                bio: `Travel enthusiast at Azraq Tours.`,
+                languages: ['English'],
+                emailVerified: true,
+                phoneVerified: true,
+                provider: 'email',
+                createdAt: new Date().toISOString(),
+                role: isWebsiteOwner({ email: cleanEmail } as any) ? 'admin' : 'user',
+                isAdmin: isWebsiteOwner({ email: cleanEmail } as any),
+              };
+            }
+            userToken = `token_${userCred.user.uid}_${Date.now()}`;
           }
-
-          if (!loggedUser) {
-            loggedUser = {
-              uid: userCred.user.uid,
-              fullName: userCred.user.displayName || cleanEmail.split('@')[0].replace('.', ' '),
-              email: cleanEmail,
-              phone: '',
-              photoURL: userCred.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanEmail)}`,
-              bio: `Travel enthusiast at Azraq Tours.`,
-              languages: ['English'],
-              emailVerified: true,
-              phoneVerified: true,
-              provider: 'email',
-              createdAt: new Date().toISOString(),
-              role: isWebsiteOwner({ email: cleanEmail } as any) ? 'admin' : 'user',
-              isAdmin: isWebsiteOwner({ email: cleanEmail } as any),
-            };
-          }
-        }
-      } catch (fbErr: any) {
-        console.warn('Firebase login attempt notice:', fbErr?.code || fbErr?.message);
-      }
-
-      // 2. Try Server API if not logged in yet
-      if (!loggedUser) {
-        const apiRes = await safeFetchJson('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: cleanEmail, password: pass }),
-        });
-
-        if (apiRes.ok && apiRes.data?.user) {
-          loggedUser = apiRes.data.user;
-          userToken = apiRes.data.token;
-        }
-      }
-
-      // 3. Fallback: check cached registration or owner direct access
-      if (!loggedUser) {
-        const localUsers = JSON.parse(localStorage.getItem(LOCAL_USERS_KEY) || '{}');
-        if (localUsers[cleanEmail]) {
-          loggedUser = localUsers[cleanEmail];
-        } else if (isWebsiteOwner({ email: cleanEmail } as any) || pass.length >= 4) {
-          loggedUser = {
-            uid: `usr_${Date.now()}`,
-            fullName: isWebsiteOwner({ email: cleanEmail } as any) ? 'Istihad Ahmed' : cleanEmail.split('@')[0].replace('.', ' '),
-            email: cleanEmail,
-            phone: isWebsiteOwner({ email: cleanEmail } as any) ? '+880 1851-172032' : '',
-            photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanEmail)}`,
-            bio: `Traveler with Azraq Tours.`,
-            languages: ['English'],
-            emailVerified: true,
-            phoneVerified: true,
-            provider: 'email',
-            createdAt: new Date().toISOString(),
-            role: isWebsiteOwner({ email: cleanEmail } as any) ? 'admin' : 'user',
-            isAdmin: isWebsiteOwner({ email: cleanEmail } as any),
-          };
+        } catch (fbErr: any) {
+          console.warn('Firebase login attempt notice:', fbErr?.code || fbErr?.message);
         }
       }
 
       if (!loggedUser) {
         return {
           success: false,
-          error: 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়। অনুগ্রহ করে আবার চেষ্টা করুন।',
+          error: 'Incorrect email or password. Please try again.',
         };
       }
 

@@ -81,5 +81,77 @@
     "isAdmin": false,
     "role": "user",
     "failedLoginAttempts": 0
+  },
+  "client.traveler845@gmail.com": {
+    "uid": "goog_1786731985493_e0daq",
+    "fullName": "Traveler Explorer 845",
+    "email": "client.traveler845@gmail.com",
+    "phone": "+1 (555) 019-2834",
+    "country": "United States",
+    "photoURL": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    "bio": "Google authenticated travel enthusiast.",
+    "languages": [
+      "English"
+    ],
+    "emailVerified": true,
+    "phoneVerified": true,
+    "provider": "google",
+    "createdAt": "2026-08-14T18:26:25.493Z",
+    "updatedAt": "2026-08-14T18:26:25.494Z",
+    "isProfileComplete": true,
+    "isAdmin": false,
+    "role": "user"
+  },
+  "test1@email.com": {
+    "uid": "usr_1786732518752_xmcn3",
+    "fullName": "Alice Traveler One",
+    "email": "test1@email.com",
+    "phone": "+15551000001",
+    "country": "United States",
+    "passwordHash": "876059b6a599d2195ad1dfe072dba9a7fbb02bdd6804224593a0fedd00a017f1e08fce8b83867899b3cb0c9b6099dfb41c47775c99d022ed0503cf9a7688f999",
+    "passwordSalt": "b97e9695fc276bdcd4fd23466c87cf91",
+    "photoURL": "https://api.dicebear.com/7.x/avataaars/svg?seed=Alice%20Traveler%20One",
+    "bio": "Hello! I am Alice Traveler One, excited to discover amazing travel destinations.",
+    "languages": [
+      "English"
+    ],
+    "emailVerified": true,
+    "emailVerificationCode": "628968",
+    "emailCodeExpiry": 1786818918752,
+    "phoneVerified": true,
+    "phoneOtpCode": "110648",
+    "phoneOtpExpiry": 1786733118752,
+    "provider": "email",
+    "createdAt": "2026-08-14T18:35:18.752Z",
+    "updatedAt": "2026-08-14T18:35:18.752Z",
+    "isProfileComplete": true,
+    "isAdmin": false,
+    "role": "user"
+  },
+  "test2@email.com": {
+    "uid": "usr_1786732532028_1poq2",
+    "fullName": "Bob Explorer Two",
+    "email": "test2@email.com",
+    "phone": "+15552000002",
+    "country": "Canada",
+    "passwordHash": "c2db6431ad4516a07e6039777d2e5c380c4303e68b446839b13e12683fcb9bc00c91abf8899a6d606d36255d36ad6ed1d3b16a69635c2ab0d7f56facae4d0560",
+    "passwordSalt": "68f9c0af87b0f22f4d8c681b0490deec",
+    "photoURL": "https://api.dicebear.com/7.x/avataaars/svg?seed=Bob%20Explorer%20Two",
+    "bio": "Hello! I am Bob Explorer Two, excited to discover amazing travel destinations.",
+    "languages": [
+      "English"
+    ],
+    "emailVerified": true,
+    "emailVerificationCode": "775326",
+    "emailCodeExpiry": 1786818932028,
+    "phoneVerified": true,
+    "phoneOtpCode": "770923",
+    "phoneOtpExpiry": 1786733132028,
+    "provider": "email",
+    "createdAt": "2026-08-14T18:35:32.028Z",
+    "updatedAt": "2026-08-14T18:35:32.028Z",
+    "isProfileComplete": true,
+    "isAdmin": false,
+    "role": "user"
   }
 }
