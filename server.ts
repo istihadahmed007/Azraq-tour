@@ -978,6 +978,29 @@ app.post("/api/ai/itinerary", async (req, res) => {
                 required: ["category", "items"],
               },
             },
+            budget: {
+              type: Type.OBJECT,
+              properties: {
+                currency: { type: Type.STRING, description: "e.g. USD, BDT, EUR" },
+                totalBudget: { type: Type.NUMBER, description: "Total estimated budget ceiling" },
+                items: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      name: { type: Type.STRING, description: "Item description, e.g. Round-trip Flights or Entry Ticket" },
+                      category: { type: Type.STRING, description: "Flights, Accommodation, Activities, Food & Dining, Transport, Shopping, Visa & Insurance, Miscellaneous" },
+                      estimatedCost: { type: Type.NUMBER },
+                      dayNumber: { type: Type.INTEGER, description: "Day number if associated with a day" },
+                      spotName: { type: Type.STRING, description: "Spot or attraction name if applicable" },
+                      notes: { type: Type.STRING },
+                    },
+                    required: ["name", "category", "estimatedCost"],
+                  },
+                },
+              },
+              required: ["currency", "totalBudget", "items"],
+            },
           },
           required: ["title", "destination", "days", "weatherSummary", "packingList"],
         },

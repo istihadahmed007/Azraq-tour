@@ -82,6 +82,34 @@ export interface PackingCategory {
   items: string[];
 }
 
+export type ExpenseCategory =
+  | 'Flights'
+  | 'Accommodation'
+  | 'Activities'
+  | 'Food & Dining'
+  | 'Transport'
+  | 'Shopping'
+  | 'Visa & Insurance'
+  | 'Miscellaneous';
+
+export interface BudgetItem {
+  id: string;
+  name: string;
+  category: ExpenseCategory;
+  estimatedCost: number;
+  actualCost?: number;
+  isPaid?: boolean;
+  dayNumber?: number;
+  spotName?: string;
+  notes?: string;
+}
+
+export interface ItineraryBudget {
+  currency: string;
+  totalBudget: number;
+  items: BudgetItem[];
+}
+
 export interface Itinerary {
   id: string;
   title: string;
@@ -91,6 +119,7 @@ export interface Itinerary {
   aiSummary: string;
   days: ItineraryDay[];
   packingList: PackingCategory[];
+  budget?: ItineraryBudget;
   savedAt?: string;
 }
 
