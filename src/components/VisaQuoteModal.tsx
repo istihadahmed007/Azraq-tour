@@ -16,7 +16,7 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
   onSuccessSubmitted,
   initialCountry,
 }) => {
-  const { user } = useAuth();
+  const { user, openAuthModal, showToast } = useAuth();
 
   // Form Steps: 1 = Destination & Travel, 2 = Background & Service, 3 = Contact, 4 = Success
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -811,7 +811,7 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                   placeholder="e.g. Sarah Jenkins"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400 min-h-[44px]"
                 />
               </div>
 
@@ -823,7 +823,7 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                   placeholder="e.g. sarah@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400 min-h-[44px]"
                 />
               </div>
 
@@ -835,7 +835,7 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                   placeholder="e.g. +880 1851-172032"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400 min-h-[44px]"
                 />
                 <span className="text-[11px] text-slate-400 mt-1 block">
                   Our visa specialists will review your requirements and provide document guidance via WhatsApp or Email.
@@ -847,7 +847,7 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="px-5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all"
+                  className="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all min-h-[44px]"
                 >
                   Back
                 </button>
@@ -855,16 +855,16 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-7 py-3 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-teal-500/25 flex items-center gap-2 disabled:opacity-50"
+                  className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-teal-500/25 flex items-center gap-2 disabled:opacity-50 min-h-[44px] cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
                       <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
-                      <span>Submitting...</span>
+                      <span>Sending Request...</span>
                     </>
                   ) : (
                     <>
-                      <span>Submit Visa Quote Request</span>
+                      <span>Send My Quote</span>
                       <span className="material-symbols-outlined text-base">send</span>
                     </>
                   )}
@@ -916,11 +916,39 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                 <div><strong className="text-slate-100">Contact:</strong> {submittedQuote.email} ({submittedQuote.phone})</div>
               </div>
 
+              {/* Post-Quote Prompt: Want to track this quote? Create an account */}
+              {!user && (
+                <div className="p-4 bg-gradient-to-r from-teal-500/15 via-slate-800/80 to-emerald-500/15 border border-teal-400/40 rounded-2xl max-w-md mx-auto text-left flex flex-col gap-3 shadow-lg">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-teal-400/20 border border-teal-400/40 flex items-center justify-center text-teal-300 shrink-0 text-base">
+                      🔔
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-teal-300">Want to track this visa quote?</h4>
+                      <p className="text-[11px] text-slate-200 mt-0.5 leading-snug">
+                        Create an account to save your visa application request and receive real-time document verification updates.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleClose();
+                      openAuthModal('register');
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm">person_add</span>
+                    <span>Sign Up to Track Status</span>
+                  </button>
+                </div>
+              )}
+
               <div className="pt-2 flex justify-center">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="px-8 py-3 rounded-2xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-sm transition-all shadow-lg"
+                  className="px-8 py-3 rounded-2xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-sm transition-all shadow-lg min-h-[44px] cursor-pointer"
                 >
                   Done
                 </button>

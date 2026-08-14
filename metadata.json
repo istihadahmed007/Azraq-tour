@@ -1,6 +1,6 @@
 {
-  "name": "GlobeTrotter AI - Travel Concierge",
-  "description": "AI-powered travel concierge, itinerary planner, travel feed, and smart packing assistant.",
+  "name": "Azraq Tours & Travels",
+  "description": "Luxury Travel Concierge for Asia. Curated destinations, instant Visa & Flight quotations, and custom AI itinerary planning for Bangladeshi travelers.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

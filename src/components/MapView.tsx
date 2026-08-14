@@ -1,172 +1,159 @@
 import React, { useState } from 'react';
 import { Destination, Spot } from '../types';
+import { InteractiveAsiaMap } from './InteractiveAsiaMap';
+import { VisaQuoteModal } from './VisaQuoteModal';
+import { FlightQuoteModal } from './FlightQuoteModal';
 
 interface MapViewProps {
   destinations: Destination[];
   onSelectDestination: (destination: Destination) => void;
   selectedSpot?: Spot;
+  onQuickGenerateItinerary?: (destName: string) => void;
 }
 
 export const MapView: React.FC<MapViewProps> = ({
   destinations,
   onSelectDestination,
-  selectedSpot,
+  onQuickGenerateItinerary,
 }) => {
-  const [activePinId, setActivePinId] = useState<string>(
-    selectedSpot ? 'spot-selected' : destinations[0]?.id || 'kyoto-japan'
-  );
-  const [mapCategory, setMapCategory] = useState<string>('All');
+  const [quoteCountry, setQuoteCountry] = useState<string | undefined>(undefined);
+  const [isVisaModalOpen, setIsVisaModalOpen] = useState(false);
+  const [isFlightModalOpen, setIsFlightModalOpen] = useState(false);
 
-  const filteredDestinations = destinations.filter(
-    (d) => mapCategory === 'All' || d.category === mapCategory
-  );
-
-  const activeDest =
-    destinations.find((d) => d.id === activePinId) || destinations[0];
+  const handleOpenQuotation = (countryOrName: string) => {
+    setQuoteCountry(countryOrName);
+    setIsVisaModalOpen(true);
+  };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-20 md:pt-10 pb-24 flex flex-col gap-6 h-full min-h-screen">
-      {/* Map Header & Filter Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
-        <div>
-          <h2 className="font-serif-display text-2xl md:text-3xl text-on-surface font-semibold">
-            Interactive Travel Map
-          </h2>
-          <p className="text-xs text-outline mt-0.5">
-            Explore AI-verified destinations and saved itinerary spots globally
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-24 md:pt-12 pb-24 flex flex-col gap-8">
+      {/* Map Header & Value Proposition */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/80 p-6 sm:p-8 rounded-3xl border border-sky-400/25 backdrop-blur-xl shadow-2xl">
+        <div className="space-y-1 max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-300 text-xs font-bold uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span>Interactive Asia Corridor Map</span>
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-serif-display font-extrabold text-white">
+            Explore Asia by Region & Corridors
+          </h1>
+          <p className="text-sm text-slate-300 leading-relaxed font-normal">
+            Browse 15 handpicked destinations from South Asia to East Asia. View direct Dhaka flight corridors, instant visa classifications, and request customized travel quotes with a single tap.
           </p>
         </div>
 
-        {/* Categories */}
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar max-w-full">
-          {['All', 'Beach', 'Culture', 'City', 'Mountain'].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setMapCategory(cat)}
-              className={`text-xs px-3.5 py-1.5 rounded-full font-semibold transition-all shrink-0 ${
-                mapCategory === cat
-                  ? 'bg-primary text-on-primary shadow-md'
-                  : 'bg-white/5 text-on-surface-variant hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* Quick Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => setIsVisaModalOpen(true)}
+            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer min-h-[44px]"
+          >
+            <span className="material-symbols-outlined text-base">verified</span>
+            <span>Visa Quote</span>
+          </button>
+
+          <button
+            onClick={() => setIsFlightModalOpen(true)}
+            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer min-h-[44px]"
+          >
+            <span className="material-symbols-outlined text-base">flight_takeoff</span>
+            <span>Flight Quote</span>
+          </button>
         </div>
       </div>
 
-      {/* Main Map Container */}
-      <div className="relative w-full h-[580px] rounded-3xl overflow-hidden glass-card border border-white/15 shadow-2xl bg-[#0c0e11]">
-        {/* World Map Graphic Background */}
-        <div className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity pointer-events-none"
-             style={{
-               backgroundImage: `url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=2000&q=80')`
-             }}
-        ></div>
+      {/* Main Interactive Leaflet Asia Map */}
+      <InteractiveAsiaMap
+        destinations={destinations}
+        onSelectDestination={onSelectDestination}
+        onOpenQuotation={handleOpenQuotation}
+        onQuickGenerateItinerary={onQuickGenerateItinerary}
+      />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111316] via-transparent to-black/60"></div>
-
-        {/* Map Pins */}
-        <div className="absolute inset-0 p-8 flex items-center justify-center overflow-hidden">
-          {filteredDestinations.map((dest, idx) => {
-            let topPos = '50%';
-            let leftPos = '50%';
-
-            if (dest.coordinates && typeof dest.coordinates.lat === 'number' && typeof dest.coordinates.lng === 'number') {
-              // Asia/World bounds mapping
-              const minLat = -15, maxLat = 55;
-              const minLng = 20, maxLng = 150;
-              
-              const topVal = 100 - ((dest.coordinates.lat - minLat) / (maxLat - minLat)) * 100;
-              const leftVal = ((dest.coordinates.lng - minLng) / (maxLng - minLng)) * 100;
-
-              topPos = `${Math.max(12, Math.min(85, topVal))}%`;
-              leftPos = `${Math.max(8, Math.min(92, leftVal))}%`;
-            } else {
-              const fallbackPositions = [
-                { top: '38%', left: '48%' },
-                { top: '42%', left: '82%' },
-                { top: '35%', left: '78%' },
-                { top: '60%', left: '70%' },
-                { top: '48%', left: '58%' },
-              ];
-              const pos = fallbackPositions[idx % fallbackPositions.length];
-              topPos = pos.top;
-              leftPos = pos.left;
-            }
-
-            const isActive = activeDest?.id === dest.id;
-
-            return (
-              <div
-                key={dest.id}
-                onClick={() => setActivePinId(dest.id)}
-                style={{ top: topPos, left: leftPos }}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20 group"
-              >
-                {/* Ping animation if active */}
-                {isActive && (
-                  <span className="absolute -inset-2 rounded-full bg-sky-400/40 animate-ping"></span>
-                )}
-
-                <div
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-2xl transition-all duration-300 border ${
-                    isActive
-                      ? 'bg-sky-500 text-slate-950 border-white scale-110 font-bold z-30'
-                      : 'bg-slate-950/80 backdrop-blur-md text-white border-white/20 group-hover:scale-105'
-                  }`}
-                >
-                  <span className="text-xs">{dest.flag || '📍'}</span>
-                  <span className="text-xs whitespace-nowrap font-medium">{dest.name}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Selected Spot Details Preview Card Overlay */}
-        {activeDest && (
-          <div className="absolute bottom-6 left-6 right-6 md:right-auto md:w-96 glass-card rounded-2xl p-5 shadow-2xl border border-white/20 z-30 flex flex-col gap-3">
-            <div className="relative h-36 rounded-xl overflow-hidden bg-surface-container-low">
-              <img
-                src={activeDest.imageUrl}
-                alt={activeDest.name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] text-tertiary font-semibold flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs">local_fire_department</span>
-                <span>{activeDest.badge || `${activeDest.matchScore}% Match`}</span>
-              </div>
+      {/* Key Corridors & Regional Insights Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* Card 1: Dhaka ↔ Maldives & Island Escapes */}
+        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-sky-400/20 backdrop-blur-md shadow-xl flex flex-col justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
+              <span className="material-symbols-outlined text-base">beach_access</span>
+              <span>Island & Beach Escapes</span>
             </div>
-
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between items-center">
-                <h3 className="font-serif-display text-lg text-white font-semibold">
-                  {activeDest.name}, {activeDest.country}
-                </h3>
-                <span className="text-xs text-tertiary flex items-center gap-0.5 font-semibold">
-                  <span className="material-symbols-outlined text-xs">star</span>
-                  {activeDest.rating}
-                </span>
-              </div>
-
-              <p className="text-xs text-on-surface-variant line-clamp-2">
-                {activeDest.description}
-              </p>
-            </div>
-
-            <div className="flex gap-2 pt-2 border-t border-white/10">
-              <button
-                onClick={() => onSelectDestination(activeDest)}
-                className="flex-1 bg-primary text-on-primary font-semibold text-xs py-2.5 rounded-xl hover:bg-primary-fixed transition-all flex items-center justify-center gap-1.5"
-              >
-                <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                <span>Plan Trip Here</span>
-              </button>
-            </div>
+            <h3 className="text-lg font-bold text-white">Dhaka ↔ Maldives & Bali</h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-normal">
+              Specialized fast-track resort bookings, seaplane transfers, and 30-day Visa-on-Arrival assistance for Bangladeshi passport holders.
+            </p>
           </div>
-        )}
+          <button
+            onClick={() => handleOpenQuotation('Maldives')}
+            className="text-xs font-bold text-sky-400 hover:text-sky-200 flex items-center gap-1 cursor-pointer pt-2 border-t border-white/10"
+          >
+            <span>Quote Island Holiday</span>
+            <span className="material-symbols-outlined text-xs">arrow_forward</span>
+          </button>
+        </div>
+
+        {/* Card 2: ASEAN & Shopping Corridors */}
+        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-sky-400/20 backdrop-blur-md shadow-xl flex flex-col justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sky-400 font-bold text-xs uppercase tracking-wider">
+              <span className="material-symbols-outlined text-base">shopping_bag</span>
+              <span>Southeast Asia Hubs</span>
+            </div>
+            <h3 className="text-lg font-bold text-white">Dhaka ↔ Bangkok & KL</h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-normal">
+              High-frequency daily flights, Thai sticker visa documentation, Malaysian eVisa approvals, and medical tourism concierge.
+            </p>
+          </div>
+          <button
+            onClick={() => handleOpenQuotation('Thailand')}
+            className="text-xs font-bold text-sky-400 hover:text-sky-200 flex items-center gap-1 cursor-pointer pt-2 border-t border-white/10"
+          >
+            <span>Quote ASEAN Package</span>
+            <span className="material-symbols-outlined text-xs">arrow_forward</span>
+          </button>
+        </div>
+
+        {/* Card 3: East Asia & Middle East Luxury */}
+        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-sky-400/20 backdrop-blur-md shadow-xl flex flex-col justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+              <span className="material-symbols-outlined text-base">temple_buddhist</span>
+              <span>East Asia & Gulf Luxury</span>
+            </div>
+            <h3 className="text-lg font-bold text-white">Dhaka ↔ Tokyo & Dubai</h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-normal">
+              Japan Embassy visa consultation, Dubai multi-entry eVisas, luxury desert glamping, and seasonal cherry blossom tours.
+            </p>
+          </div>
+          <button
+            onClick={() => handleOpenQuotation('Japan')}
+            className="text-xs font-bold text-sky-400 hover:text-sky-200 flex items-center gap-1 cursor-pointer pt-2 border-t border-white/10"
+          >
+            <span>Quote Japan & Dubai Trip</span>
+            <span className="material-symbols-outlined text-xs">arrow_forward</span>
+          </button>
+        </div>
       </div>
+
+      {/* Modals for Direct Quotation */}
+      <VisaQuoteModal
+        isOpen={isVisaModalOpen}
+        onClose={() => {
+          setIsVisaModalOpen(false);
+          setQuoteCountry(undefined);
+        }}
+        initialCountry={quoteCountry}
+      />
+
+      <FlightQuoteModal
+        isOpen={isFlightModalOpen}
+        onClose={() => {
+          setIsFlightModalOpen(false);
+          setQuoteCountry(undefined);
+        }}
+        initialDestination={quoteCountry}
+      />
     </div>
   );
 };

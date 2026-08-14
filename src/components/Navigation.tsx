@@ -171,38 +171,38 @@ export const Navigation: React.FC<NavigationProps> = ({
               <div className="flex items-center gap-2 ml-1">
                 <button
                   onClick={() => openAuthModal('login')}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-sky-100 hover:text-white bg-white/10 hover:bg-white/15 transition-all border border-sky-300/30 flex items-center gap-1.5 shadow-sm active:scale-95"
+                  className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-sky-100 hover:text-white bg-transparent hover:bg-white/10 transition-all border border-sky-300/40 hover:border-sky-300 flex items-center gap-1.5 shadow-sm active:scale-95 min-h-[40px] cursor-pointer"
                 >
-                  <img
-                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                    alt="Google"
-                    className="w-3.5 h-3.5"
-                  />
+                  <span className="material-symbols-outlined text-base">login</span>
                   <span>Log In</span>
                 </button>
 
                 <button
                   onClick={() => openAuthModal('register')}
-                  className="px-4 py-1.5 rounded-xl text-xs font-bold text-slate-950 bg-sky-400 hover:bg-sky-300 transition-all shadow-md active:scale-95"
+                  className="px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 transition-all shadow-lg shadow-amber-500/20 hover:shadow-amber-500/35 active:scale-95 flex items-center gap-1.5 min-h-[40px] cursor-pointer"
                 >
-                  Create Account
+                  <span className="material-symbols-outlined text-base">person_add</span>
+                  <span>Sign Up</span>
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2 ml-1">
                 <div
                   onClick={() => onViewChange('profile')}
-                  className="flex items-center gap-2 p-1 pr-2.5 rounded-full hover:bg-white/10 cursor-pointer transition-all border border-sky-300/30 bg-white/5"
-                  title={`${user?.fullName} (${user?.email})`}
+                  className="flex items-center gap-2 p-1.5 pr-3 rounded-full hover:bg-white/10 cursor-pointer transition-all border border-amber-400/40 bg-slate-900/60 shadow-sm"
+                  title={`${user?.fullName} (${user?.email}) - Go to My Dashboard`}
                 >
                   <img
                     src={user?.photoURL || BRAND_LOGOS.userAvatar}
                     alt={user?.fullName || 'Traveler'}
-                    className="w-8 h-8 rounded-full object-cover border border-sky-300/50 shadow-sm"
+                    className="w-8 h-8 rounded-full object-cover border border-amber-400/60 shadow-sm"
                   />
-                  <span className="hidden lg:inline text-xs font-semibold text-white max-w-[100px] truncate">
-                    {user?.fullName?.split(' ')[0] || 'Traveler'}
-                  </span>
+                  <div className="hidden lg:flex flex-col text-left">
+                    <span className="text-xs font-bold text-white max-w-[110px] truncate leading-tight">
+                      {user?.fullName?.split(' ')[0] || 'Traveler'}
+                    </span>
+                    <span className="text-[10px] text-amber-300 font-medium">Dashboard</span>
+                  </div>
                   {!user?.emailVerified && (
                     <span
                       onClick={(e) => {
@@ -218,9 +218,9 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <button
                   onClick={logout}
                   title="Log Out"
-                  className="p-1.5 rounded-full hover:bg-rose-500/20 text-sky-200 hover:text-rose-300 transition-colors"
+                  className="p-2 rounded-xl hover:bg-rose-500/20 text-sky-200 hover:text-rose-300 transition-colors cursor-pointer min-h-[38px] flex items-center justify-center border border-white/10"
                 >
-                  <span className="material-symbols-outlined text-sm">logout</span>
+                  <span className="material-symbols-outlined text-base">logout</span>
                 </button>
               </div>
             )}

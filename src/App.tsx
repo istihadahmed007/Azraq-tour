@@ -16,11 +16,17 @@ import { MapView } from './components/MapView';
 import { ProfileView } from './components/ProfileView';
 import { DestinationModal } from './components/DestinationModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { Footer } from './components/Footer';
+import { FloatingWhatsAppButton } from './components/FloatingWhatsAppButton';
+import { FlightQuoteModal } from './components/FlightQuoteModal';
+import { VisaQuoteModal } from './components/VisaQuoteModal';
 import AuthCallback from './pages/AuthCallback';
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<NavView>('discover');
   const [brandTheme, setBrandTheme] = useState<BrandTheme>('azraq');
+  const [isFooterVisaModalOpen, setIsFooterVisaModalOpen] = useState(false);
+  const [isFooterFlightModalOpen, setIsFooterFlightModalOpen] = useState(false);
 
   // Handle Supabase Auth Callback URL if redirected here
   const isAuthCallbackRoute =
@@ -182,12 +188,20 @@ function AppContent() {
             }}
             onRemoveItinerary={handleRemoveSavedItinerary}
             onNavigateToFeed={() => setCurrentView('feed')}
+            onSelectDestination={setModalDestination}
           />
         )}
 
         {currentView === 'admin' && (
           <AdminDashboard onClose={() => setCurrentView('discover')} />
         )}
+
+        {/* Global Travel Agency Footer */}
+        <Footer
+          onNavigate={(view) => setCurrentView(view as NavView)}
+          onOpenVisaQuote={() => setIsFooterVisaModalOpen(true)}
+          onOpenFlightQuote={() => setIsFooterFlightModalOpen(true)}
+        />
       </main>
 
       {/* Destination Inspector Modal */}
@@ -195,6 +209,23 @@ function AppContent() {
         destination={modalDestination}
         onClose={() => setModalDestination(null)}
         onGenerateItinerary={handleQuickGenerateItinerary}
+      />
+
+      {/* Footer Quotation Modals */}
+      <VisaQuoteModal
+        isOpen={isFooterVisaModalOpen}
+        onClose={() => setIsFooterVisaModalOpen(false)}
+      />
+
+      <FlightQuoteModal
+        isOpen={isFooterFlightModalOpen}
+        onClose={() => setIsFooterFlightModalOpen(false)}
+      />
+
+      {/* Persistent Floating WhatsApp Chat Widget */}
+      <FloatingWhatsAppButton
+        phoneNumber="8801851172032"
+        defaultMessage="Hello Azraq Tours & Travels! I would like to inquire about a Flight / Visa Quotation."
       />
 
       {/* Auth Modal & Toast Notifications */}

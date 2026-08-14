@@ -297,6 +297,7 @@ export interface User {
   updatedAt?: string;
   homeLocation?: string;
   travelPreferences?: string[];
+  savedDestinationIds?: string[];
   isProfileComplete?: boolean;
   isAdmin?: boolean;
   role?: 'admin' | 'user' | 'owner';

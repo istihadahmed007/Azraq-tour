@@ -15,7 +15,7 @@ export const FlightQuoteModal: React.FC<FlightQuoteModalProps> = ({
   onSuccessSubmitted,
   initialDestination,
 }) => {
-  const { user } = useAuth();
+  const { user, openAuthModal, showToast } = useAuth();
 
   // Multi-step form step state: 1 = Flight Info, 2 = Passengers & Preferences, 3 = Contact & Confirmation, 4 = Success Screen
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -533,7 +533,7 @@ export const FlightQuoteModal: React.FC<FlightQuoteModalProps> = ({
                   placeholder="e.g. Alex Mercer"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-sky-300/20 text-white text-sm focus:outline-none focus:border-sky-400"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-800/80 border border-sky-300/20 text-white text-sm focus:outline-none focus:border-sky-400 min-h-[44px]"
                 />
               </div>
 
@@ -545,7 +545,7 @@ export const FlightQuoteModal: React.FC<FlightQuoteModalProps> = ({
                   placeholder="e.g. alex@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-sky-300/20 text-white text-sm focus:outline-none focus:border-sky-400"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-800/80 border border-sky-300/20 text-white text-sm focus:outline-none focus:border-sky-400 min-h-[44px]"
                 />
               </div>
 
@@ -557,7 +557,7 @@ export const FlightQuoteModal: React.FC<FlightQuoteModalProps> = ({
                   placeholder="e.g. +880 1851-172032"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-sky-300/20 text-white text-sm focus:outline-none focus:border-sky-400"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-800/80 border border-sky-300/20 text-white text-sm focus:outline-none focus:border-sky-400 min-h-[44px]"
                 />
                 <span className="text-[11px] text-slate-400 mt-1 block">
                   Our travel experts will contact you directly on WhatsApp or Email with tailored flight options.
@@ -569,7 +569,7 @@ export const FlightQuoteModal: React.FC<FlightQuoteModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="px-5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all"
+                  className="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all min-h-[44px]"
                 >
                   Back
                 </button>
@@ -577,16 +577,16 @@ export const FlightQuoteModal: React.FC<FlightQuoteModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-7 py-3 rounded-2xl bg-gradient-to-r from-sky-400 to-teal-400 hover:from-sky-300 hover:to-teal-300 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-sky-500/25 flex items-center gap-2 disabled:opacity-50"
+                  className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-amber-500/25 flex items-center gap-2 disabled:opacity-50 min-h-[44px] cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
                       <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
-                      <span>Submitting...</span>
+                      <span>Sending Request...</span>
                     </>
                   ) : (
                     <>
-                      <span>Submit Quote Request</span>
+                      <span>Send My Quote</span>
                       <span className="material-symbols-outlined text-base">send</span>
                     </>
                   )}
@@ -638,12 +638,40 @@ export const FlightQuoteModal: React.FC<FlightQuoteModalProps> = ({
                 <div><strong className="text-slate-100">Contact:</strong> {submittedQuote.email} ({submittedQuote.phone})</div>
               </div>
 
+              {/* Post-Quote Prompt: Want to track this quote? Create an account */}
+              {!user && (
+                <div className="p-4 bg-gradient-to-r from-amber-500/15 via-slate-800/80 to-emerald-500/15 border border-amber-400/40 rounded-2xl max-w-md mx-auto text-left flex flex-col gap-3 shadow-lg">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0 text-base">
+                      🔔
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-amber-300">Want to track this quote?</h4>
+                      <p className="text-[11px] text-slate-200 mt-0.5 leading-snug">
+                        Create a free account to save your request, track quote revisions, and receive real-time status updates from our agents.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleClose();
+                      openAuthModal('register');
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 text-slate-950 font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm">person_add</span>
+                    <span>Sign Up to Track Quote</span>
+                  </button>
+                </div>
+              )}
+
               {/* Done Button */}
               <div className="pt-2 flex justify-center gap-3">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="px-8 py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-sm transition-all shadow-lg"
+                  className="px-8 py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-sm transition-all shadow-lg min-h-[44px] cursor-pointer"
                 >
                   Done
                 </button>
