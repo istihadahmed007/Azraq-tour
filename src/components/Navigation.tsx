@@ -193,7 +193,12 @@ export const Navigation: React.FC<NavigationProps> = ({
                   title={`${user?.fullName} (${user?.email}) - Go to My Dashboard`}
                 >
                   <img
-                    src={user?.photoURL || BRAND_LOGOS.userAvatar}
+                    src={
+                      user?.photoURL ||
+                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+                        user?.fullName || user?.email || 'traveler'
+                      )}`
+                    }
                     alt={user?.fullName || 'Traveler'}
                     className="w-8 h-8 rounded-full object-cover border border-amber-400/60 shadow-sm"
                   />

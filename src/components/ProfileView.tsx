@@ -358,130 +358,269 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       )}
 
-      {/* Guest Mode Hero Card */}
-      {isGuest ? (
-        <div className="glass-card rounded-3xl p-8 md:p-12 flex flex-col items-center text-center gap-6 border border-sky-300/30 shadow-2xl relative overflow-hidden">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400/30 via-sky-500/20 to-emerald-400/30 border border-amber-400/40 flex items-center justify-center text-4xl shadow-xl">
-            👑
+      {/* GUEST MODE: VIP Portal Welcome & Quick Quote Tracking */}
+      {isGuest || !user ? (
+        <div className="space-y-8 animate-fade-in">
+          {/* Guest Mode Hero Card */}
+          <div className="glass-card rounded-3xl p-8 md:p-12 flex flex-col items-center text-center gap-6 border border-amber-400/30 shadow-2xl relative overflow-hidden bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-[#0a192f]/95">
+            {/* Ambient Gold Glow */}
+            <div className="absolute -top-10 -right-10 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -bottom-10 -left-10 w-80 h-80 bg-sky-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400/30 via-sky-500/20 to-emerald-400/30 border border-amber-400/40 flex items-center justify-center text-4xl shadow-xl">
+              👑
+            </div>
+
+            <div className="max-w-xl space-y-2.5">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                <Crown className="w-3.5 h-3.5" />
+                <span>Azraq Tours & Travels • VIP Client Portal</span>
+              </div>
+              <h1 className="font-serif-display text-2xl md:text-4xl font-extrabold text-white tracking-tight">
+                Welcome to My Azraq VIP Portal
+              </h1>
+              <p className="text-xs md:text-sm text-sky-100/80 leading-relaxed">
+                Log in to access your personalized travel dashboard, track active flight & visa quotations in real-time, view official rate assessments, and manage your custom itineraries.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-3.5 mt-2">
+              <button
+                onClick={() => openAuthModal('login')}
+                className="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs sm:text-sm transition-all shadow-lg active:scale-95 flex items-center gap-2 cursor-pointer min-h-[46px]"
+              >
+                <Mail className="w-4 h-4" />
+                <span>Log In to My Account</span>
+              </button>
+
+              <button
+                onClick={() => openAuthModal('register')}
+                className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 text-slate-950 font-extrabold text-xs sm:text-sm transition-all shadow-xl active:scale-95 cursor-pointer min-h-[46px]"
+              >
+                Create VIP Account
+              </button>
+            </div>
           </div>
 
-          <div className="max-w-lg space-y-2">
-            <h1 className="font-serif-display text-2xl md:text-3xl font-bold text-white">
-              My Azraq — VIP Client Portal
-            </h1>
-            <p className="text-xs md:text-sm text-sky-100/80 leading-relaxed">
-              Log in to track your active flight & visa quotations in real-time, browse saved destinations, download booking confirmations, and connect with your dedicated travel agent.
-            </p>
+          {/* Quick Quote Tracking for Guests without logging in */}
+          <div className="glass-card rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl bg-slate-900/90 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-serif-display font-bold text-white flex items-center gap-2">
+                  <Search className="w-5 h-5 text-amber-400" />
+                  Instant Quotation Lookup
+                </h2>
+                <p className="text-xs text-sky-200/80">
+                  Already submitted a quotation request? Enter your Quote ID or registered email below to check status immediately.
+                </p>
+              </div>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!quoteSearchTerm.trim()) {
+                  showToast('Please enter a Quote ID or email address to search.', 'error');
+                  return;
+                }
+                setIsLoadingQuotes(true);
+                try {
+                  const res = await fetch(`/api/quotes/track?query=${encodeURIComponent(quoteSearchTerm.trim())}`);
+                  const data = await res.json();
+                  if (res.ok && data.quotes && data.quotes.length > 0) {
+                    setUserQuotes(data.quotes);
+                    showToast(`Found ${data.quotes.length} quotation request(s)!`, 'success');
+                  } else {
+                    setUserQuotes([]);
+                    showToast('No quotations found matching this Request ID or Email.', 'error');
+                  }
+                } catch {
+                  showToast('Failed to look up quotation. Please try again.', 'error');
+                } finally {
+                  setIsLoadingQuotes(false);
+                }
+              }}
+              className="flex flex-col sm:flex-row gap-3"
+            >
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={quoteSearchTerm}
+                  onChange={(e) => setQuoteSearchTerm(e.target.value)}
+                  placeholder="Enter Quote ID (e.g. AZR-3335) or your email address..."
+                  className="w-full pl-10 pr-4 py-3.5 rounded-2xl bg-slate-800 border border-sky-400/30 text-white text-xs sm:text-sm focus:outline-none focus:border-sky-400 min-h-[46px]"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoadingQuotes}
+                className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 min-h-[46px]"
+              >
+                <Search className={`w-4 h-4 ${isLoadingQuotes ? 'animate-spin' : ''}`} />
+                <span>{isLoadingQuotes ? 'Searching...' : 'Track Quote'}</span>
+              </button>
+            </form>
+
+            {/* If guest looked up quotes */}
+            {userQuotes.length > 0 && (
+              <div className="pt-4 border-t border-white/10 space-y-3">
+                <div className="text-xs font-bold text-sky-200">
+                  Search Results ({userQuotes.length} record(s)):
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {userQuotes.map((q) => (
+                    <div
+                      key={q.id}
+                      className="p-5 rounded-2xl bg-slate-950 border border-amber-400/30 flex flex-col justify-between gap-3 shadow-lg"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="p-2 rounded-xl bg-sky-500/20 text-sky-300">
+                            {q.type === 'flight' ? <Plane className="w-4 h-4" /> : <Stamp className="w-4 h-4" />}
+                          </span>
+                          <div>
+                            <span className="text-xs font-mono text-amber-300 font-bold block">{q.id}</span>
+                            <span className="text-xs text-white font-medium">
+                              {q.type === 'flight' ? `${q.from} ✈️ ${q.to}` : (q as any).destinationCountry}
+                            </span>
+                          </div>
+                        </div>
+                        {getStatusBadge(q.status)}
+                      </div>
+
+                      <div className="text-xs text-slate-300">
+                        Date: <span className="text-white font-medium">{q.type === 'flight' ? q.departureDate : (q as any).intendedTravelDate}</span> • Customer: <span className="text-white font-medium">{q.customerName}</span>
+                      </div>
+
+                      <button
+                        onClick={() => setSelectedQuoteDetail(q)}
+                        className="w-full py-2 rounded-xl bg-amber-400/20 hover:bg-amber-400 text-amber-300 hover:text-slate-950 font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>View Official Assessment & WhatsApp Agent</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
-            <button
-              onClick={() => loginWithGoogle()}
-              className="px-6 py-3.5 rounded-2xl bg-white hover:bg-gray-100 text-gray-900 font-bold text-xs sm:text-sm transition-all shadow-xl active:scale-95 flex items-center gap-2.5 cursor-pointer min-h-[44px]"
-            >
-              <img
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                alt="Google"
-                className="w-5 h-5"
-              />
-              <span>Sign In with Google</span>
-            </button>
+          {/* VIP Portal Benefits Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div className="glass-card rounded-3xl p-6 border border-white/10 space-y-3 bg-slate-900/80">
+              <div className="w-12 h-12 rounded-2xl bg-sky-500/20 text-sky-300 flex items-center justify-center">
+                <Plane className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-bold text-white font-serif-display">Live Airfare & Visa Tracking</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Check status updates in real-time as our IATA-certified ticketing specialists lock wholesale airline fares.
+              </p>
+            </div>
 
-            <button
-              onClick={() => openAuthModal('login')}
-              className="px-5 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs sm:text-sm transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer min-h-[44px]"
-            >
-              <Mail className="w-4 h-4" />
-              <span>Log In</span>
-            </button>
+            <div className="glass-card rounded-3xl p-6 border border-white/10 space-y-3 bg-slate-900/80">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-300 flex items-center justify-center">
+                <Crown className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-bold text-white font-serif-display">Exclusive VIP Privileges</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Save bespoke multi-day holiday plans, book hospital appointments, and unlock seasonal group discounts.
+              </p>
+            </div>
 
-            <button
-              onClick={() => openAuthModal('register')}
-              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-lg active:scale-95 cursor-pointer min-h-[44px]"
-            >
-              Create Account
-            </button>
+            <div className="glass-card rounded-3xl p-6 border border-white/10 space-y-3 bg-slate-900/80">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center">
+                <MessageCircle className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-bold text-white font-serif-display">24/7 Dedicated WhatsApp Desk</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Direct one-touch messaging with our Dhaka & international operations desk for instant amendments.
+              </p>
+            </div>
           </div>
         </div>
       ) : (
-        /* Authenticated VIP User Header & Hub */
-        <div className="glass-card rounded-3xl p-6 md:p-8 flex flex-col sm:flex-row items-center gap-6 border border-amber-400/25 shadow-2xl relative overflow-hidden bg-gradient-to-r from-slate-950/90 via-slate-900/90 to-[#0a192f]/90">
-          {/* Ambient Gold Glow */}
-          <div className="absolute -top-10 -right-10 w-72 h-72 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+        /* AUTHENTICATED VIP USER PORTAL */
+        <>
+          {/* Authenticated VIP User Header & Hub */}
+          <div className="glass-card rounded-3xl p-6 md:p-8 flex flex-col sm:flex-row items-center gap-6 border border-amber-400/25 shadow-2xl relative overflow-hidden bg-gradient-to-r from-slate-950/90 via-slate-900/90 to-[#0a192f]/90">
+            {/* Ambient Gold Glow */}
+            <div className="absolute -top-10 -right-10 w-72 h-72 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
-          <div className="relative group shrink-0">
-            <img
-              src={
-                user?.photoURL ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
-                  user?.fullName || 'traveler'
-                )}`
-              }
-              alt={user?.fullName || 'Traveler'}
-              className="w-24 h-24 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl ring-4 ring-amber-400/20"
-            />
-            <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 border-2 border-slate-950 flex items-center justify-center text-slate-950 text-xs font-black shadow-lg" title="Azraq VIP Member">
-              👑
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left gap-1.5">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="font-serif-display text-2xl md:text-3xl font-black text-white tracking-tight">
-                Welcome back, {user?.fullName || 'Distinguished Traveler'}!
-              </h1>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 shadow-md">
-                <Crown className="w-3.5 h-3.5 fill-slate-950" />
-                <span>Azraq VIP Elite</span>
-              </span>
+            <div className="relative group shrink-0">
+              <img
+                src={
+                  user?.photoURL ||
+                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+                    user?.fullName || user?.email || 'traveler'
+                  )}`
+                }
+                alt={user?.fullName || 'Traveler'}
+                className="w-24 h-24 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl ring-4 ring-amber-400/20"
+              />
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 border-2 border-slate-950 flex items-center justify-center text-slate-950 text-xs font-black shadow-lg" title="Azraq VIP Member">
+                👑
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs md:text-sm text-sky-200/90 font-medium">
-              <span className="flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-sky-300" />
-                <span>{user?.email}</span>
-              </span>
-              {user?.phone && (
-                <span className="flex items-center gap-1.5">
-                  <span className="text-white/30">•</span>
-                  <Phone className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>{user.phone}</span>
+            <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left gap-1.5">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="font-serif-display text-2xl md:text-3xl font-black text-white tracking-tight">
+                  Welcome back, {user?.fullName || 'Distinguished Traveler'}!
+                </h1>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 shadow-md">
+                  <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                  <span>Azraq VIP Elite</span>
                 </span>
-              )}
-              {user?.homeLocation && (
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs md:text-sm text-sky-200/90 font-medium">
                 <span className="flex items-center gap-1.5">
-                  <span className="text-white/30">•</span>
-                  <MapPin className="w-3.5 h-3.5 text-amber-300" />
-                  <span>{user.homeLocation}</span>
+                  <Mail className="w-3.5 h-3.5 text-sky-300" />
+                  <span>{user?.email}</span>
                 </span>
-              )}
+                {user?.phone && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-white/30">•</span>
+                    <Phone className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>{user.phone}</span>
+                  </span>
+                )}
+                {user?.homeLocation && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-white/30">•</span>
+                    <MapPin className="w-3.5 h-3.5 text-amber-300" />
+                    <span>{user.homeLocation}</span>
+                  </span>
+                )}
+              </div>
+
+              <p className="text-xs text-slate-300 line-clamp-1 mt-0.5">
+                {user?.bio || 'VIP Global traveler with Azraq Tours & Travels.'}
+              </p>
             </div>
 
-            <p className="text-xs text-slate-300 line-clamp-1 mt-0.5">
-              {user?.bio || 'VIP Global traveler with Azraq Tours & Travels.'}
-            </p>
-          </div>
+            {/* Action buttons on header */}
+            <div className="flex sm:flex-col gap-2 shrink-0">
+              <button
+                onClick={() => setActiveTab('settings')}
+                className="px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-sky-200 hover:text-white border border-white/10 transition-colors flex items-center gap-2 text-xs font-bold cursor-pointer min-h-[40px]"
+              >
+                <Settings className="w-4 h-4 text-amber-300" />
+                <span>Settings</span>
+              </button>
 
-          {/* Action buttons on header */}
-          <div className="flex sm:flex-col gap-2 shrink-0">
-            <button
-              onClick={() => setActiveTab('settings')}
-              className="px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-sky-200 hover:text-white border border-white/10 transition-colors flex items-center gap-2 text-xs font-bold cursor-pointer min-h-[40px]"
-            >
-              <Settings className="w-4 h-4 text-amber-300" />
-              <span>Settings</span>
-            </button>
-
-            <button
-              onClick={logout}
-              className="px-4 py-2.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-400/20 transition-colors flex items-center gap-2 text-xs font-bold cursor-pointer min-h-[40px]"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Log Out</span>
-            </button>
+              <button
+                onClick={logout}
+                className="px-4 py-2.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-400/20 transition-colors flex items-center gap-2 text-xs font-bold cursor-pointer min-h-[40px]"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Log Out</span>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
 
       {/* CORE 4-SECTION NAVIGATION TABS */}
       <div className="flex items-center gap-2 border-b border-white/10 pb-3.5 overflow-x-auto hide-scrollbar">
@@ -1242,6 +1381,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             ))
           )}
         </div>
+      )}
+        </>
       )}
 
       {/* EXACT QUOTE DETAIL & RE-REQUEST MODAL */}

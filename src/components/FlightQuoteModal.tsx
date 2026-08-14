@@ -530,7 +530,7 @@ export const FlightQuoteModal: React.FC<FlightQuoteModalProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Alex Mercer"
+                  placeholder="e.g. Istihad Ahmed"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full px-4 py-3 rounded-2xl bg-slate-800/80 border border-sky-300/20 text-white text-sm focus:outline-none focus:border-sky-400 min-h-[44px]"
@@ -542,7 +542,7 @@ export const FlightQuoteModal: React.FC<FlightQuoteModalProps> = ({
                 <input
                   type="email"
                   required
-                  placeholder="e.g. alex@example.com"
+                  placeholder="e.g. client@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 rounded-2xl bg-slate-800/80 border border-sky-300/20 text-white text-sm focus:outline-none focus:border-sky-400 min-h-[44px]"
