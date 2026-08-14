@@ -17,16 +17,6 @@
     "isProfileComplete": true,
     "passwordSalt": "0cccddab81c536a2b719c0da95bf473a"
   },
-  "explorer.google@gmail.com": {
-    "uid": "goog_1786548642514_ckkmn",
-    "fullName": "Google Traveler",
-    "email": "explorer.google@gmail.com",
-    "photoURL": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-    "emailVerified": true,
-    "provider": "google",
-    "createdAt": "2026-08-12T15:30:42.514Z",
-    "isProfileComplete": false
-  },
   "test.traveler@example.com": {
     "uid": "usr_1786554733499_w2wfv",
     "fullName": "Test Traveler",
@@ -82,26 +72,6 @@
     "role": "user",
     "failedLoginAttempts": 0
   },
-  "client.traveler845@gmail.com": {
-    "uid": "goog_1786731985493_e0daq",
-    "fullName": "Traveler Explorer 845",
-    "email": "client.traveler845@gmail.com",
-    "phone": "+1 (555) 019-2834",
-    "country": "United States",
-    "photoURL": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-    "bio": "Google authenticated travel enthusiast.",
-    "languages": [
-      "English"
-    ],
-    "emailVerified": true,
-    "phoneVerified": true,
-    "provider": "google",
-    "createdAt": "2026-08-14T18:26:25.493Z",
-    "updatedAt": "2026-08-14T18:26:25.494Z",
-    "isProfileComplete": true,
-    "isAdmin": false,
-    "role": "user"
-  },
   "test1@email.com": {
     "uid": "usr_1786732518752_xmcn3",
     "fullName": "Alice Traveler One",
@@ -150,6 +120,58 @@
     "provider": "email",
     "createdAt": "2026-08-14T18:35:32.028Z",
     "updatedAt": "2026-08-14T18:35:32.028Z",
+    "isProfileComplete": true,
+    "isAdmin": false,
+    "role": "user"
+  },
+  "rahim@email.com": {
+    "uid": "usr_1786733074300_dhkh5",
+    "fullName": "Rahim Ahmed",
+    "email": "rahim@email.com",
+    "phone": "+8801711223344",
+    "country": "Bangladesh",
+    "passwordHash": "9f56a61b6519f890cc69157556d4748a376ab0c0b20f2bd435a42590b82c093968d48e86a6459140fe91f84271b0813f4fde839e8f7c88d2cc324e92c82c85f3",
+    "passwordSalt": "548d560669831f16b3dd902431de6472",
+    "photoURL": "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahim%20Ahmed",
+    "bio": "Hello! I am Rahim Ahmed, excited to discover amazing travel destinations.",
+    "languages": [
+      "English"
+    ],
+    "emailVerified": true,
+    "emailVerificationCode": "976534",
+    "emailCodeExpiry": 1786819474300,
+    "phoneVerified": true,
+    "phoneOtpCode": "539044",
+    "phoneOtpExpiry": 1786733674300,
+    "provider": "email",
+    "createdAt": "2026-08-14T18:44:34.300Z",
+    "updatedAt": "2026-08-14T18:44:34.300Z",
+    "isProfileComplete": true,
+    "isAdmin": false,
+    "role": "user"
+  },
+  "sultana@email.com": {
+    "uid": "usr_1786733087181_rsg9x",
+    "fullName": "Sultana Begum",
+    "email": "sultana@email.com",
+    "phone": "+8801999887766",
+    "country": "Bangladesh",
+    "passwordHash": "13ed041be55c16a56449e086736723307a95051c8cb63b53b46e40574d3150fb1bb2472a77799910347572e9ccb3b21c15b2413923d5fa8a4e6287fe979fc615",
+    "passwordSalt": "a6b4e9ff353ac7a11ca23f1a110b3b4b",
+    "photoURL": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sultana%20Begum",
+    "bio": "Hello! I am Sultana Begum, excited to discover amazing travel destinations.",
+    "languages": [
+      "English"
+    ],
+    "emailVerified": true,
+    "emailVerificationCode": "222185",
+    "emailCodeExpiry": 1786819487181,
+    "phoneVerified": true,
+    "phoneOtpCode": "216626",
+    "phoneOtpExpiry": 1786733687181,
+    "provider": "email",
+    "createdAt": "2026-08-14T18:44:47.181Z",
+    "updatedAt": "2026-08-14T18:44:47.181Z",
     "isProfileComplete": true,
     "isAdmin": false,
     "role": "user"

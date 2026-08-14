@@ -680,9 +680,11 @@ app.post("/api/auth/verify-phone-otp", (req, res) => {
 app.post("/api/auth/google", (req, res) => {
   try {
     const { email, fullName, photoURL } = req.body;
-    const userEmail = email || "traveler.google@gmail.com";
-    const userName = fullName || "Google Explorer";
-    const normalizedEmail = userEmail.trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ error: "Email is required for Google authentication." });
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const userName = fullName ? fullName.trim() : normalizedEmail.split("@")[0].replace(".", " ");
 
     let existingUser = usersStore.get(normalizedEmail);
 
@@ -691,13 +693,13 @@ app.post("/api/auth/google", (req, res) => {
         uid: `goog_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         fullName: userName,
         email: normalizedEmail,
-        phone: "+1 (555) 019-2834",
-        country: "United States",
-        photoURL: photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-        bio: "Google authenticated travel enthusiast.",
+        phone: "",
+        country: "Bangladesh",
+        photoURL: photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(normalizedEmail)}`,
+        bio: `Hello! I am ${userName}, a travel enthusiast at Azraq Tours.`,
         languages: ["English"],
         emailVerified: true, // Google accounts pre-verified
-        phoneVerified: true,
+        phoneVerified: false,
         provider: "google",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -1570,6 +1572,11 @@ app.get("/api/quotes/track", (req, res) => {
       (q) => q.id.toLowerCase() === query || q.email.toLowerCase() === query
     );
 
+    // If querying by email, return the list (even if empty) to avoid UI errors
+    if (query.includes("@")) {
+      return res.json({ success: true, quotes: results });
+    }
+
     if (results.length === 0) {
       return res.status(404).json({ error: "No quotation request found matching your Request ID or Email." });
     }
@@ -1578,6 +1585,61 @@ app.get("/api/quotes/track", (req, res) => {
   } catch (err: any) {
     console.error("Track Quote Error:", err);
     res.status(500).json({ error: "Failed to track quotation." });
+  }
+});
+
+// 7b. User's Own Quote History & Count Endpoint
+app.get("/api/users/me/quotes", (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    let token = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : "";
+    if (!token && req.headers["x-auth-token"]) {
+      token = String(req.headers["x-auth-token"]).trim();
+    }
+
+    let userEmail = "";
+    if (token && activeTokensMap.has(token)) {
+      userEmail = activeTokensMap.get(token)!;
+    } else if (req.query.email) {
+      userEmail = String(req.query.email).trim().toLowerCase();
+    }
+
+    if (!userEmail) {
+      return res.status(401).json({ error: "Unauthorized: Please provide a valid session token or email." });
+    }
+
+    const userQuotes = quotesStore.filter((q) => q.email.toLowerCase() === userEmail.toLowerCase());
+    res.json({ success: true, quotes: userQuotes, count: userQuotes.length });
+  } catch (err: any) {
+    console.error("User Quotes Error:", err);
+    res.status(500).json({ error: "Failed to retrieve user quotes." });
+  }
+});
+
+app.get("/api/users/me/quotes/count", (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    let token = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : "";
+    if (!token && req.headers["x-auth-token"]) {
+      token = String(req.headers["x-auth-token"]).trim();
+    }
+
+    let userEmail = "";
+    if (token && activeTokensMap.has(token)) {
+      userEmail = activeTokensMap.get(token)!;
+    } else if (req.query.email) {
+      userEmail = String(req.query.email).trim().toLowerCase();
+    }
+
+    if (!userEmail) {
+      return res.status(401).json({ error: "Unauthorized: Please provide a valid session token or email." });
+    }
+
+    const userQuotes = quotesStore.filter((q) => q.email.toLowerCase() === userEmail.toLowerCase());
+    res.json({ success: true, count: userQuotes.length });
+  } catch (err: any) {
+    console.error("User Quotes Count Error:", err);
+    res.status(500).json({ error: "Failed to retrieve quote count." });
   }
 });
 

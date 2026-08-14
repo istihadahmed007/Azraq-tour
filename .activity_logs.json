@@ -1,0 +1,26 @@
+[
+  {
+    "id": "act_1786733101085_w094",
+    "quoteId": "AZR-3335",
+    "action": "New Flight Quote Submitted",
+    "performedBy": "Rahim Ahmed (Client)",
+    "details": "Route: Dhaka (DAC) ✈️ Bangkok (BKK) on 2026-09-01. Automated acknowledgment sent.",
+    "timestamp": "2026-08-14T18:45:01.085Z"
+  },
+  {
+    "id": "act_1",
+    "quoteId": "AZR-1024",
+    "action": "New Quote Submitted",
+    "performedBy": "Istihad Ahmed (Client)",
+    "details": "Round Trip Dhaka -> Bangkok requested for 2 Adults, 1 Child.",
+    "timestamp": "2026-08-14T17:44:29.545Z"
+  },
+  {
+    "id": "act_2",
+    "quoteId": "VSQ-930214",
+    "action": "Assigned Staff & Status Changed",
+    "performedBy": "Super Admin",
+    "details": "Assigned to Tania Sultana. Status changed from New to Processing.",
+    "timestamp": "2026-08-14T15:44:29.545Z"
+  }
+]

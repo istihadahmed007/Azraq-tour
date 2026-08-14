@@ -101,7 +101,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
               className="w-12 h-12 rounded-full object-cover border-2 border-primary/40 shadow-md"
             />
             <div className="sm:hidden">
-              <p className="text-xs font-bold text-white">{user?.fullName || 'Travel Explorer'}</p>
+              <p className="text-xs font-bold text-white">{user?.fullName || user?.email?.split('@')[0] || 'Traveler'}</p>
               <p className="text-[10px] text-sky-200/80">Share with community</p>
             </div>
           </div>

@@ -257,7 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 1. Google Sign-In with safe handling (no admin impersonation)
+  // 1. Google Sign-In with safe handling (no fake mock users)
   const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
@@ -267,41 +267,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let googleUid = '';
 
       try {
-        // Try Firebase popup with strict 2.5s race timeout
+        // Try Firebase popup with race timeout
         const result = await withTimeout(
           signInWithPopup(auth, googleProvider),
-          2500,
+          4000,
           'Popup timeout/blocked'
         );
-        if (result?.user) {
-          googleEmail = result.user.email?.toLowerCase() || '';
+        if (result?.user && result.user.email) {
+          googleEmail = result.user.email.toLowerCase();
           googleName = result.user.displayName || '';
           googlePhoto = result.user.photoURL || '';
           googleUid = result.user.uid;
         }
       } catch (fbErr: any) {
-        console.warn('Firebase popup handled:', fbErr?.code || fbErr?.message || fbErr);
+        console.warn('Firebase popup notice:', fbErr?.code || fbErr?.message || fbErr);
       }
 
       if (!googleEmail) {
-        // Create or sign in as a standard demo client traveler in iframe environments
-        const randId = Math.floor(100 + Math.random() * 900);
-        googleEmail = `client.traveler${randId}@gmail.com`;
-        googleName = `Traveler Explorer ${randId}`;
-        googlePhoto = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80`;
-        googleUid = `goog_client_${Date.now()}`;
+        // If Google popup was cancelled or blocked in iframe, guide user to email login
+        openAuthModal('login');
+        showToast('Please log in with your email & password or create an account.', 'info');
+        return {
+          success: false,
+          error: 'Google Sign-In popup was closed or unavailable in this window. Please use email login.',
+        };
       }
 
       const verifiedUser: User = {
         uid: googleUid || `usr_g_${Date.now()}`,
         fullName: googleName || googleEmail.split('@')[0].replace('.', ' '),
         email: googleEmail,
-        phone: '+1 (555) 019-2834',
-        photoURL: googlePhoto,
-        bio: `Hello! I am ${googleName}, travel enthusiast at Azraq Tours.`,
+        phone: '',
+        photoURL: googlePhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(googleEmail)}`,
+        bio: `Hello! I am ${googleName || googleEmail.split('@')[0]}, a travel enthusiast at Azraq Tours.`,
         languages: ['English'],
         emailVerified: true,
-        phoneVerified: true,
+        phoneVerified: false,
         provider: 'google',
         createdAt: new Date().toISOString(),
         role: isWebsiteOwner({ email: googleEmail } as any) ? 'admin' : 'user',

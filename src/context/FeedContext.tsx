@@ -156,9 +156,9 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: postId,
         authorId: user.uid,
         authorEmail: user.email,
-        authorName: user.fullName || 'Travel Explorer',
-        authorAvatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullName || 'explorer')}`,
-        location: location?.trim() || user.homeLocation || 'Global Explorer',
+        authorName: user.fullName || user.email.split('@')[0],
+        authorAvatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullName || user.email)}`,
+        location: location?.trim() || user.homeLocation || 'Bangladesh',
         badgeLabel,
         imageUrl:
           imageUrl?.trim() ||

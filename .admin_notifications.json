@@ -1,0 +1,20 @@
+[
+  {
+    "id": "notif_1786733101085_1gbz",
+    "title": "✈️ New Flight Quote",
+    "message": "Rahim Ahmed requested a quote for Dhaka (DAC) to Bangkok (BKK).",
+    "quoteId": "AZR-3335",
+    "type": "quote_new",
+    "isRead": false,
+    "createdAt": "2026-08-14T18:45:01.085Z"
+  },
+  {
+    "id": "notif_1",
+    "title": "⚡ Urgent New Quote",
+    "message": "Istihad Ahmed requested a Bangkok Flight quote (AZR-1024).",
+    "quoteId": "AZR-1024",
+    "type": "quote_new",
+    "isRead": false,
+    "createdAt": "2026-08-14T17:44:29.545Z"
+  }
+]
