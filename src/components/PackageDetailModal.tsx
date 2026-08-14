@@ -48,9 +48,9 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
 
   const handleWhatsApp = () => {
     const text = encodeURIComponent(
-      `Hello GlobeTrotter AI! I would like more information and a quote for: ${pkg.package_name} (${pkg.country}) - Duration: ${pkg.duration}`
+      `Hello Azraq Tours & Travels! I would like more information and a quote for: ${pkg.package_name} (${pkg.country}) - Duration: ${pkg.duration}`
     );
-    window.open(`https://wa.me/8801700000000?text=${text}`, '_blank');
+    window.open(`https://wa.me/8801851172032?text=${text}`, '_blank');
   };
 
   return (

@@ -832,7 +832,7 @@ export const VisaQuoteModal: React.FC<VisaQuoteModalProps> = ({
                 <input
                   type="tel"
                   required
-                  placeholder="e.g. +1 (555) 987-6543"
+                  placeholder="e.g. +880 1851-172032"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-teal-300/20 text-white text-sm focus:outline-none focus:border-teal-400"

@@ -104,6 +104,8 @@ export interface Comment {
 
 export interface FeedPost {
   id: string;
+  authorId?: string;
+  authorEmail?: string;
   authorName: string;
   authorAvatar: string;
   location: string;
@@ -118,6 +120,9 @@ export interface FeedPost {
   isBookmarked: boolean;
   commentsList: Comment[];
   aiVerified?: boolean;
+  likedBy?: string[];
+  bookmarkedBy?: string[];
+  createdAt?: string | any;
 }
 
 export interface PricingTier {

@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
-import { BrandTheme, Destination, FeedPost, Itinerary, NavView, Spot } from './types';
-import {
-  INITIAL_DESTINATIONS,
-  INITIAL_FEED_POSTS,
-  INITIAL_KYOTO_ITINERARY,
-  TRENDING_HASHTAGS,
-} from './data/mockData';
+import { BrandTheme, Destination, Itinerary, NavView, Spot } from './types';
+import { INITIAL_DESTINATIONS, INITIAL_KYOTO_ITINERARY } from './data/mockData';
 
 import { AuthProvider } from './context/AuthContext';
 import { PackageProvider } from './context/PackageContext';
+import { FeedProvider } from './context/FeedContext';
 import { AuthModal } from './components/AuthModal';
 import { Toast } from './components/Toast';
 import { Navigation } from './components/Navigation';
@@ -39,7 +35,6 @@ function AppContent() {
 
   // Application State
   const [destinations] = useState<Destination[]>(INITIAL_DESTINATIONS);
-  const [feedPosts, setFeedPosts] = useState<FeedPost[]>(INITIAL_FEED_POSTS);
   const [currentItinerary, setCurrentItinerary] = useState<Itinerary>(INITIAL_KYOTO_ITINERARY);
   const [savedItineraries, setSavedItineraries] = useState<Itinerary[]>([INITIAL_KYOTO_ITINERARY]);
   const [modalDestination, setModalDestination] = useState<Destination | null>(null);
@@ -112,11 +107,6 @@ function AppContent() {
     setCurrentView('map');
   };
 
-  // Add new post from Feed
-  const handleAddPost = (newPost: FeedPost) => {
-    setFeedPosts([newPost, ...feedPosts]);
-  };
-
   // Select destination by name (from hashtags or feed)
   const handleSelectDestinationByName = (name: string) => {
     const found = destinations.find(
@@ -132,7 +122,6 @@ function AppContent() {
   };
 
   const isCurrentItinerarySaved = savedItineraries.some((i) => i.id === currentItinerary.id);
-  const bookmarkedPosts = feedPosts.filter((p) => p.isBookmarked);
 
   return (
     <div className={`min-h-screen text-[#f0f9ff] sky-natural-bg font-sans selection:bg-[#0284c7] selection:text-white ${brandTheme === 'azraq' ? 'azraq-mode' : ''}`}>
@@ -171,10 +160,8 @@ function AppContent() {
 
         {currentView === 'feed' && (
           <FeedView
-            posts={feedPosts}
-            trendingHashtags={TRENDING_HASHTAGS}
-            onAddPost={handleAddPost}
             onSelectDestinationByName={handleSelectDestinationByName}
+            onNavigateToProfile={() => setCurrentView('profile')}
           />
         )}
 
@@ -189,12 +176,12 @@ function AppContent() {
         {currentView === 'profile' && (
           <ProfileView
             savedItineraries={savedItineraries}
-            bookmarkedPosts={bookmarkedPosts}
             onSelectItinerary={(itinerary) => {
               setCurrentItinerary(itinerary);
               setCurrentView('planner');
             }}
             onRemoveItinerary={handleRemoveSavedItinerary}
+            onNavigateToFeed={() => setCurrentView('feed')}
           />
         )}
 
@@ -221,7 +208,9 @@ export function App() {
   return (
     <AuthProvider>
       <PackageProvider>
-        <AppContent />
+        <FeedProvider>
+          <AppContent />
+        </FeedProvider>
       </PackageProvider>
     </AuthProvider>
   );

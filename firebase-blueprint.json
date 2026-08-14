@@ -14,9 +14,38 @@
         "emailVerified": { "type": "boolean" },
         "phoneVerified": { "type": "boolean" },
         "createdAt": { "type": "string" },
-        "homeLocation": { "type": "string" }
+        "homeLocation": { "type": "string" },
+        "bio": { "type": "string" },
+        "travelPreferences": { "type": "array" }
       },
       "required": ["uid", "email"]
+    },
+    "feed_posts": {
+      "title": "Community Feed Posts",
+      "description": "Travel stories, photos, and insights posted by users and displayed in community feed and user profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorEmail": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "location": { "type": "string" },
+        "badgeLabel": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "likes": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "caption": { "type": "string" },
+        "hashtags": { "type": "array" },
+        "timeAgo": { "type": "string" },
+        "isLiked": { "type": "boolean" },
+        "isBookmarked": { "type": "boolean" },
+        "commentsList": { "type": "array" },
+        "likedBy": { "type": "array" },
+        "bookmarkedBy": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "authorName", "caption"]
     },
     "quotes": {
       "title": "Travel Quote Requests",

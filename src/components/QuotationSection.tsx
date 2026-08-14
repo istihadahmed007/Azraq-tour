@@ -40,15 +40,25 @@ export const QuotationSection: React.FC = () => {
             Get personalized Visa and Flight Quotations from our travel experts. Submit your travel requirements and receive a customized quotation.
           </p>
 
-          {/* Track Quotation Quick Trigger */}
-          <div className="pt-2">
+          {/* Track Quotation Quick Trigger & WhatsApp Direct */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => setIsTrackModalOpen(true)}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-sky-300 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-sky-400/20 transition-all hover:border-sky-400/50"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-sky-300 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-sky-400/20 transition-all hover:border-sky-400/50 cursor-pointer"
             >
               <span className="material-symbols-outlined text-sm">find_in_page</span>
-              <span>Already submitted? Track your quotation request →</span>
+              <span>Already submitted? Track your request →</span>
             </button>
+
+            <a
+              href="https://wa.me/8801851172032?text=Hello%20Azraq%20Tours%20%26%20Travels!%20I%20would%20like%20to%20inquire%20about%20a%20Flight%20or%20Visa%20quotation."
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 hover:text-white bg-emerald-500/15 hover:bg-emerald-500/25 px-4 py-2 rounded-full border border-emerald-400/30 transition-all shadow-sm"
+            >
+              <span className="material-symbols-outlined text-sm text-emerald-400">chat</span>
+              <span>Direct WhatsApp Hotline: 01851172032</span>
+            </a>
           </div>
         </div>
 

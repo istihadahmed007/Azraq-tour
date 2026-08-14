@@ -188,7 +188,7 @@ export const PackageQuotationModal: React.FC<PackageQuotationModalProps> = ({ pk
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+880 1700 000000"
+                    placeholder="+880 1851-172032"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-sky-400"
                   />
                 </div>

@@ -554,7 +554,7 @@ export const FlightQuoteModal: React.FC<FlightQuoteModalProps> = ({
                 <input
                   type="tel"
                   required
-                  placeholder="e.g. +1 (555) 019-2834"
+                  placeholder="e.g. +880 1851-172032"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-sky-300/20 text-white text-sm focus:outline-none focus:border-sky-400"

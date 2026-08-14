@@ -323,8 +323,40 @@ export const Navigation: React.FC<NavigationProps> = ({
           )}
         </nav>
 
+        {/* Quick Contact & Hotline Box */}
+        <div className="p-3 rounded-2xl bg-sky-950/60 border border-sky-400/25 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-sky-300 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              24/7 Travel Desk
+            </span>
+            <span className="text-[10px] text-slate-400">Azraq</span>
+          </div>
+
+          <a
+            href="https://wa.me/8801851172032?text=Hello%20Azraq%20Tours%20%26%20Travels!%20I%20would%20like%20assistance%20with%20travel%20packages%20and%20quotations."
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-between p-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-emerald-300 transition-all text-xs font-semibold group"
+          >
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-base group-hover:scale-110 transition-transform">chat</span>
+              <span className="font-mono text-[11px] font-bold">01851172032</span>
+            </div>
+            <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-tight">WhatsApp ↗</span>
+          </a>
+
+          <a
+            href="tel:+8801851172032"
+            className="flex items-center justify-center gap-1 text-[11px] font-medium text-slate-300 hover:text-white transition-colors"
+          >
+            <span className="material-symbols-outlined text-xs text-sky-400">call</span>
+            <span>Direct Call: +880 1851-172032</span>
+          </a>
+        </div>
+
         {/* New Trip Action Button */}
-        <div className="mt-auto pt-4">
+        <div className="pt-2">
           <button
             onClick={onNewTripClick}
             className="w-full bg-primary text-on-primary rounded-xl py-3 px-4 font-semibold text-sm hover:bg-primary-fixed transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[0.98] active:scale-95"
