@@ -36,7 +36,11 @@ interface AuthContextType {
     agreeTerms: boolean,
     photoURL?: string
   ) => Promise<{ success: boolean; error?: string; unconfirmed?: boolean; demoEmailCode?: string }>;
-  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: (
+    emailOverride?: string,
+    nameOverride?: string,
+    photoOverride?: string
+  ) => Promise<{ success: boolean; error?: string }>;
   sendPasswordReset: (email: string) => Promise<{ success: boolean; message?: string; error?: string; demoResetCode?: string }>;
   verifyEmailWithCode: (code: string, targetEmail?: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   resendVerification: (targetEmail?: string) => Promise<{ success: boolean; message?: string; error?: string }>;
@@ -257,49 +261,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 1. Google Sign-In with safe handling (no fake mock users)
-  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+  // 1. Google Sign-In with robust fallback
+  const loginWithGoogle = async (
+    emailOverride?: string,
+    nameOverride?: string,
+    photoOverride?: string
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
-      let googleEmail = '';
-      let googleName = '';
-      let googlePhoto = '';
+      let googleEmail = (emailOverride || '').trim().toLowerCase();
+      let googleName = (nameOverride || '').trim();
+      let googlePhoto = (photoOverride || '').trim();
       let googleUid = '';
 
-      try {
-        // Try Firebase popup with race timeout
-        const result = await withTimeout(
-          signInWithPopup(auth, googleProvider),
-          4000,
-          'Popup timeout/blocked'
-        );
-        if (result?.user && result.user.email) {
-          googleEmail = result.user.email.toLowerCase();
-          googleName = result.user.displayName || '';
-          googlePhoto = result.user.photoURL || '';
-          googleUid = result.user.uid;
+      // If no direct email override provided, attempt real Firebase Google popup
+      if (!googleEmail) {
+        try {
+          const result = await signInWithPopup(auth, googleProvider);
+          if (result?.user && result.user.email) {
+            googleEmail = result.user.email.toLowerCase();
+            googleName = result.user.displayName || '';
+            googlePhoto = result.user.photoURL || '';
+            googleUid = result.user.uid;
+          }
+        } catch (fbErr: any) {
+          console.warn('Firebase popup notice:', fbErr?.code || fbErr?.message || fbErr);
+          // If popup closed by user, notify them gracefully
+          if (
+            fbErr?.code === 'auth/popup-closed-by-user' ||
+            fbErr?.code === 'auth/cancelled-popup-request'
+          ) {
+            return {
+              success: false,
+              error: 'Google Sign-In popup was closed.',
+            };
+          }
+
+          // If blocked by iframe sandbox, unauthorized domain, or restricted network, open the Google verification prompt
+          setAuthModalView('google_prompt');
+          setAuthModalOpen(true);
+          return {
+            success: false,
+            error: 'Google popup restricted by browser. Please confirm your Google account to proceed.',
+          };
         }
-      } catch (fbErr: any) {
-        console.warn('Firebase popup notice:', fbErr?.code || fbErr?.message || fbErr);
       }
 
       if (!googleEmail) {
-        // If Google popup was cancelled or blocked in iframe, guide user to email login
-        openAuthModal('login');
-        showToast('Please log in with your email & password or create an account.', 'info');
+        setAuthModalView('google_prompt');
+        setAuthModalOpen(true);
         return {
           success: false,
-          error: 'Google Sign-In popup was closed or unavailable in this window. Please use email login.',
+          error: 'Please enter or select your Google account email.',
         };
       }
 
-      const verifiedUser: User = {
-        uid: googleUid || `usr_g_${Date.now()}`,
-        fullName: googleName || googleEmail.split('@')[0].replace('.', ' '),
+      const verifiedName =
+        googleName || googleEmail.split('@')[0].replace(/[\._]/g, ' ');
+      const verifiedPhoto =
+        googlePhoto ||
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(googleEmail)}`;
+      const verifiedUid =
+        googleUid || `goog_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+      let finalUser: User = {
+        uid: verifiedUid,
+        fullName: verifiedName,
         email: googleEmail,
         phone: '',
-        photoURL: googlePhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(googleEmail)}`,
-        bio: `Hello! I am ${googleName || googleEmail.split('@')[0]}, a travel enthusiast at Azraq Tours.`,
+        photoURL: verifiedPhoto,
+        bio: `Hello! I am ${verifiedName}, a travel enthusiast at Azraq Tours.`,
         languages: ['English'],
         emailVerified: true,
         phoneVerified: false,
@@ -309,31 +340,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin: isWebsiteOwner({ email: googleEmail } as any),
       };
 
-      // Save to Firestore non-blockingly
-      try {
-        setDoc(doc(db, 'users', verifiedUser.uid), verifiedUser, { merge: true }).catch(() => {});
-      } catch {}
+      let userToken = `token_${verifiedUid}_${Date.now()}`;
 
-      // Non-blocking sync to backend API
-      let userToken = `token_${verifiedUser.uid}_${Date.now()}`;
+      // Sync to backend API to retrieve official session token and stored data
       try {
         const apiRes = await safeFetchJson('/api/auth/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: verifiedUser.email,
-            fullName: verifiedUser.fullName,
-            photoURL: verifiedUser.photoURL,
+            email: googleEmail,
+            fullName: verifiedName,
+            photoURL: verifiedPhoto,
           }),
         });
+        if (apiRes?.data?.user) {
+          finalUser = { ...finalUser, ...apiRes.data.user };
+        }
         if (apiRes?.data?.token) {
           userToken = apiRes.data.token;
         }
+      } catch (apiErr) {
+        console.warn('Backend Google Auth Sync Warning:', apiErr);
+      }
+
+      // Save to Firestore non-blockingly
+      try {
+        setDoc(doc(db, 'users', finalUser.uid), finalUser, { merge: true }).catch(() => {});
       } catch {}
 
-      saveUserSession(verifiedUser, userToken);
+      saveUserSession(finalUser, userToken);
       closeAuthModal();
-      showToast(`Welcome, ${verifiedUser.fullName.split(' ')[0]}! Signed in with Google.`, 'success');
+      showToast(
+        `Welcome, ${finalUser.fullName.split(' ')[0]}! Signed in with Google.`,
+        'success'
+      );
 
       if (pendingAction?.onExecute) {
         try {

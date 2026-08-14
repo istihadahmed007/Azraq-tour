@@ -373,7 +373,6 @@ export function isWebsiteOwner(user: User | null): boolean {
   if (user.isAdmin || user.role === 'admin' || user.role === 'owner') return true;
   const ownerEmails = [
     'istihadahmed1163@gmail.com',
-    'alex@globetrotter.ai',
     'admin@globetrotter.ai',
     'owner@globetrotter.ai',
   ];
@@ -388,7 +387,8 @@ export type AuthModalView =
   | 'forgot_password'
   | 'email_verification'
   | 'phone_otp'
-  | 'onboarding';
+  | 'onboarding'
+  | 'google_prompt';
 
 export interface PendingAction {
   type:

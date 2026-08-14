@@ -93,7 +93,7 @@ const DB_FILE = path.join(process.cwd(), ".users_db.json");
 
 function isOwnerEmail(email: string): boolean {
   const norm = (email || '').toLowerCase().trim();
-  const owners = ['istihadahmed1163@gmail.com', 'alex@globetrotter.ai', 'admin@globetrotter.ai', 'owner@globetrotter.ai'];
+  const owners = ['istihadahmed1163@gmail.com', 'admin@globetrotter.ai', 'owner@globetrotter.ai'];
   return owners.includes(norm) || norm.startsWith('admin') || norm.startsWith('owner');
 }
 
@@ -119,8 +119,7 @@ function loadUsersFromDisk(): Map<string, ServerUser> {
   } catch (err) {
     console.error("Failed to read user DB file:", err);
   }
-  // Default demo user (Website Owner)
-  const alexSaltHash = hashPassword("pass1234");
+  // Default owner account
   const istihadSaltHash = hashPassword("pass1234");
   return new Map<string, ServerUser>([
     [
@@ -147,36 +146,12 @@ function loadUsersFromDisk(): Map<string, ServerUser> {
         role: "admin",
       },
     ],
-    [
-      "alex@globetrotter.ai",
-      {
-        uid: "user_alex_123",
-        fullName: "Alex Mercer (Website Owner)",
-        email: "alex@globetrotter.ai",
-        phone: "+1 (555) 234-5678",
-        country: "United States",
-        passwordHash: alexSaltHash.hash,
-        passwordSalt: alexSaltHash.salt,
-        photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-        bio: "Avid explorer, photography enthusiast, and chief architect of GlobeTrotter AI.",
-        languages: ["English", "French", "Spanish"],
-        emailVerified: true,
-        phoneVerified: true,
-        provider: "email",
-        createdAt: new Date().toISOString(),
-        homeLocation: "San Francisco, CA",
-        travelPreferences: ["Culture", "Nature", "Food"],
-        isProfileComplete: true,
-        isAdmin: true,
-        role: "admin",
-      },
-    ],
   ]);
 }
 
 const usersStore = loadUsersFromDisk();
 
-// Ensure owner and demo accounts are populated
+// Ensure owner account is populated
 if (!usersStore.has("istihadahmed1163@gmail.com")) {
   const istihadSaltHash = hashPassword("pass1234");
   usersStore.set("istihadahmed1163@gmail.com", {
@@ -196,32 +171,6 @@ if (!usersStore.has("istihadahmed1163@gmail.com")) {
     createdAt: new Date().toISOString(),
     homeLocation: "Dhaka, Bangladesh",
     travelPreferences: ["Culture", "Nature", "Luxury", "Food"],
-    isProfileComplete: true,
-    isAdmin: true,
-    role: "admin",
-  });
-  saveUsersToDisk();
-}
-
-if (!usersStore.has("alex@globetrotter.ai")) {
-  const alexSaltHash = hashPassword("pass1234");
-  usersStore.set("alex@globetrotter.ai", {
-    uid: "user_alex_123",
-    fullName: "Alex Mercer (Website Owner)",
-    email: "alex@globetrotter.ai",
-    phone: "+1 (555) 234-5678",
-    country: "United States",
-    passwordHash: alexSaltHash.hash,
-    passwordSalt: alexSaltHash.salt,
-    photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-    bio: "Avid explorer, photography enthusiast, and chief architect of GlobeTrotter AI.",
-    languages: ["English", "French", "Spanish"],
-    emailVerified: true,
-    phoneVerified: true,
-    provider: "email",
-    createdAt: new Date().toISOString(),
-    homeLocation: "San Francisco, CA",
-    travelPreferences: ["Culture", "Nature", "Food"],
     isProfileComplete: true,
     isAdmin: true,
     role: "admin",
@@ -1217,9 +1166,9 @@ function loadQuotesFromDisk(): QuoteRecord[] {
       preferredAirline: "Japan Airlines / ANA",
       flexibleDate: "Yes",
       additionalRequirements: "Prefer direct flights or minimum layover in Tokyo. Window seats preferred.",
-      customerName: "Alex Mercer",
-      email: "alex@globetrotter.ai",
-      phone: "+1 (555) 234-5678",
+      customerName: "Istihad Ahmed",
+      email: "istihadahmed1163@gmail.com",
+      phone: "+880 1851-172032",
       preferredContactMethod: "WhatsApp",
       status: "Quoted",
       assignedStaff: "Istihad Ahmed (Super Admin)",

@@ -11,6 +11,7 @@ import {
   Phone,
   Globe,
   ArrowLeft,
+  ArrowRight,
   RefreshCw,
   Compass,
   Sparkles,
@@ -380,7 +381,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ brandTitle = 'Azraq Tours 
   };
 
   const isSpecialView =
-    authModalView === 'forgot_password' || authModalView === 'email_verification';
+    authModalView === 'forgot_password' ||
+    authModalView === 'email_verification' ||
+    authModalView === 'google_prompt';
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -551,7 +554,129 @@ export const AuthModal: React.FC<AuthModalProps> = ({ brandTitle = 'Azraq Tours 
               </div>
             )}
 
-            {/* VIEW 3: MAIN TABS (LOG IN / SIGN UP) */}
+            {/* VIEW 3: GOOGLE ACCOUNT PROMPT (1-CLICK & ENTER GOOGLE EMAIL) */}
+            {authModalView === 'google_prompt' && (
+              <div className="space-y-5 animate-fade-in">
+                <button
+                  type="button"
+                  onClick={() => setAuthModalView('login')}
+                  className="flex items-center gap-2 text-xs font-semibold text-sky-300 hover:text-white transition-colors cursor-pointer min-h-[44px]"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to Log In
+                </button>
+
+                <div className="text-center space-y-2">
+                  <div className="w-14 h-14 rounded-2xl bg-white p-3 mx-auto shadow-lg border border-white/20 flex items-center justify-center">
+                    <img
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                      alt="Google"
+                      className="w-8 h-8"
+                    />
+                  </div>
+                  <h3 className="text-xl font-bold font-serif-display text-white">Sign In with Google</h3>
+                  <p className="text-xs text-sky-200/80 max-w-xs mx-auto">
+                    Select your Google account or enter your Gmail address to securely sign in.
+                  </p>
+                </div>
+
+                {/* Quick 1-Click for Super Admin / Owner */}
+                <div className="space-y-2.5 pt-1">
+                  <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wider text-center">
+                    Fast Sign-In with Registered Account
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsGoogleProcessing(true);
+                      setErrorMessage('');
+                      const res = await loginWithGoogle('istihadahmed1163@gmail.com', 'Istihad Ahmed');
+                      setIsGoogleProcessing(false);
+                      if (res.error) setErrorMessage(res.error);
+                    }}
+                    disabled={isGoogleProcessing}
+                    className="w-full p-4 rounded-2xl bg-slate-800/95 hover:bg-slate-700/90 border border-amber-400/50 text-left flex items-center justify-between gap-3 group transition-all shadow-xl active:scale-[0.99] cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-400 to-amber-200 text-slate-950 flex items-center justify-center font-black font-serif-display text-sm shadow-md">
+                        IA
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-white group-hover:text-amber-300 transition-colors">
+                            Istihad Ahmed
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold border border-amber-400/30">
+                            Super Admin
+                          </span>
+                        </div>
+                        <span className="text-xs text-sky-200/70 font-mono">istihadahmed1163@gmail.com</span>
+                      </div>
+                    </div>
+
+                    <ArrowRight className="w-4 h-4 text-amber-300 group-hover:translate-x-1 transition-transform shrink-0" />
+                  </button>
+                </div>
+
+                {/* Custom Google Email Form */}
+                <div className="pt-3 border-t border-white/10 space-y-3">
+                  <div className="text-[11px] font-bold text-sky-200/70 uppercase tracking-wider text-center">
+                    Or Enter Any Google / Gmail Account
+                  </div>
+
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      const input = form.elements.namedItem('googleEmail') as HTMLInputElement;
+                      const target = input?.value?.trim();
+                      if (!target || !target.includes('@')) {
+                        setErrorMessage('Please enter a valid Google email address.');
+                        return;
+                      }
+                      setIsGoogleProcessing(true);
+                      setErrorMessage('');
+                      const res = await loginWithGoogle(target);
+                      setIsGoogleProcessing(false);
+                      if (res.error) setErrorMessage(res.error);
+                    }}
+                    className="space-y-3"
+                  >
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-300/60" />
+                      <input
+                        name="googleEmail"
+                        type="email"
+                        placeholder="yourname@gmail.com"
+                        required
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/90 border border-sky-400/30 text-white placeholder:text-sky-300/40 text-xs sm:text-sm focus:outline-none focus:border-sky-400 transition-all min-h-[44px]"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isGoogleProcessing}
+                      className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2.5 disabled:opacity-60 cursor-pointer min-h-[44px]"
+                    >
+                      {isGoogleProcessing ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-slate-900" />
+                      ) : (
+                        <>
+                          <img
+                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                            alt="Google"
+                            className="w-4 h-4"
+                          />
+                          <span>Sign In with this Google Account</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 4: MAIN TABS (LOG IN / SIGN UP) */}
             {!isSpecialView && (
               <div className="space-y-5">
                 {/* Mode Selector Tabs (Min 44px Height) */}

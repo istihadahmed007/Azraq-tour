@@ -138,9 +138,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       const dests = ALL_DESTINATIONS.filter((d) => user.savedDestinationIds?.includes(d.id));
       setSavedDestinations(dests);
     } else {
-      const defaultDestIds = ['dest_bangkok_001', 'dest_kuala_lumpur_001', 'dest_maldives_001', 'dest_bali_001', 'dest_dubai_001', 'dest_singapore_001'];
-      const defaultDests = ALL_DESTINATIONS.filter((d) => defaultDestIds.includes(d.id));
-      setSavedDestinations(defaultDests.length > 0 ? defaultDests : ALL_DESTINATIONS.slice(0, 6));
+      setSavedDestinations([]);
     }
   }, [user]);
 
@@ -386,11 +384,28 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
             <div className="flex flex-wrap items-center justify-center gap-3.5 mt-2">
               <button
+                onClick={async () => {
+                  const res = await loginWithGoogle();
+                  if (!res.success && res.error) {
+                    openAuthModal('google_prompt');
+                  }
+                }}
+                className="px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-extrabold text-xs sm:text-sm transition-all shadow-xl active:scale-95 flex items-center gap-2.5 cursor-pointer min-h-[46px]"
+              >
+                <img
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt="Google"
+                  className="w-4 h-4"
+                />
+                <span>Continue with Google</span>
+              </button>
+
+              <button
                 onClick={() => openAuthModal('login')}
                 className="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs sm:text-sm transition-all shadow-lg active:scale-95 flex items-center gap-2 cursor-pointer min-h-[46px]"
               >
                 <Mail className="w-4 h-4" />
-                <span>Log In to My Account</span>
+                <span>Log In with Email</span>
               </button>
 
               <button
@@ -1083,65 +1098,81 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {savedDestinations.map((dest) => (
-              <div
-                key={dest.id}
-                className="glass-card rounded-3xl overflow-hidden border border-white/15 hover:border-amber-400/50 transition-all flex flex-col group shadow-xl bg-slate-900/90"
+          {savedDestinations.length === 0 ? (
+            <div className="col-span-full p-12 text-center glass-card rounded-3xl flex flex-col items-center justify-center gap-3 border border-white/10 shadow-xl bg-slate-900/80">
+              <Compass className="w-12 h-12 text-slate-600" />
+              <p className="text-sm text-white font-bold font-serif-display">No saved travel destinations yet.</p>
+              <p className="text-xs text-slate-400 max-w-md leading-relaxed">
+                Explore our curated international tour packages and Asian city destinations to bookmark your favorites!
+              </p>
+              <button
+                onClick={() => onNavigate && onNavigate('packages')}
+                className="mt-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 font-extrabold text-xs shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer"
               >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={dest.imageUrl}
-                    alt={dest.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3.5 left-3.5 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-full text-xs text-amber-300 font-bold border border-white/10">
-                    {dest.country}
+                Browse Holiday Packages
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {savedDestinations.map((dest) => (
+                <div
+                  key={dest.id}
+                  className="glass-card rounded-3xl overflow-hidden border border-white/15 hover:border-amber-400/50 transition-all flex flex-col group shadow-xl bg-slate-900/90"
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={dest.imageUrl}
+                      alt={dest.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3.5 left-3.5 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-full text-xs text-amber-300 font-bold border border-white/10">
+                      {dest.country}
+                    </div>
+                    <div className="absolute top-3.5 right-3.5 bg-emerald-400 text-slate-950 px-2.5 py-0.5 rounded-full text-[11px] font-black shadow-md">
+                      {dest.category}
+                    </div>
                   </div>
-                  <div className="absolute top-3.5 right-3.5 bg-emerald-400 text-slate-950 px-2.5 py-0.5 rounded-full text-[11px] font-black shadow-md">
-                    {dest.category}
-                  </div>
-                </div>
 
-                <div className="p-5 flex flex-col justify-between flex-1 gap-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-white font-serif-display group-hover:text-amber-300 transition-colors">
-                      {dest.name}
-                    </h3>
-                    <p className="text-xs text-slate-300 line-clamp-2 mt-1.5 leading-relaxed">
-                      {dest.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-3.5 border-t border-white/10 flex items-center justify-between gap-2">
+                  <div className="p-5 flex flex-col justify-between flex-1 gap-4">
                     <div>
-                      <span className="text-[10px] uppercase font-semibold text-slate-400 block">Est. Budget</span>
-                      <span className="text-xs text-amber-300 font-extrabold font-mono">
-                        {dest.priceRange || 'BDT 35,000 - 85,000'}
-                      </span>
+                      <h3 className="text-lg font-bold text-white font-serif-display group-hover:text-amber-300 transition-colors">
+                        {dest.name}
+                      </h3>
+                      <p className="text-xs text-slate-300 line-clamp-2 mt-1.5 leading-relaxed">
+                        {dest.description}
+                      </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => onSelectDestination && onSelectDestination(dest)}
-                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-sky-200 hover:text-white border border-white/10 transition-colors"
-                        title="Explore Attraction Guide"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </button>
+                    <div className="pt-3.5 border-t border-white/10 flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] uppercase font-semibold text-slate-400 block">Est. Budget</span>
+                        <span className="text-xs text-amber-300 font-extrabold font-mono">
+                          {dest.priceRange || 'BDT 35,000 - 85,000'}
+                        </span>
+                      </div>
 
-                      <button
-                        onClick={() => onOpenFlightQuote && onOpenFlightQuote()}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 font-extrabold text-xs shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer"
-                      >
-                        Get New Quote
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => onSelectDestination && onSelectDestination(dest)}
+                          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-sky-200 hover:text-white border border-white/10 transition-colors"
+                          title="Explore Attraction Guide"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          onClick={() => onOpenFlightQuote && onOpenFlightQuote()}
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 font-extrabold text-xs shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+                        >
+                          Get New Quote
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
