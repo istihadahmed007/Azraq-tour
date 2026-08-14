@@ -1,12 +1,12 @@
 {
-  "projectId": "sound-outpost-s6shk",
-  "appId": "1:328966604153:web:0a1a76655af9e8e581dba8",
-  "apiKey": "AIzaSyCUMXv7kKKpQ_P-0zOYf-1eBHJOFpxIDSw",
-  "authDomain": "sound-outpost-s6shk.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-globetrotteraitr-2fe99126-7ba7-46dd-87d9-9d9c56a53ac9",
-  "storageBucket": "sound-outpost-s6shk.firebasestorage.app",
-  "messagingSenderId": "328966604153",
-  "measurementId": "",
-  "oAuthClientId": "328966604153-3kusk5cm7u30o7ei3r782eeglcghr30k.apps.googleusercontent.com",
+  "projectId": "azraq-tours",
+  "appId": "1:147626677042:web:25d9457ba35469893dbd2b",
+  "apiKey": "AIzaSyCfXU8PkQUjVwZ0GhgB1xcp1v7OSi3uXk4",
+  "authDomain": "azraq-tours.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "azraq-tours.firebasestorage.app",
+  "messagingSenderId": "147626677042",
+  "measurementId": "G-2VCV15W8Q4",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }
