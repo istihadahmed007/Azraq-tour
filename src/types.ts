@@ -1,4 +1,4 @@
-export type NavView = 'discover' | 'packages' | 'planner' | 'feed' | 'map' | 'profile' | 'admin';
+export type NavView = 'discover' | 'packages' | 'planner' | 'feed' | 'blog' | 'map' | 'profile' | 'admin';
 
 export type QuoteStatus =
   | 'New'
@@ -411,5 +411,59 @@ export interface ToastNotification {
   id: string;
   message: string;
   type?: 'success' | 'info' | 'error';
+}
+
+export type BlogCategory =
+  | 'Destination Guide'
+  | 'Visa Update'
+  | 'Client Spotlight'
+  | 'Travel Tips';
+
+export interface BlogAuthor {
+  name: string;
+  role: string;
+  avatar: string;
+  bio?: string;
+}
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  category: BlogCategory;
+  excerpt: string;
+  content: string;
+  coverImage: string;
+  author: BlogAuthor;
+  publishedAt: string;
+  readTime: string;
+  tags: string[];
+  seoDescription: string;
+  viewsCount?: number;
+  likesCount?: number;
+  featured?: boolean;
+}
+
+export interface SocialProofActivity {
+  id: string;
+  type: 'flight_quote' | 'visa_quote' | 'package_booking' | 'visa_approval';
+  actorAnonymized: string;
+  actionText: string;
+  destination: string;
+  timeAgo: string;
+  iconType: 'plane' | 'visa' | 'hotel' | 'check' | 'sparkles';
+  timestamp: string;
+}
+
+export interface UserTripTimelineEvent {
+  id: string;
+  quoteId: string;
+  status: QuoteStatus;
+  stepTitle: string;
+  description: string;
+  timestamp: string;
+  dotColor: 'yellow' | 'blue' | 'green' | 'purple' | 'gray';
+  agentName?: string;
+  actionType?: string;
 }
 

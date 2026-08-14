@@ -5,6 +5,7 @@ import { INITIAL_DESTINATIONS, INITIAL_KYOTO_ITINERARY } from './data/mockData';
 import { AuthProvider } from './context/AuthContext';
 import { PackageProvider } from './context/PackageContext';
 import { FeedProvider } from './context/FeedContext';
+import { BlogProvider } from './context/BlogContext';
 import { AuthModal } from './components/AuthModal';
 import { Toast } from './components/Toast';
 import { Navigation } from './components/Navigation';
@@ -12,6 +13,8 @@ import { DiscoverView } from './components/DiscoverView';
 import { PackagesView } from './components/PackagesView';
 import { PlannerView } from './components/PlannerView';
 import { FeedView } from './components/FeedView';
+import { BlogView } from './components/BlogView';
+import { SocialProofTicker } from './components/SocialProofTicker';
 import { MapView } from './components/MapView';
 import { ProfileView } from './components/ProfileView';
 import { DestinationModal } from './components/DestinationModal';
@@ -171,6 +174,14 @@ function AppContent() {
           />
         )}
 
+        {currentView === 'blog' && (
+          <BlogView
+            onNavigateToView={(v) => setCurrentView(v as NavView)}
+            onOpenFlightQuote={() => setIsFooterFlightModalOpen(true)}
+            onOpenVisaQuote={() => setIsFooterVisaModalOpen(true)}
+          />
+        )}
+
         {currentView === 'map' && (
           <MapView
             destinations={destinations}
@@ -206,6 +217,9 @@ function AppContent() {
           onOpenFlightQuote={() => setIsFooterFlightModalOpen(true)}
         />
       </main>
+
+      {/* Floating Live Social Proof Toast (Option 2 - High Conversion Proof) */}
+      <SocialProofTicker variant="toast" />
 
       {/* Destination Inspector Modal */}
       <DestinationModal
@@ -243,7 +257,9 @@ export function App() {
     <AuthProvider>
       <PackageProvider>
         <FeedProvider>
-          <AppContent />
+          <BlogProvider>
+            <AppContent />
+          </BlogProvider>
         </FeedProvider>
       </PackageProvider>
     </AuthProvider>

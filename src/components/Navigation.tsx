@@ -110,6 +110,17 @@ export const Navigation: React.FC<NavigationProps> = ({
               Feed
             </button>
             <button
+              onClick={() => onViewChange('blog')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+                currentView === 'blog'
+                  ? 'bg-primary text-on-primary shadow-md font-semibold'
+                  : 'text-on-surface-variant hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <span>Stories & Blog</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            </button>
+            <button
               onClick={() => onViewChange('map')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                 currentView === 'map'
@@ -287,6 +298,18 @@ export const Navigation: React.FC<NavigationProps> = ({
           >
             <span className="material-symbols-outlined text-xl">auto_awesome_motion</span>
             <span>Feed</span>
+          </button>
+
+          <button
+            onClick={() => onViewChange('blog')}
+            className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
+              currentView === 'blog'
+                ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md'
+                : 'text-on-surface-variant hover:bg-white/5 hover:text-white hover:translate-x-1'
+            }`}
+          >
+            <span className="material-symbols-outlined text-xl">menu_book</span>
+            <span>Stories & Blog</span>
           </button>
 
           <button

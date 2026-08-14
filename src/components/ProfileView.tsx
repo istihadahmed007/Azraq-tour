@@ -76,6 +76,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   // Quotes state
   const [userQuotes, setUserQuotes] = useState<QuoteRequest[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
   const [isLoadingQuotes, setIsLoadingQuotes] = useState(false);
   const [selectedQuoteDetail, setSelectedQuoteDetail] = useState<QuoteRequest | null>(null);
   const [quoteSearchTerm, setQuoteSearchTerm] = useState('');
@@ -110,23 +111,35 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     return score;
   }, [newPassword]);
 
-  // Load User Quotes from API
+  // Load User Quotes and Personalized Activity Timeline from API
   const loadUserQuotes = async () => {
     if (!user?.email) {
       setUserQuotes([]);
+      setTimelineEvents([]);
       return;
     }
     setIsLoadingQuotes(true);
     try {
+      // 1. Fetch user quotes
       const res = await fetch(`/api/quotes/track?query=${encodeURIComponent(user.email)}`);
       const data = await res.json();
-      if (res.ok && data.quotes) {
+      if (res.ok && Array.isArray(data.quotes)) {
         setUserQuotes(data.quotes);
       } else {
         setUserQuotes([]);
       }
+
+      // 2. Fetch personalized step-by-step activity timeline
+      const timelineRes = await fetch(`/api/users/me/timeline?email=${encodeURIComponent(user.email)}`);
+      if (timelineRes.ok) {
+        const timelineData = await timelineRes.json();
+        if (timelineData.success && Array.isArray(timelineData.timeline)) {
+          setTimelineEvents(timelineData.timeline);
+        }
+      }
     } catch {
       setUserQuotes([]);
+      setTimelineEvents([]);
     } finally {
       setIsLoadingQuotes(false);
     }
@@ -710,10 +723,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="glass-card rounded-3xl p-6 border border-sky-400/30 shadow-xl bg-gradient-to-br from-sky-950/60 to-slate-900 flex items-center justify-between group hover:border-sky-400 transition-all">
               <div className="space-y-1">
                 <div className="text-xs font-bold text-sky-300 uppercase tracking-wider">Total Quotes Requested</div>
-                <div className="text-4xl font-extrabold text-white font-serif-display">{totalQuotesCount}</div>
-                <div className="text-[11px] text-slate-400">All submitted flight & visa requests</div>
+                {totalQuotesCount === 0 ? (
+                  <div>
+                    <div className="text-sm font-bold text-amber-300 flex items-center gap-1.5 py-1">
+                      <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>No quotes yet. Start your first journey!</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">Request your first custom quote below</div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-4xl font-extrabold text-white font-serif-display">{totalQuotesCount}</div>
+                    <div className="text-[11px] text-slate-400">All submitted flight & visa requests</div>
+                  </div>
+                )}
               </div>
-              <div className="w-14 h-14 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400 group-hover:scale-110 transition-transform shrink-0">
                 <FileText className="w-7 h-7" />
               </div>
             </div>
@@ -725,7 +750,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <div className="text-4xl font-extrabold text-amber-300 font-serif-display">{pendingQuotesCount}</div>
                 <div className="text-[11px] text-amber-200/70">Under review by Azraq staff</div>
               </div>
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300 group-hover:scale-110 transition-transform shrink-0">
                 <Clock className="w-7 h-7" />
               </div>
             </div>
@@ -737,7 +762,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <div className="text-4xl font-extrabold text-emerald-300 font-serif-display">{bookedTripsCount}</div>
                 <div className="text-[11px] text-emerald-200/70">Confirmed vouchers & itineraries</div>
               </div>
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 group-hover:scale-110 transition-transform shrink-0">
                 <Crown className="w-7 h-7" />
               </div>
             </div>
@@ -936,6 +961,143 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* ======================================================== */}
+          {/* SECTION: MY TRIP STATUS (LIVE ACTIVITY TIMELINE FEED)   */}
+          {/* ======================================================== */}
+          <div className="space-y-4 pt-4 border-t border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-serif-display font-bold text-white flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-emerald-400" />
+                  My Trip Status & Live Activity Timeline
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Real-time step-by-step milestone progression for your flight, visa, and holiday requests.
+                </p>
+              </div>
+
+              <button
+                onClick={loadUserQuotes}
+                className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors"
+                title="Refresh timeline updates"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingQuotes ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            {timelineEvents.length === 0 ? (
+              <div className="p-8 text-center glass-card rounded-3xl border border-white/10 space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400 mx-auto">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div className="max-w-md mx-auto">
+                  <h4 className="text-sm font-bold text-white">No quotes yet. Start your first journey!</h4>
+                  <p className="text-xs text-slate-400 mt-1">
+                    When you request a flight or visa quote, our dedicated staff timeline will show every step from ticket search to booking confirmation.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  {onOpenFlightQuote && (
+                    <button
+                      onClick={onOpenFlightQuote}
+                      className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs shadow-md transition-transform hover:scale-105 flex items-center gap-1.5"
+                    >
+                      <Plane className="w-4 h-4" />
+                      Request Flight Quote
+                    </button>
+                  )}
+                  {onOpenVisaQuote && (
+                    <button
+                      onClick={onOpenVisaQuote}
+                      className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-md transition-transform hover:scale-105 flex items-center gap-1.5"
+                    >
+                      <Stamp className="w-4 h-4" />
+                      Request Visa Quote
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="glass-card rounded-3xl p-6 border border-white/15 shadow-xl bg-slate-900/90 relative overflow-hidden">
+                {/* Vertical Timeline Track */}
+                <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-2.5 sm:before:left-3.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-white/15">
+                  {timelineEvents.map((evt, idx) => {
+                    const dotClass =
+                      evt.dotColor === 'yellow'
+                        ? 'bg-amber-400 ring-4 ring-amber-400/20'
+                        : evt.dotColor === 'blue'
+                        ? 'bg-sky-400 ring-4 ring-sky-400/20'
+                        : evt.dotColor === 'green'
+                        ? 'bg-emerald-400 ring-4 ring-emerald-400/20'
+                        : evt.dotColor === 'purple'
+                        ? 'bg-purple-400 ring-4 ring-purple-400/20'
+                        : 'bg-slate-400 ring-4 ring-slate-400/20';
+
+                    return (
+                      <div key={evt.id || idx} className="relative group">
+                        {/* Status Dot */}
+                        <div
+                          className={`absolute -left-6 sm:-left-8 top-1.5 w-3.5 h-3.5 rounded-full ${dotClass} transition-transform group-hover:scale-125`}
+                        />
+
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                          <div className="space-y-1 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-mono text-xs font-bold text-amber-300">{evt.quoteId}</span>
+                              <span className="text-white/40">•</span>
+                              <span className="text-xs font-semibold text-white">{evt.stepTitle}</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-sky-200 border border-white/10 font-mono">
+                                {evt.routeOrDestination}
+                              </span>
+                            </div>
+
+                            <p className="text-xs text-slate-300 leading-relaxed pt-1">{evt.description}</p>
+
+                            {/* Specialist or Pricing tags if available */}
+                            <div className="flex flex-wrap items-center gap-3 pt-2 text-[11px]">
+                              {evt.agentName && (
+                                <span className="text-sky-300 flex items-center gap-1 font-medium">
+                                  <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                                  Specialist: {evt.agentName}
+                                </span>
+                              )}
+                              {evt.quotedPrice && (
+                                <span className="text-emerald-300 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                                  Quoted Price: {evt.quotedPrice}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Timestamp and WhatsApp Action */}
+                          <div className="sm:text-right shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                            <span className="text-[11px] text-white/50 font-mono">
+                              {new Date(evt.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} •{' '}
+                              {new Date(evt.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                            </span>
+
+                            <a
+                              href={`https://wa.me/8801851172032?text=${encodeURIComponent(
+                                `Hello Azraq Concierge! Inquiring about quote ${evt.quoteId} for ${evt.routeOrDestination}. Status: ${evt.stepTitle}`
+                              )}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[11px] font-semibold border border-emerald-500/30 transition-colors"
+                            >
+                              <MessageCircle className="w-3 h-3" />
+                              <span>WhatsApp Follow-up</span>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

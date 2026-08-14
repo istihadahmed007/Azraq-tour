@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import { INITIAL_TOUR_PACKAGES } from "./src/data/initialPackagesData";
+import { INITIAL_BLOG_POSTS, INITIAL_SOCIAL_PROOF_ACTIVITIES } from "./src/data/blogPostsData";
 
 const app = express();
 const PORT = 3000;
@@ -1592,6 +1593,143 @@ app.get("/api/users/me/quotes/count", (req, res) => {
   }
 });
 
+// 7c. User's Personalized Trip Status Timeline Feed
+app.get("/api/users/me/timeline", (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    let token = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : "";
+    if (!token && req.headers["x-auth-token"]) {
+      token = String(req.headers["x-auth-token"]).trim();
+    }
+
+    let userEmail = "";
+    if (token && activeTokensMap.has(token)) {
+      userEmail = activeTokensMap.get(token)!;
+    } else if (req.query.email) {
+      userEmail = String(req.query.email).trim().toLowerCase();
+    }
+
+    if (!userEmail) {
+      return res.status(401).json({ error: "Unauthorized: Please provide a valid session token or email." });
+    }
+
+    const userQuotes = quotesStore.filter((q) => q.email.toLowerCase() === userEmail.toLowerCase());
+    
+    // Generate rich step-by-step activity timeline for this user's trip requests
+    const timelineEvents: Array<{
+      id: string;
+      quoteId: string;
+      quoteType: string;
+      routeOrDestination: string;
+      status: string;
+      stepTitle: string;
+      description: string;
+      timestamp: string;
+      dotColor: 'yellow' | 'blue' | 'green' | 'purple' | 'gray';
+      agentName?: string;
+      quotedPrice?: string;
+      flightOptions?: string;
+      staffNote?: string;
+      contactMethod?: string;
+      phone?: string;
+    }> = [];
+
+    userQuotes.forEach((quote) => {
+      const destination = quote.type === 'flight' 
+        ? `${quote.from} ➔ ${quote.to}` 
+        : quote.type === 'visa' 
+        ? `${quote.destinationCountry} (${quote.visaType} Visa)`
+        : quote.destinationCountry || 'Custom Tour';
+
+      // Step 1: Request received milestone (Yellow dot)
+      timelineEvents.push({
+        id: `tl_${quote.id}_received`,
+        quoteId: quote.id,
+        quoteType: quote.type,
+        routeOrDestination: destination,
+        status: 'Pending',
+        stepTitle: `Quote Request ${quote.id} Received & Logged`,
+        description: `Your quotation request for ${destination} was registered in the Azraq priority queue. Automated confirmation sent.`,
+        timestamp: quote.createdAt,
+        dotColor: 'yellow',
+        contactMethod: quote.preferredContactMethod,
+        phone: quote.phone,
+      });
+
+      // Step 2: Under Review / Assigned Specialist (Blue dot)
+      if (quote.assignedStaff || quote.status !== 'New') {
+        const assignedTime = quote.updatedAt && quote.updatedAt !== quote.createdAt 
+          ? quote.updatedAt 
+          : new Date(new Date(quote.createdAt).getTime() + 1000 * 60 * 25).toISOString();
+        
+        timelineEvents.push({
+          id: `tl_${quote.id}_review`,
+          quoteId: quote.id,
+          quoteType: quote.type,
+          routeOrDestination: destination,
+          status: 'Reviewing',
+          stepTitle: `Assigned to ${quote.assignedStaff || 'Senior Travel Specialist'}`,
+          description: `Our dedicated consultant is analyzing live wholesale GDS airline tariffs and consular appointment slots.`,
+          timestamp: assignedTime,
+          dotColor: 'blue',
+          agentName: quote.assignedStaff,
+        });
+      }
+
+      // Step 3: Quoted / Price Assessment Prepared (Green dot)
+      if (['Quoted', 'Quoted via WhatsApp', 'Quoted via Email', 'Quotation Prepared', 'Sent', 'Customer Confirmed', 'Booked'].includes(quote.status)) {
+        const quotedTime = quote.updatedAt || new Date(new Date(quote.createdAt).getTime() + 1000 * 60 * 90).toISOString();
+        timelineEvents.push({
+          id: `tl_${quote.id}_quoted`,
+          quoteId: quote.id,
+          quoteType: quote.type,
+          routeOrDestination: destination,
+          status: 'Quoted',
+          stepTitle: `Personalized Quotation Ready (${quote.quotedPrice || 'Wholesale Tariff'})`,
+          description: quote.staffNote 
+            ? `${quote.staffNote}` 
+            : `Your official price estimate of ${quote.quotedPrice || 'competitive rate'} was dispatched via ${quote.preferredContactMethod || 'WhatsApp'}.`,
+          timestamp: quotedTime,
+          dotColor: 'green',
+          quotedPrice: quote.quotedPrice,
+          flightOptions: quote.flightOptions,
+          agentName: quote.assignedStaff,
+        });
+      }
+
+      // Step 4: Confirmed / Booked (Purple dot)
+      if (['Booked', 'Customer Confirmed'].includes(quote.status)) {
+        timelineEvents.push({
+          id: `tl_${quote.id}_confirmed`,
+          quoteId: quote.id,
+          quoteType: quote.type,
+          routeOrDestination: destination,
+          status: 'Booked',
+          stepTitle: `Booking Confirmed & Vouchers Issued!`,
+          description: `All flight e-tickets, hotel booking confirmation vouchers, and embassy documents are finalized. Safe travels!`,
+          timestamp: quote.updatedAt || new Date().toISOString(),
+          dotColor: 'purple',
+          agentName: quote.assignedStaff,
+        });
+      }
+    });
+
+    // Sort newest events first
+    timelineEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    res.json({
+      success: true,
+      timeline: timelineEvents,
+      activeQuotesCount: userQuotes.length,
+      quotes: userQuotes,
+    });
+  } catch (err: any) {
+    console.error("User Timeline Error:", err);
+    res.status(500).json({ error: "Failed to load user trip timeline." });
+  }
+});
+
+
 // 8. Admin List All Quotations
 app.get("/api/quotes/admin", (req, res) => {
   try {
@@ -2236,6 +2374,248 @@ app.post("/api/ai/verify-post", async (req, res) => {
   } catch (err: any) {
     console.error("Error in /api/ai/verify-post:", err);
     res.status(500).json({ error: err.message || "Failed to verify post" });
+  }
+});
+
+// ========================================================
+// --- Travel Inspiration & Stories Blog DB & Endpoints ---
+// ========================================================
+const BLOG_DB_FILE = path.join(process.cwd(), ".blog_posts_db.json");
+
+function loadBlogPostsFromDisk() {
+  try {
+    if (fs.existsSync(BLOG_DB_FILE)) {
+      const data = fs.readFileSync(BLOG_DB_FILE, "utf-8");
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to read blog DB file:", err);
+  }
+  return INITIAL_BLOG_POSTS;
+}
+
+let blogPostsStore: any[] = loadBlogPostsFromDisk();
+
+function saveBlogPostsToDisk() {
+  try {
+    fs.writeFileSync(BLOG_DB_FILE, JSON.stringify(blogPostsStore, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to save blog DB file:", err);
+  }
+}
+
+// 1. Get All Blog Posts (with category and search filter)
+app.get("/api/blog/posts", (req, res) => {
+  try {
+    const { category, search, tag, featured } = req.query;
+    let list = [...blogPostsStore];
+
+    if (category && category !== "All") {
+      list = list.filter((p) => p.category.toLowerCase() === String(category).toLowerCase());
+    }
+
+    if (tag) {
+      const tNorm = String(tag).toLowerCase();
+      list = list.filter((p) => (p.tags || []).some((t: string) => t.toLowerCase().includes(tNorm)));
+    }
+
+    if (featured === "true") {
+      list = list.filter((p) => p.featured === true);
+    }
+
+    if (search) {
+      const s = String(search).toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.title.toLowerCase().includes(s) ||
+          p.excerpt.toLowerCase().includes(s) ||
+          p.content.toLowerCase().includes(s) ||
+          (p.tags || []).some((t: string) => t.toLowerCase().includes(s))
+      );
+    }
+
+    res.json({ success: true, posts: list });
+  } catch (err: any) {
+    console.error("Get Blog Posts Error:", err);
+    res.status(500).json({ error: "Failed to load blog posts." });
+  }
+});
+
+// 2. Get Single Blog Post by ID or Slug
+app.get("/api/blog/posts/:idOrSlug", (req, res) => {
+  try {
+    const { idOrSlug } = req.params;
+    const post = blogPostsStore.find(
+      (p) => p.id === idOrSlug || p.slug === idOrSlug
+    );
+    if (!post) {
+      return res.status(404).json({ error: "Blog post not found." });
+    }
+    // Increment view count
+    post.viewsCount = (post.viewsCount || 0) + 1;
+    saveBlogPostsToDisk();
+
+    res.json({ success: true, post });
+  } catch (err: any) {
+    console.error("Get Single Blog Post Error:", err);
+    res.status(500).json({ error: "Failed to load article." });
+  }
+});
+
+// 3. Create New Blog Post (Admin)
+app.post("/api/blog/posts", (req, res) => {
+  try {
+    const {
+      title,
+      category,
+      excerpt,
+      content,
+      coverImage,
+      author,
+      readTime,
+      tags,
+      seoDescription,
+      featured,
+    } = req.body;
+
+    if (!title || !content || !category) {
+      return res.status(400).json({ error: "Title, Category, and Content are required." });
+    }
+
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+
+    const newPost = {
+      id: `post_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      slug: slug || `article-${Date.now()}`,
+      title,
+      category: category || "Destination Guide",
+      excerpt: excerpt || title,
+      content,
+      coverImage: coverImage || "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80",
+      author: author || {
+        name: "Azraq Travel Editorial Desk",
+        role: "Senior Travel Consultant",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=AzraqDesk",
+        bio: "Travel insights curated by Azraq Tours & Travels certified consultants.",
+      },
+      publishedAt: new Date().toISOString().split("T")[0],
+      readTime: readTime || "5 min read",
+      tags: Array.isArray(tags) ? tags : ["#Travel", "#AzraqGuides"],
+      seoDescription: seoDescription || excerpt || title,
+      viewsCount: 1,
+      likesCount: 0,
+      featured: Boolean(featured),
+    };
+
+    blogPostsStore.unshift(newPost);
+    saveBlogPostsToDisk();
+
+    res.json({ success: true, message: "Blog post published successfully.", post: newPost });
+  } catch (err: any) {
+    console.error("Create Blog Post Error:", err);
+    res.status(500).json({ error: "Failed to create blog post." });
+  }
+});
+
+// 4. Update Blog Post (Admin)
+app.patch("/api/blog/posts/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const index = blogPostsStore.findIndex((p) => p.id === id);
+    if (index === -1) {
+      return res.status(404).json({ error: "Post not found." });
+    }
+
+    blogPostsStore[index] = {
+      ...blogPostsStore[index],
+      ...req.body,
+      updatedAt: new Date().toISOString(),
+    };
+    saveBlogPostsToDisk();
+
+    res.json({ success: true, message: "Post updated successfully.", post: blogPostsStore[index] });
+  } catch (err: any) {
+    console.error("Update Blog Post Error:", err);
+    res.status(500).json({ error: "Failed to update blog post." });
+  }
+});
+
+// 5. Delete Blog Post (Admin)
+app.delete("/api/blog/posts/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const index = blogPostsStore.findIndex((p) => p.id === id);
+    if (index === -1) {
+      return res.status(404).json({ error: "Post not found." });
+    }
+
+    blogPostsStore.splice(index, 1);
+    saveBlogPostsToDisk();
+
+    res.json({ success: true, message: "Blog post deleted successfully." });
+  } catch (err: any) {
+    console.error("Delete Blog Post Error:", err);
+    res.status(500).json({ error: "Failed to delete blog post." });
+  }
+});
+
+// 6. Like Blog Post
+app.post("/api/blog/posts/:id/like", (req, res) => {
+  try {
+    const { id } = req.params;
+    const post = blogPostsStore.find((p) => p.id === id);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found." });
+    }
+    post.likesCount = (post.likesCount || 0) + 1;
+    saveBlogPostsToDisk();
+    res.json({ success: true, likesCount: post.likesCount });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to like post." });
+  }
+});
+
+// ========================================================
+// --- Live Social Proof Activity Feed Stream Endpoints ---
+// ========================================================
+app.get("/api/social-proof/live", (req, res) => {
+  try {
+    // Generate anonymized real-time events combining recent quotes with verified activity stream
+    const dynamicQuotesEvents = quotesStore.slice(0, 5).map((q, idx) => {
+      const names = (q.customerName || "Traveler").trim().split(" ");
+      const anonName = names.length > 1 ? `${names[0]} ${names[names.length - 1][0]}.` : `${names[0]} K.`;
+      const timeDiff = Math.max(2, Math.floor((Date.now() - new Date(q.createdAt).getTime()) / 60000));
+      const timeStr = timeDiff < 60 ? `${timeDiff} mins ago` : `${Math.floor(timeDiff / 60)} hours ago`;
+
+      return {
+        id: `sp_dyn_${q.id}`,
+        type: q.type === "flight" ? "flight_quote" : q.type === "visa" ? "visa_quote" : "package_booking",
+        actorAnonymized: anonName,
+        actionText: q.type === "flight" 
+          ? `requested a flight quotation for ${q.from} ✈️ ${q.to}`
+          : q.type === "visa"
+          ? `submitted a ${q.visaType || "Tourist"} Visa request for ${q.destinationCountry}`
+          : `requested personalized pricing for ${q.destinationCountry || "Custom Trip"}`,
+        destination: q.type === "flight" ? q.to : q.destinationCountry,
+        timeAgo: timeStr,
+        iconType: q.type === "flight" ? "plane" : q.type === "visa" ? "visa" : "hotel",
+        timestamp: q.createdAt,
+      };
+    });
+
+    const combined = [...dynamicQuotesEvents, ...INITIAL_SOCIAL_PROOF_ACTIVITIES];
+    // De-duplicate and sort
+    const unique = Array.from(new Map(combined.map((item) => [item.id, item])).values());
+    res.json({ success: true, activities: unique.slice(0, 15) });
+  } catch (err: any) {
+    console.error("Social Proof Error:", err);
+    res.status(500).json({ error: "Failed to retrieve social proof stream." });
   }
 });
 
