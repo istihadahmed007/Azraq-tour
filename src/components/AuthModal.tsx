@@ -129,7 +129,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ brandTitle = 'Azraq Tours 
   );
 
   // Form fields
-  const [emailOrPhone, setEmailOrPhone] = useState('istihadahmed1163@gmail.com');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false); // Unchecked by default per user request
 

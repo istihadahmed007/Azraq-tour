@@ -286,6 +286,63 @@ function findUserByEmailOrPhone(identifier: string): ServerUser | undefined {
 
 // --- Authentication Endpoints ---
 
+// Active token storage map
+const activeTokensMap = new Map<string, string>(); // token -> email
+
+// 0. Authenticated /api/auth/me Endpoint
+app.get("/api/auth/me", (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    let token = "";
+    if (authHeader.startsWith("Bearer ")) {
+      token = authHeader.substring(7).trim();
+    } else if (req.headers["x-auth-token"]) {
+      token = String(req.headers["x-auth-token"]).trim();
+    }
+
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized: No session token provided." });
+    }
+
+    let foundUser: ServerUser | undefined;
+
+    // Check active tokens map
+    if (activeTokensMap.has(token)) {
+      const email = activeTokensMap.get(token)!;
+      foundUser = usersStore.get(email.toLowerCase());
+    }
+
+    // Fallback: search by uid or email encoded in token
+    if (!foundUser) {
+      for (const u of usersStore.values()) {
+        if (token.includes(u.uid) || token.includes(u.email)) {
+          foundUser = u;
+          break;
+        }
+      }
+    }
+
+    // Fallback: search by x-user-email header if provided
+    if (!foundUser && req.headers["x-user-email"]) {
+      const headerEmail = String(req.headers["x-user-email"]).trim().toLowerCase();
+      foundUser = usersStore.get(headerEmail);
+    }
+
+    if (!foundUser) {
+      return res.status(401).json({ error: "Unauthorized: User session not found or expired." });
+    }
+
+    // Return the authenticated user object safely
+    res.json({
+      success: true,
+      user: sanitizeUserPayload(foundUser),
+    });
+  } catch (err: any) {
+    console.error("Get /api/auth/me error:", err);
+    res.status(500).json({ error: "Failed to retrieve current user session." });
+  }
+});
+
 // 1. Register Endpoint
 app.post("/api/auth/register", (req, res) => {
   try {

@@ -54,5 +54,32 @@
     "isProfileComplete": true,
     "isAdmin": true,
     "role": "admin"
+  },
+  "testclient@email.com": {
+    "uid": "usr_1786731917356_4yp71",
+    "fullName": "Test Client User",
+    "email": "testclient@email.com",
+    "phone": "+8801812345678",
+    "country": "Bangladesh",
+    "passwordHash": "72afb514cbd6870a3d3e6d8232084d2ced27909dc75ae56ee2b0c86ba973ffb04b96db5e87f4d2b63d7432deaa53838595c7112b1577232e6416fe2b23617e9d",
+    "passwordSalt": "79fd5f3c908adcf7cf9e0d9fe5cd3f85",
+    "photoURL": "https://api.dicebear.com/7.x/avataaars/svg?seed=Test%20Client%20User",
+    "bio": "Hello! I am Test Client User, excited to discover amazing travel destinations.",
+    "languages": [
+      "English"
+    ],
+    "emailVerified": true,
+    "emailVerificationCode": "834746",
+    "emailCodeExpiry": 1786818317356,
+    "phoneVerified": true,
+    "phoneOtpCode": "801333",
+    "phoneOtpExpiry": 1786732517356,
+    "provider": "email",
+    "createdAt": "2026-08-14T18:25:17.356Z",
+    "updatedAt": "2026-08-14T18:25:23.122Z",
+    "isProfileComplete": true,
+    "isAdmin": false,
+    "role": "user",
+    "failedLoginAttempts": 0
   }
 }

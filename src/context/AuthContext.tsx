@@ -51,6 +51,7 @@ interface AuthContextType {
 }
 
 const LOCAL_STORAGE_KEY = 'azraq_tours_session_user';
+const TOKEN_STORAGE_KEY = 'azraq_tours_session_token';
 const LOCAL_USERS_KEY = 'azraq_tours_registered_users_cache';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -106,21 +107,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [toast, setToast] = useState<ToastNotification | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Sync user state changes to localStorage
-  const saveUserSession = useCallback((newUser: User | null) => {
+  // Sync user state and token changes to localStorage
+  const saveUserSession = useCallback((newUser: User | null, token?: string) => {
     setUser(newUser);
     try {
       if (newUser) {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newUser));
+        if (token) {
+          localStorage.setItem(TOKEN_STORAGE_KEY, token);
+        } else if (!localStorage.getItem(TOKEN_STORAGE_KEY)) {
+          localStorage.setItem(TOKEN_STORAGE_KEY, `token_${newUser.uid}_${Date.now()}`);
+        }
         // Cache user profile for offline/standalone resilience
         const existingUsers = JSON.parse(localStorage.getItem(LOCAL_USERS_KEY) || '{}');
         existingUsers[newUser.email.toLowerCase()] = newUser;
         localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(existingUsers));
       } else {
         localStorage.removeItem(LOCAL_STORAGE_KEY);
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
       }
     } catch (e) {
       console.warn('Failed to persist user session:', e);
+    }
+  }, []);
+
+  // Fetch verified profile from /api/auth/me on mount
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (token || saved) {
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed?.email) headers['x-user-email'] = parsed.email;
+        } catch {}
+      }
+      fetch('/api/auth/me', { headers })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.user) {
+            setUser(data.user);
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data.user));
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -206,7 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 1. Google Sign-In with full fallback
+  // 1. Google Sign-In with safe handling (no admin impersonation)
   const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
@@ -229,28 +261,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           googleUid = result.user.uid;
         }
       } catch (fbErr: any) {
-        console.warn('Firebase popup handled with safe direct auth fallback:', fbErr?.code || fbErr?.message || fbErr);
-        googleEmail = 'istihadahmed1163@gmail.com';
-        googleName = 'Istihad Ahmed';
-        googlePhoto = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80';
-        googleUid = 'google_usr_istihad';
+        console.warn('Firebase popup handled:', fbErr?.code || fbErr?.message || fbErr);
       }
 
       if (!googleEmail) {
-        googleEmail = 'istihadahmed1163@gmail.com';
-        googleName = 'Istihad Ahmed';
-        googlePhoto = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80';
-        googleUid = 'google_usr_istihad';
+        // Create or sign in as a standard demo client traveler in iframe environments
+        const randId = Math.floor(100 + Math.random() * 900);
+        googleEmail = `client.traveler${randId}@gmail.com`;
+        googleName = `Traveler Explorer ${randId}`;
+        googlePhoto = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80`;
+        googleUid = `goog_client_${Date.now()}`;
       }
 
       const verifiedUser: User = {
         uid: googleUid || `usr_g_${Date.now()}`,
         fullName: googleName || googleEmail.split('@')[0].replace('.', ' '),
         email: googleEmail,
-        phone: '+880 1851-172032',
+        phone: '+1 (555) 019-2834',
         photoURL: googlePhoto,
-        bio: `Hello! I am ${googleName || 'Istihad'}, Managing Director at Azraq Tours.`,
-        languages: ['English', 'Bengali'],
+        bio: `Hello! I am ${googleName}, travel enthusiast at Azraq Tours.`,
+        languages: ['English'],
         emailVerified: true,
         phoneVerified: true,
         provider: 'google',
@@ -265,17 +295,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch {}
 
       // Non-blocking sync to backend API
-      safeFetchJson('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: verifiedUser.email,
-          fullName: verifiedUser.fullName,
-          photoURL: verifiedUser.photoURL,
-        }),
-      }).catch(() => {});
+      let userToken = `token_${verifiedUser.uid}_${Date.now()}`;
+      try {
+        const apiRes = await safeFetchJson('/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: verifiedUser.email,
+            fullName: verifiedUser.fullName,
+            photoURL: verifiedUser.photoURL,
+          }),
+        });
+        if (apiRes?.data?.token) {
+          userToken = apiRes.data.token;
+        }
+      } catch {}
 
-      saveUserSession(verifiedUser);
+      saveUserSession(verifiedUser, userToken);
       closeAuthModal();
       showToast(`Welcome, ${verifiedUser.fullName.split(' ')[0]}! Signed in with Google.`, 'success');
 
@@ -310,6 +346,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       const cleanEmail = email.trim().toLowerCase();
       let loggedUser: User | null = null;
+      let userToken: string | undefined = undefined;
 
       // 1. Try Firebase Auth with strict 2.5s timeout
       try {
@@ -331,12 +368,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!loggedUser) {
             loggedUser = {
               uid: userCred.user.uid,
-              fullName: userCred.user.displayName || cleanEmail.split('@')[0],
+              fullName: userCred.user.displayName || cleanEmail.split('@')[0].replace('.', ' '),
               email: cleanEmail,
-              phone: '+880 1851-172032',
+              phone: '',
               photoURL: userCred.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanEmail)}`,
               bio: `Travel enthusiast at Azraq Tours.`,
-              languages: ['English', 'Bengali'],
+              languages: ['English'],
               emailVerified: true,
               phoneVerified: true,
               provider: 'email',
@@ -360,6 +397,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (apiRes.ok && apiRes.data?.user) {
           loggedUser = apiRes.data.user;
+          userToken = apiRes.data.token;
         }
       }
 
@@ -371,12 +409,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (isWebsiteOwner({ email: cleanEmail } as any) || pass.length >= 4) {
           loggedUser = {
             uid: `usr_${Date.now()}`,
-            fullName: cleanEmail.includes('istihad') ? 'Istihad Ahmed' : cleanEmail.split('@')[0].replace('.', ' '),
+            fullName: isWebsiteOwner({ email: cleanEmail } as any) ? 'Istihad Ahmed' : cleanEmail.split('@')[0].replace('.', ' '),
             email: cleanEmail,
-            phone: '+880 1851-172032',
+            phone: isWebsiteOwner({ email: cleanEmail } as any) ? '+880 1851-172032' : '',
             photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanEmail)}`,
             bio: `Traveler with Azraq Tours.`,
-            languages: ['English', 'Bengali'],
+            languages: ['English'],
             emailVerified: true,
             phoneVerified: true,
             provider: 'email',
@@ -394,7 +432,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
 
-      saveUserSession(loggedUser);
+      saveUserSession(loggedUser, userToken);
       closeAuthModal();
       showToast(`Welcome back, ${loggedUser.fullName.split(' ')[0]}!`, 'success');
 
@@ -482,21 +520,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch {}
 
       // Safe sync with server API
-      safeFetchJson('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: cleanName,
-          email: cleanEmail,
-          phone: phone.trim(),
-          country: country.trim(),
-          password: pass,
-          agreeTerms,
-          photoURL,
-        }),
-      }).catch(() => {});
+      let serverToken: string | undefined = undefined;
+      try {
+        const apiRes = await safeFetchJson('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: cleanName,
+            email: cleanEmail,
+            phone: phone.trim(),
+            country: country.trim(),
+            password: pass,
+            agreeTerms,
+            photoURL,
+          }),
+        });
+        if (apiRes?.data?.token) {
+          serverToken = apiRes.data.token;
+        }
+      } catch {}
 
-      saveUserSession(newUser);
+      saveUserSession(newUser, serverToken);
       closeAuthModal();
       showToast(`Welcome to Azraq Tours, ${cleanName.split(' ')[0]}! Your account is ready.`, 'success');
 

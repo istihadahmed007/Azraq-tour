@@ -112,96 +112,54 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   // Load User Quotes from API / fallback
   const loadUserQuotes = async () => {
-    if (!user?.email) return;
+    if (!user?.email) {
+      setUserQuotes([]);
+      return;
+    }
     setIsLoadingQuotes(true);
     try {
       const res = await fetch(`/api/quotes/track?query=${encodeURIComponent(user.email)}`);
       const data = await res.json();
-      if (res.ok && data.quotes && data.quotes.length > 0) {
+      if (res.ok && data.quotes) {
         setUserQuotes(data.quotes);
       } else {
-        // Sample default VIP quotes for demo/testing
-        const defaultSampleQuotes: QuoteRequest[] = [
-          {
-            id: 'AZR-1024',
-            type: 'flight',
-            tripType: 'Round Trip',
-            from: 'Dhaka (DAC)',
-            to: 'Bangkok (BKK)',
-            departureDate: '2026-11-20',
-            returnDate: '2026-11-27',
-            adults: 2,
-            children: 1,
-            infants: 0,
-            cabinClass: 'Economy',
-            preferredAirline: 'Thai Airways / Biman',
-            flexibleDate: 'No',
-            additionalRequirements: 'Halal meal, direct flight preferred.',
-            customerName: user.fullName || 'Istihad Ahmed',
-            email: user.email,
-            phone: user.phone || '+880 1851-172032',
-            preferredContactMethod: 'WhatsApp',
-            status: 'Processing',
-            staffNote: 'Checking seat availability with Thai Airways for TG322.',
-            quotedPrice: 'BDT 48,500 / Person (All inclusive)',
-            assignedStaff: 'Rahim Chowdhury (Flight Specialist)',
-            createdAt: '2026-10-24T14:30:00Z',
-          },
-          {
-            id: 'VSQ-930214',
-            type: 'visa',
-            destinationCountry: 'Malaysia',
-            visaType: 'Tourist',
-            intendedTravelDate: '2026-12-05',
-            applicantsCount: 2,
-            applicantNationality: 'Bangladeshi',
-            passportValidity: 'More than 6 months',
-            previousVisa: 'Yes',
-            previousRefusal: 'No',
-            currentResidence: 'Bangladesh',
-            requiredService: 'Full Package',
-            customerName: user.fullName || 'Istihad Ahmed',
-            email: user.email,
-            phone: user.phone || '+880 1851-172032',
-            preferredContactMethod: 'WhatsApp',
-            status: 'Quoted',
-            staffNote: 'Documents verified. Ready for eNTRI / eVisa processing. Standard 3 working days.',
-            visaFee: 'BDT 6,500 / Person',
-            quotedPrice: 'BDT 13,000 Total (2 Persons)',
-            assignedStaff: 'Tania Sultana (Visa Specialist)',
-            createdAt: '2026-10-22T09:15:00Z',
-          },
-          {
-            id: 'FLQ-849201',
-            type: 'flight',
-            tripType: 'Round Trip',
-            from: 'Dhaka (DAC)',
-            to: 'Singapore (SIN)',
-            departureDate: '2026-12-15',
-            returnDate: '2026-12-22',
-            adults: 2,
-            children: 0,
-            infants: 0,
-            cabinClass: 'Economy',
-            flexibleDate: 'Yes',
-            customerName: user.fullName || 'Istihad Ahmed',
-            email: user.email,
-            phone: user.phone || '+880 1851-172032',
-            status: 'Booked',
-            quotedPrice: 'BDT 56,200 / Person (Singapore Airlines SQ447)',
-            staffNote: 'Tickets issued! E-Ticket voucher dispatched to email.',
-            assignedStaff: 'Istihad Ahmed (Super Admin)',
-            createdAt: '2026-09-18T10:00:00Z',
-          },
-        ];
-        setUserQuotes(defaultSampleQuotes);
+        setUserQuotes([]);
       }
     } catch {
-      // Fallback
+      setUserQuotes([]);
     } finally {
       setIsLoadingQuotes(false);
     }
   };
+
+  // Fetch verified profile from /api/auth/me on page load
+  useEffect(() => {
+    const token = localStorage.getItem('azraq_tours_session_token') || localStorage.getItem('azraq_token');
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (user?.email) {
+      headers['x-user-email'] = user.email;
+    }
+
+    if (token || user?.email) {
+      fetch('/api/auth/me', { headers })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.user) {
+            // Update fields if updated on server
+            setEditFullName(data.user.fullName || '');
+            setEditPhone(data.user.phone || '');
+            setEditHomeLocation(data.user.homeLocation || '');
+            setEditBio(data.user.bio || '');
+          }
+        })
+        .catch((err) => {
+          console.warn('Error fetching /api/auth/me in ProfileView:', err);
+        });
+    }
+  }, [user?.email]);
 
   // Load Saved Destinations
   useEffect(() => {
