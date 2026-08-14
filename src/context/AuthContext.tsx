@@ -286,11 +286,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       saveUserSession(data.user);
       setIsLoading(false);
-      setAuthModalView('email_verification');
+      closeAuthModal();
+      showToast(`Welcome to Azraq Tours, ${data.user.fullName.split(' ')[0]}! Your account is ready.`, 'success');
+
+      if (pendingAction?.onExecute) {
+        try {
+          pendingAction.onExecute();
+        } catch (e) {
+          console.warn('Pending action execute error:', e);
+        }
+        setPendingAction(null);
+      }
 
       return {
         success: true,
-        unconfirmed: true,
+        unconfirmed: false,
         demoEmailCode: data.demoEmailCode,
       };
     } catch (error: any) {

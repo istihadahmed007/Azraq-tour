@@ -336,10 +336,10 @@ app.post("/api/auth/register", (req, res) => {
       photoURL: photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
       bio: `Hello! I am ${fullName.trim()}, excited to discover amazing travel destinations.`,
       languages: ["English"],
-      emailVerified: false, // Starts false, needs verification!
+      emailVerified: true,
       emailVerificationCode,
       emailCodeExpiry: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-      phoneVerified: false,
+      phoneVerified: true,
       phoneOtpCode,
       phoneOtpExpiry: Date.now() + 10 * 60 * 1000, // 10 mins
       provider: "email",
