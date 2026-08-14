@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrandTheme, Destination, FeedPost, Itinerary, NavView, Spot, isWebsiteOwner } from './types';
+import { BrandTheme, Destination, FeedPost, Itinerary, NavView, Spot } from './types';
 import {
   INITIAL_DESTINATIONS,
   INITIAL_FEED_POSTS,
@@ -7,7 +7,7 @@ import {
   TRENDING_HASHTAGS,
 } from './data/mockData';
 
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { PackageProvider } from './context/PackageContext';
 import { AuthModal } from './components/AuthModal';
 import { Toast } from './components/Toast';
@@ -20,11 +20,22 @@ import { MapView } from './components/MapView';
 import { ProfileView } from './components/ProfileView';
 import { DestinationModal } from './components/DestinationModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import AuthCallback from './pages/AuthCallback';
 
 function AppContent() {
-  const { user, loginWithEmail } = useAuth();
   const [currentView, setCurrentView] = useState<NavView>('discover');
   const [brandTheme, setBrandTheme] = useState<BrandTheme>('azraq');
+
+  // Handle Supabase Auth Callback URL if redirected here
+  const isAuthCallbackRoute =
+    typeof window !== 'undefined' &&
+    (window.location.pathname.startsWith('/auth/callback') ||
+      window.location.hash.includes('access_token=') ||
+      window.location.search.includes('code='));
+
+  if (isAuthCallbackRoute) {
+    return <AuthCallback />;
+  }
 
   // Application State
   const [destinations] = useState<Destination[]>(INITIAL_DESTINATIONS);
@@ -188,40 +199,7 @@ function AppContent() {
         )}
 
         {currentView === 'admin' && (
-          isWebsiteOwner(user) ? (
-            <AdminDashboard onClose={() => setCurrentView('discover')} />
-          ) : (
-            <div className="w-full max-w-2xl mx-auto px-4 pt-28 pb-20 text-center flex flex-col items-center gap-6">
-              <div className="w-20 h-20 rounded-full bg-sky-500/10 border border-sky-400/30 flex items-center justify-center text-4xl shadow-2xl">
-                🛡️
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl md:text-3xl font-bold font-serif-display text-white">
-                  Website Owner Access Only
-                </h2>
-                <p className="text-sm text-sky-200/80 max-w-md mx-auto leading-relaxed">
-                  The Quotation Management Admin Portal is strictly reserved for the website owner and authorized agency administrators to manage customer flight and visa quotes.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-center gap-3 mt-2">
-                <button
-                  onClick={async () => {
-                    await loginWithEmail('alex@globetrotter.ai', 'pass1234');
-                  }}
-                  className="px-6 py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-sm transition-all shadow-xl flex items-center gap-2 active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
-                  <span>Sign In as Website Owner</span>
-                </button>
-                <button
-                  onClick={() => setCurrentView('discover')}
-                  className="px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all border border-white/15"
-                >
-                  Back to Explorer
-                </button>
-              </div>
-            </div>
-          )
+          <AdminDashboard onClose={() => setCurrentView('discover')} />
         )}
       </main>
 

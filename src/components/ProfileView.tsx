@@ -17,7 +17,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onSelectItinerary,
   onRemoveItinerary,
 }) => {
-  const { user, isGuest, openAuthModal, logout, loginWithEmail } = useAuth();
+  const { user, isGuest, openAuthModal, loginWithGoogle, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'itineraries' | 'bookmarks' | 'settings'>('itineraries');
 
   return (
@@ -48,34 +48,46 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* Guest Mode Hero Card */}
       {isGuest ? (
-        <div className="glass-card rounded-3xl p-8 md:p-10 flex flex-col items-center text-center gap-5 border border-sky-300/30 shadow-2xl relative overflow-hidden">
+        <div className="glass-card rounded-3xl p-8 md:p-10 flex flex-col items-center text-center gap-6 border border-sky-300/30 shadow-2xl relative overflow-hidden">
           <div className="w-20 h-20 rounded-full bg-sky-500/20 border border-sky-300/40 flex items-center justify-center text-4xl shadow-xl">
             🌍
           </div>
 
-          <div className="max-w-md">
-            <h1 className="font-serif-display text-2xl md:text-3xl font-bold text-white mb-2">
-              Welcome, Traveler! 🌍
+          <div className="max-w-md space-y-2">
+            <h1 className="font-serif-display text-2xl md:text-3xl font-bold text-white">
+              Welcome to Azraq Tours & Travels ✈️
             </h1>
             <p className="text-xs md:text-sm text-sky-100/80 leading-relaxed">
-              You are currently exploring as a guest. Create a free account in 30 seconds to save your favorite itineraries, bookmark travel posts, and personalize your experience.
+              Sign in with Google or create an account to save custom itineraries, bookmark luxury packages, track visa and flight quotes, and personalize your journey.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
             <button
-              onClick={() => openAuthModal('register')}
-              className="px-6 py-3 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm transition-all shadow-xl active:scale-98 flex items-center gap-2"
+              onClick={() => loginWithGoogle()}
+              className="px-6 py-3.5 rounded-2xl bg-white hover:bg-gray-100 text-gray-900 font-bold text-xs sm:text-sm transition-all shadow-xl active:scale-95 flex items-center gap-2.5"
             >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Create Free Account</span>
+              <img
+                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                alt="Google"
+                className="w-5 h-5"
+              />
+              <span>Sign in with Google</span>
             </button>
 
             <button
               onClick={() => openAuthModal('login')}
-              className="px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-all border border-white/20"
+              className="px-5 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs sm:text-sm transition-all shadow-md active:scale-95 flex items-center gap-2"
             >
-              Log In
+              <Mail className="w-4 h-4" />
+              <span>Email Sign In</span>
+            </button>
+
+            <button
+              onClick={() => openAuthModal('register')}
+              className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm transition-all border border-white/20"
+            >
+              Create Account
             </button>
           </div>
         </div>
@@ -88,7 +100,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="relative group">
             <img
               src={user?.photoURL || BRAND_LOGOS.userAvatar}
-              alt={user?.fullName}
+              alt={user?.fullName || 'Traveler'}
               className="w-24 h-24 rounded-full object-cover border-4 border-primary/40 shadow-xl shrink-0"
             />
           </div>
@@ -96,7 +108,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left gap-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-serif-display text-2xl md:text-3xl font-bold text-white">
-                {user?.fullName}
+                {user?.fullName || 'Explorer'}
               </h1>
               {isWebsiteOwner(user) ? (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-slate-950 shadow-md">
@@ -113,7 +125,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:text-sm text-sky-200/90 font-medium">
               <span className="flex items-center gap-1">
                 <Mail className="w-3.5 h-3.5 text-sky-300" />
-                <span>{user?.email}</span>
+                <span>{user?.email || 'traveler@azraq.tours'}</span>
               </span>
               {user?.phone && (
                 <span className="flex items-center gap-1">
@@ -165,7 +177,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 onClick={() => openAuthModal('onboarding')}
                 className="text-sky-300 hover:text-white font-medium underline underline-offset-2 ml-auto sm:ml-0"
               >
-                Edit Travel Preferences
+                Edit Preferences
               </button>
             </div>
           </div>

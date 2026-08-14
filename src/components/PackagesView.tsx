@@ -17,6 +17,7 @@ import {
 
 export const PackagesView: React.FC = () => {
   const {
+    packages,
     destinations,
     allCountries,
     searchQuery,
@@ -56,14 +57,16 @@ export const PackagesView: React.FC = () => {
           </p>
 
           {/* Quick Metrics Badge */}
-          <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-300">
-            <span className="flex items-center gap-1.5 bg-slate-900/80 px-3.5 py-1.5 rounded-xl border border-sky-400/40 text-emerald-400 font-extrabold text-sm">
+          <div className="pt-2 flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-300">
+            <span className="flex items-center gap-1.5 bg-slate-900/90 px-3.5 py-1.5 rounded-xl border border-sky-400/40 text-emerald-400 font-extrabold text-sm shadow-md">
               <Compass className="w-4 h-4 text-sky-400" />
-              {filteredPackages.length} Tour Packages Available
+              {filteredPackages.length === packages.length
+                ? `${packages.length} Tour Packages Available`
+                : `${filteredPackages.length} of ${packages.length} Packages Showing`}
             </span>
-            <span className="flex items-center gap-1.5 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-700/80">
+            <span className="flex items-center gap-1.5 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-700/80 text-sky-200">
               <MapPin className="w-4 h-4 text-emerald-400" />
-              {destinations.length} Active Destination(s)
+              {destinations.length} Destination Spots ({allCountries.length} Countries)
             </span>
           </div>
         </div>

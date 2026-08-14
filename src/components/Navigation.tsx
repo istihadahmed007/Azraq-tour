@@ -171,14 +171,19 @@ export const Navigation: React.FC<NavigationProps> = ({
               <div className="flex items-center gap-2 ml-1">
                 <button
                   onClick={() => openAuthModal('login')}
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold text-sky-200 hover:text-white bg-white/5 hover:bg-white/10 transition-all border border-sky-300/20"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-sky-100 hover:text-white bg-white/10 hover:bg-white/15 transition-all border border-sky-300/30 flex items-center gap-1.5 shadow-sm active:scale-95"
                 >
-                  Log In
+                  <img
+                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                    alt="Google"
+                    className="w-3.5 h-3.5"
+                  />
+                  <span>Log In</span>
                 </button>
 
                 <button
                   onClick={() => openAuthModal('register')}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 transition-all shadow-md active:scale-98"
+                  className="px-4 py-1.5 rounded-xl text-xs font-bold text-slate-950 bg-sky-400 hover:bg-sky-300 transition-all shadow-md active:scale-95"
                 >
                   Create Account
                 </button>
@@ -187,16 +192,16 @@ export const Navigation: React.FC<NavigationProps> = ({
               <div className="flex items-center gap-2 ml-1">
                 <div
                   onClick={() => onViewChange('profile')}
-                  className="flex items-center gap-2 p-1 pr-2 rounded-full hover:bg-white/10 cursor-pointer transition-all border border-sky-300/20"
+                  className="flex items-center gap-2 p-1 pr-2.5 rounded-full hover:bg-white/10 cursor-pointer transition-all border border-sky-300/30 bg-white/5"
                   title={`${user?.fullName} (${user?.email})`}
                 >
                   <img
                     src={user?.photoURL || BRAND_LOGOS.userAvatar}
-                    alt={user?.fullName}
-                    className="w-8 h-8 rounded-full object-cover border border-sky-300/50"
+                    alt={user?.fullName || 'Traveler'}
+                    className="w-8 h-8 rounded-full object-cover border border-sky-300/50 shadow-sm"
                   />
-                  <span className="hidden lg:inline text-xs font-medium text-white max-w-[100px] truncate">
-                    {user?.fullName.split(' ')[0]}
+                  <span className="hidden lg:inline text-xs font-semibold text-white max-w-[100px] truncate">
+                    {user?.fullName?.split(' ')[0] || 'Traveler'}
                   </span>
                   {!user?.emailVerified && (
                     <span

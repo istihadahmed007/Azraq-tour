@@ -99,12 +99,8 @@ function isOwnerEmail(email: string): boolean {
 
 // Password Validator helper
 function validatePasswordRequirements(password: string): { valid: boolean; error?: string } {
-  if (password.length < 8) return { valid: false, error: "Password must be at least 8 characters long." };
-  if (!/[A-Z]/.test(password)) return { valid: false, error: "Password must contain at least 1 uppercase letter." };
-  if (!/[a-z]/.test(password)) return { valid: false, error: "Password must contain at least 1 lowercase letter." };
-  if (!/[0-9]/.test(password)) return { valid: false, error: "Password must contain at least 1 number." };
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    return { valid: false, error: "Password must contain at least 1 special character." };
+  if (!password || password.length < 6) {
+    return { valid: false, error: "Password must be at least 6 characters long." };
   }
   return { valid: true };
 }
@@ -125,7 +121,32 @@ function loadUsersFromDisk(): Map<string, ServerUser> {
   }
   // Default demo user (Website Owner)
   const alexSaltHash = hashPassword("pass1234");
+  const istihadSaltHash = hashPassword("pass1234");
   return new Map<string, ServerUser>([
+    [
+      "istihadahmed1163@gmail.com",
+      {
+        uid: "user_istihad_001",
+        fullName: "Istihad Ahmed",
+        email: "istihadahmed1163@gmail.com",
+        phone: "+880 1712-345678",
+        country: "Bangladesh",
+        passwordHash: istihadSaltHash.hash,
+        passwordSalt: istihadSaltHash.salt,
+        photoURL: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+        bio: "Managing Director at Azraq Tours & Travels.",
+        languages: ["Bengali", "English", "Arabic"],
+        emailVerified: true,
+        phoneVerified: true,
+        provider: "email",
+        createdAt: new Date().toISOString(),
+        homeLocation: "Dhaka, Bangladesh",
+        travelPreferences: ["Culture", "Nature", "Luxury", "Food"],
+        isProfileComplete: true,
+        isAdmin: true,
+        role: "admin",
+      },
+    ],
     [
       "alex@globetrotter.ai",
       {
@@ -154,6 +175,59 @@ function loadUsersFromDisk(): Map<string, ServerUser> {
 }
 
 const usersStore = loadUsersFromDisk();
+
+// Ensure owner and demo accounts are populated
+if (!usersStore.has("istihadahmed1163@gmail.com")) {
+  const istihadSaltHash = hashPassword("pass1234");
+  usersStore.set("istihadahmed1163@gmail.com", {
+    uid: "user_istihad_001",
+    fullName: "Istihad Ahmed",
+    email: "istihadahmed1163@gmail.com",
+    phone: "+880 1712-345678",
+    country: "Bangladesh",
+    passwordHash: istihadSaltHash.hash,
+    passwordSalt: istihadSaltHash.salt,
+    photoURL: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+    bio: "Managing Director at Azraq Tours & Travels.",
+    languages: ["Bengali", "English", "Arabic"],
+    emailVerified: true,
+    phoneVerified: true,
+    provider: "email",
+    createdAt: new Date().toISOString(),
+    homeLocation: "Dhaka, Bangladesh",
+    travelPreferences: ["Culture", "Nature", "Luxury", "Food"],
+    isProfileComplete: true,
+    isAdmin: true,
+    role: "admin",
+  });
+  saveUsersToDisk();
+}
+
+if (!usersStore.has("alex@globetrotter.ai")) {
+  const alexSaltHash = hashPassword("pass1234");
+  usersStore.set("alex@globetrotter.ai", {
+    uid: "user_alex_123",
+    fullName: "Alex Mercer (Website Owner)",
+    email: "alex@globetrotter.ai",
+    phone: "+1 (555) 234-5678",
+    country: "United States",
+    passwordHash: alexSaltHash.hash,
+    passwordSalt: alexSaltHash.salt,
+    photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    bio: "Avid explorer, photography enthusiast, and chief architect of GlobeTrotter AI.",
+    languages: ["English", "French", "Spanish"],
+    emailVerified: true,
+    phoneVerified: true,
+    provider: "email",
+    createdAt: new Date().toISOString(),
+    homeLocation: "San Francisco, CA",
+    travelPreferences: ["Culture", "Nature", "Food"],
+    isProfileComplete: true,
+    isAdmin: true,
+    role: "admin",
+  });
+  saveUsersToDisk();
+}
 
 function saveUsersToDisk() {
   try {

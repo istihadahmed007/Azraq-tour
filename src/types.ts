@@ -293,6 +293,7 @@ export type AuthModalView =
 export interface PendingAction {
   type:
     | 'like_post'
+    | 'bookmark_post'
     | 'comment_post'
     | 'follow_traveler'
     | 'save_destination'
