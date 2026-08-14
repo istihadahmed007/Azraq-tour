@@ -768,6 +768,53 @@ app.post("/api/auth/update-profile", (req, res) => {
   }
 });
 
+// 10b. Change Password Endpoint (Authenticated / Current Password Check)
+app.post("/api/auth/change-password", (req, res) => {
+  try {
+    const { email, currentPassword, newPassword } = req.body;
+
+    if (!email || !currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Email, current password, and new password are required." });
+    }
+
+    const user = findUserByEmailOrPhone(email);
+    if (!user) {
+      return res.status(404).json({ error: "User account not found." });
+    }
+
+    // Verify current password
+    if (user.passwordHash && user.passwordSalt) {
+      const isValid = verifyPassword(currentPassword, user.passwordHash, user.passwordSalt);
+      if (!isValid) {
+        return res.status(400).json({ error: "Incorrect current password. Please try again." });
+      }
+    }
+
+    // Validate new password rules
+    const passCheck = validatePasswordRequirements(newPassword);
+    if (!passCheck.valid) {
+      return res.status(400).json({ error: passCheck.error });
+    }
+
+    // Hash and store new password
+    const { hash, salt } = hashPassword(newPassword);
+    user.passwordHash = hash;
+    user.passwordSalt = salt;
+    user.updatedAt = new Date().toISOString();
+
+    usersStore.set(user.email, user);
+    saveUsersToDisk();
+
+    res.json({
+      success: true,
+      message: "Password changed successfully!",
+    });
+  } catch (err: any) {
+    console.error("Change Password Error:", err);
+    res.status(500).json({ error: "Failed to change password. Please try again." });
+  }
+});
+
 // --- Admin Users & Verification Management Endpoints ---
 
 // 11. Admin Get All Registered Users & Metrics
@@ -1018,20 +1065,56 @@ app.post("/api/ai/itinerary", async (req, res) => {
 
 // --- Persistent Quotations Database ---
 const QUOTES_DB_FILE = path.join(process.cwd(), ".quotes_db.json");
+const ACTIVITY_LOGS_FILE = path.join(process.cwd(), ".activity_logs.json");
+const NOTIFICATIONS_FILE = path.join(process.cwd(), ".admin_notifications.json");
+
+interface InternalNoteRecord {
+  id: string;
+  authorName: string;
+  authorRole: string;
+  text: string;
+  createdAt: string;
+}
 
 interface QuoteRecord {
   id: string;
   type: "flight" | "visa";
-  status: "New" | "Reviewing" | "Quotation Prepared" | "Sent" | "Customer Confirmed" | "Closed";
+  status: string;
   createdAt: string;
   updatedAt?: string;
   customerName: string;
   email: string;
   phone: string;
+  preferredContactMethod?: "WhatsApp" | "Email" | "Phone Call";
   staffNote?: string;
+  internalNotes?: InternalNoteRecord[];
   quotedPrice?: string;
   flightOptions?: string;
+  visaFee?: string;
+  assignedStaff?: string;
+  assignedStaffId?: string;
+  isArchived?: boolean;
+  acknowledgmentSent?: boolean;
   [key: string]: any;
+}
+
+interface ActivityRecord {
+  id: string;
+  quoteId: string;
+  action: string;
+  performedBy: string;
+  details?: string;
+  timestamp: string;
+}
+
+interface NotificationRecord {
+  id: string;
+  title: string;
+  message: string;
+  quoteId?: string;
+  type: "quote_new" | "status_change" | "sla_warning" | "staff_assigned";
+  isRead: boolean;
+  createdAt: string;
 }
 
 function loadQuotesFromDisk(): QuoteRecord[] {
@@ -1062,12 +1145,25 @@ function loadQuotesFromDisk(): QuoteRecord[] {
       customerName: "Alex Mercer",
       email: "alex@globetrotter.ai",
       phone: "+1 (555) 234-5678",
-      status: "Quotation Prepared",
+      preferredContactMethod: "WhatsApp",
+      status: "Quoted",
+      assignedStaff: "Istihad Ahmed (Super Admin)",
+      assignedStaffId: "staff_1",
       createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
       updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
       staffNote: "Found 2 direct Business Class options with JAL and ANA.",
       quotedPrice: "$3,450 / person",
       flightOptions: "JAL Flight JL001 (SFO-HND Nonstop) - $3,450 USD. ANA Flight NH107 - $3,620 USD.",
+      internalNotes: [
+        {
+          id: "note_1",
+          authorName: "Istihad Ahmed",
+          authorRole: "Super Admin",
+          text: "Client requested fast VIP lounge assistance at Haneda. Offered partner perks.",
+          createdAt: new Date(Date.now() - 3600000 * 18).toISOString(),
+        }
+      ],
+      acknowledgmentSent: true,
     },
     {
       id: "VSQ-930214",
@@ -1086,15 +1182,109 @@ function loadQuotesFromDisk(): QuoteRecord[] {
       customerName: "Sarah Jenkins",
       email: "sarah.j@example.com",
       phone: "+1 (555) 987-6543",
-      status: "Reviewing",
+      preferredContactMethod: "Email",
+      status: "Processing",
+      assignedStaff: "Tania Sultana (Visa Specialist)",
+      assignedStaffId: "staff_3",
       createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
       updatedAt: new Date(Date.now() - 3600000 * 1).toISOString(),
       staffNote: "Reviewing passport & itinerary documents. Appointment slot available for next Tuesday.",
+      quotedPrice: "BDT 18,500 Total Service & Embassy Fee",
+      visaFee: "BDT 11,500 Embassy Fee",
+      internalNotes: [
+        {
+          id: "note_2",
+          authorName: "Tania Sultana",
+          authorRole: "Visa Specialist",
+          text: "Verified bank balance and employment NOC. Ready for biometric submission slot.",
+          createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+        }
+      ],
+      acknowledgmentSent: true,
+    },
+    {
+      id: "AZR-1024",
+      type: "flight",
+      tripType: "Round Trip",
+      from: "Dhaka (DAC)",
+      to: "Bangkok (BKK)",
+      departureDate: "2026-11-20",
+      returnDate: "2026-11-27",
+      adults: 2,
+      children: 1,
+      infants: 0,
+      cabinClass: "Economy",
+      preferredAirline: "Thai Airways / Biman",
+      flexibleDate: "No",
+      additionalRequirements: "Halal meal and extra baggage allowance requested.",
+      customerName: "Istihad Ahmed",
+      email: "istihadahmed1163@gmail.com",
+      phone: "+8801712345678",
+      preferredContactMethod: "WhatsApp",
+      status: "New",
+      assignedStaff: "Rahim Chowdhury (Flight Specialist)",
+      assignedStaffId: "staff_2",
+      createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+      updatedAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+      staffNote: "",
+      internalNotes: [],
+      acknowledgmentSent: true,
+    },
+  ];
+}
+
+function loadActivityLogs(): ActivityRecord[] {
+  try {
+    if (fs.existsSync(ACTIVITY_LOGS_FILE)) {
+      return JSON.parse(fs.readFileSync(ACTIVITY_LOGS_FILE, "utf-8"));
+    }
+  } catch (err) {
+    console.error("Failed to read activity logs DB file:", err);
+  }
+  return [
+    {
+      id: "act_1",
+      quoteId: "AZR-1024",
+      action: "New Quote Submitted",
+      performedBy: "Istihad Ahmed (Client)",
+      details: "Round Trip Dhaka -> Bangkok requested for 2 Adults, 1 Child.",
+      timestamp: new Date(Date.now() - 3600000 * 1).toISOString(),
+    },
+    {
+      id: "act_2",
+      quoteId: "VSQ-930214",
+      action: "Assigned Staff & Status Changed",
+      performedBy: "Super Admin",
+      details: "Assigned to Tania Sultana. Status changed from New to Processing.",
+      timestamp: new Date(Date.now() - 3600000 * 3).toISOString(),
+    },
+  ];
+}
+
+function loadNotifications(): NotificationRecord[] {
+  try {
+    if (fs.existsSync(NOTIFICATIONS_FILE)) {
+      return JSON.parse(fs.readFileSync(NOTIFICATIONS_FILE, "utf-8"));
+    }
+  } catch (err) {
+    console.error("Failed to read notifications DB file:", err);
+  }
+  return [
+    {
+      id: "notif_1",
+      title: "⚡ Urgent New Quote",
+      message: "Istihad Ahmed requested a Bangkok Flight quote (AZR-1024).",
+      quoteId: "AZR-1024",
+      type: "quote_new",
+      isRead: false,
+      createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
     },
   ];
 }
 
 let quotesStore: QuoteRecord[] = loadQuotesFromDisk();
+let activityLogsStore: ActivityRecord[] = loadActivityLogs();
+let notificationsStore: NotificationRecord[] = loadNotifications();
 
 function saveQuotesToDisk() {
   try {
@@ -1102,6 +1292,51 @@ function saveQuotesToDisk() {
   } catch (err) {
     console.error("Failed to save quotes DB file:", err);
   }
+}
+
+function saveActivityLogsToDisk() {
+  try {
+    fs.writeFileSync(ACTIVITY_LOGS_FILE, JSON.stringify(activityLogsStore, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to save activity logs DB file:", err);
+  }
+}
+
+function saveNotificationsToDisk() {
+  try {
+    fs.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify(notificationsStore, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to save notifications DB file:", err);
+  }
+}
+
+function logActivity(quoteId: string, action: string, performedBy: string, details?: string) {
+  const newLog: ActivityRecord = {
+    id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    quoteId,
+    action,
+    performedBy,
+    details,
+    timestamp: new Date().toISOString(),
+  };
+  activityLogsStore.unshift(newLog);
+  if (activityLogsStore.length > 200) activityLogsStore = activityLogsStore.slice(0, 200);
+  saveActivityLogsToDisk();
+}
+
+function createNotification(title: string, message: string, quoteId?: string, type: "quote_new" | "status_change" | "sla_warning" | "staff_assigned" = "quote_new") {
+  const newNotif: NotificationRecord = {
+    id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    title,
+    message,
+    quoteId,
+    type,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+  };
+  notificationsStore.unshift(newNotif);
+  if (notificationsStore.length > 100) notificationsStore = notificationsStore.slice(0, 100);
+  saveNotificationsToDisk();
 }
 
 // 5. Submit Flight Ticket Quotation Request
@@ -1123,14 +1358,15 @@ app.post("/api/quotes/flight", (req, res) => {
       customerName,
       email,
       phone,
+      preferredContactMethod,
     } = req.body;
 
     if (!customerName || !email || !phone || !from || !to || !departureDate) {
       return res.status(400).json({ error: "Please fill in all required fields (Name, Email, Phone, From, To, Departure Date)." });
     }
 
-    const randomId = Math.floor(100000 + Math.random() * 900000);
-    const id = `FLQ-${randomId}`;
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    const id = `AZR-${randomId}`;
 
     const newQuote: QuoteRecord = {
       id,
@@ -1150,16 +1386,25 @@ app.post("/api/quotes/flight", (req, res) => {
       customerName,
       email: email.trim().toLowerCase(),
       phone,
+      preferredContactMethod: preferredContactMethod || "WhatsApp",
       status: "New",
       createdAt: new Date().toISOString(),
+      internalNotes: [],
+      acknowledgmentSent: true,
+      assignedStaff: "Rahim Chowdhury (Flight Specialist)",
+      assignedStaffId: "staff_2",
     };
 
     quotesStore.unshift(newQuote);
     saveQuotesToDisk();
 
+    // Trigger audit log & notification
+    logActivity(id, "New Flight Quote Submitted", `${customerName} (Client)`, `Route: ${from} ✈️ ${to} on ${departureDate}. Automated acknowledgment sent.`);
+    createNotification("✈️ New Flight Quote", `${customerName} requested a quote for ${from} to ${to}.`, id, "quote_new");
+
     res.json({
       success: true,
-      message: "Quote Request Received successfully!",
+      message: "Flight quote request received! An acknowledgment email and status tracking link have been generated.",
       quote: newQuote,
     });
   } catch (err: any) {
@@ -1186,14 +1431,15 @@ app.post("/api/quotes/visa", (req, res) => {
       customerName,
       email,
       phone,
+      preferredContactMethod,
     } = req.body;
 
     if (!customerName || !email || !phone || !destinationCountry || !visaType || !intendedTravelDate || !applicantNationality) {
       return res.status(400).json({ error: "Please fill in all required fields (Name, Email, Phone, Destination Country, Visa Type, Travel Date, Nationality)." });
     }
 
-    const randomId = Math.floor(100000 + Math.random() * 900000);
-    const id = `VSQ-${randomId}`;
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    const id = `AZR-${randomId}`;
 
     const newQuote: QuoteRecord = {
       id,
@@ -1212,16 +1458,25 @@ app.post("/api/quotes/visa", (req, res) => {
       customerName,
       email: email.trim().toLowerCase(),
       phone,
+      preferredContactMethod: preferredContactMethod || "WhatsApp",
       status: "New",
       createdAt: new Date().toISOString(),
+      internalNotes: [],
+      acknowledgmentSent: true,
+      assignedStaff: "Tania Sultana (Visa Specialist)",
+      assignedStaffId: "staff_3",
     };
 
     quotesStore.unshift(newQuote);
     saveQuotesToDisk();
 
+    // Trigger audit log & notification
+    logActivity(id, "New Visa Quote Submitted", `${customerName} (Client)`, `Destination: ${destinationCountry} (${visaType} Visa). Automated acknowledgment sent.`);
+    createNotification("🛂 New Visa Quote", `${customerName} requested ${visaType} visa processing for ${destinationCountry}.`, id, "quote_new");
+
     res.json({
       success: true,
-      message: "Visa Quote Request Received successfully!",
+      message: "Visa quote request received! An acknowledgment email and status tracking link have been generated.",
       quote: newQuote,
     });
   } catch (err: any) {
@@ -1256,7 +1511,12 @@ app.get("/api/quotes/track", (req, res) => {
 // 8. Admin List All Quotations
 app.get("/api/quotes/admin", (req, res) => {
   try {
-    res.json({ success: true, quotes: quotesStore });
+    res.json({
+      success: true,
+      quotes: quotesStore,
+      notifications: notificationsStore,
+      activityLogs: activityLogsStore,
+    });
   } catch (err: any) {
     console.error("Admin List Quotes Error:", err);
     res.status(500).json({ error: "Failed to load quotations for admin." });
@@ -1267,7 +1527,18 @@ app.get("/api/quotes/admin", (req, res) => {
 app.patch("/api/quotes/admin/:id", (req, res) => {
   try {
     const { id } = req.params;
-    const { status, staffNote, quotedPrice, flightOptions } = req.body;
+    const {
+      status,
+      staffNote,
+      quotedPrice,
+      flightOptions,
+      visaFee,
+      assignedStaff,
+      assignedStaffId,
+      newInternalNote,
+      performedBy,
+      isArchived,
+    } = req.body;
 
     const quoteIndex = quotesStore.findIndex((q) => q.id.toLowerCase() === id.toLowerCase());
     if (quoteIndex === -1) {
@@ -1275,24 +1546,141 @@ app.patch("/api/quotes/admin/:id", (req, res) => {
     }
 
     const targetQuote = quotesStore[quoteIndex];
-    if (status) targetQuote.status = status;
+    const prevStatus = targetQuote.status;
+    const actor = performedBy || "Staff Member";
+
+    if (status && status !== prevStatus) {
+      targetQuote.status = status;
+      logActivity(targetQuote.id, `Status updated: ${prevStatus} ➔ ${status}`, actor, `Updated by ${actor}`);
+      createNotification(`Status Changed: ${targetQuote.id}`, `${targetQuote.customerName}'s quote changed to ${status}`, targetQuote.id, "status_change");
+    }
+
     if (staffNote !== undefined) targetQuote.staffNote = staffNote;
     if (quotedPrice !== undefined) targetQuote.quotedPrice = quotedPrice;
     if (flightOptions !== undefined) targetQuote.flightOptions = flightOptions;
-    targetQuote.updatedAt = new Date().toISOString();
+    if (visaFee !== undefined) targetQuote.visaFee = visaFee;
+    if (isArchived !== undefined) targetQuote.isArchived = isArchived;
 
+    if (assignedStaff && assignedStaff !== targetQuote.assignedStaff) {
+      const prevStaff = targetQuote.assignedStaff || "Unassigned";
+      targetQuote.assignedStaff = assignedStaff;
+      targetQuote.assignedStaffId = assignedStaffId || targetQuote.assignedStaffId;
+      logActivity(targetQuote.id, "Reassigned Staff", actor, `Reassigned from ${prevStaff} to ${assignedStaff}`);
+      createNotification("Staff Assigned", `${targetQuote.id} assigned to ${assignedStaff}`, targetQuote.id, "staff_assigned");
+    }
+
+    if (newInternalNote && newInternalNote.trim()) {
+      if (!targetQuote.internalNotes) targetQuote.internalNotes = [];
+      const noteEntry: InternalNoteRecord = {
+        id: `note_${Date.now()}`,
+        authorName: actor,
+        authorRole: actor.includes("Super Admin") ? "Super Admin" : "Support Agent",
+        text: newInternalNote.trim(),
+        createdAt: new Date().toISOString(),
+      };
+      targetQuote.internalNotes.push(noteEntry);
+      logActivity(targetQuote.id, "Internal Note Added", actor, newInternalNote.trim());
+    }
+
+    targetQuote.updatedAt = new Date().toISOString();
     quotesStore[quoteIndex] = targetQuote;
     saveQuotesToDisk();
 
     res.json({
       success: true,
-      message: `Quotation ${id} updated to status '${status}'. Notification generated.`,
+      message: `Quotation ${id} updated successfully.`,
       quote: targetQuote,
     });
   } catch (err: any) {
     console.error("Admin Update Quote Error:", err);
     res.status(500).json({ error: "Failed to update quotation." });
   }
+});
+
+// 9b. Admin Delete Quotation (Super Admin Only)
+app.delete("/api/quotes/admin/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { performedBy } = req.body || {};
+
+    const quoteIndex = quotesStore.findIndex((q) => q.id.toLowerCase() === id.toLowerCase());
+    if (quoteIndex === -1) {
+      return res.status(404).json({ error: "Quotation not found." });
+    }
+
+    const removedQuote = quotesStore.splice(quoteIndex, 1)[0];
+    saveQuotesToDisk();
+
+    logActivity(id, "Quote Deleted", performedBy || "Super Admin", `Deleted quote for ${removedQuote.customerName}`);
+
+    res.json({ success: true, message: `Quotation ${id} was permanently removed.` });
+  } catch (err: any) {
+    console.error("Delete Quote Error:", err);
+    res.status(500).json({ error: "Failed to delete quote." });
+  }
+});
+
+// 9c. Admin Bulk Actions Endpoint
+app.post("/api/quotes/admin/bulk-action", (req, res) => {
+  try {
+    const { action, ids, value, performedBy } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "Please select at least one quote." });
+    }
+
+    const actor = performedBy || "Staff Member";
+    let updatedCount = 0;
+
+    quotesStore = quotesStore.map((q) => {
+      if (ids.includes(q.id)) {
+        updatedCount++;
+        const updated = { ...q, updatedAt: new Date().toISOString() };
+        if (action === "status") {
+          updated.status = value || "Processing";
+          logActivity(q.id, `Bulk Status Change ➔ ${value}`, actor);
+        } else if (action === "assign") {
+          updated.assignedStaff = value || "Istihad Ahmed (Super Admin)";
+          logActivity(q.id, `Bulk Assigned ➔ ${value}`, actor);
+        } else if (action === "archive") {
+          updated.isArchived = true;
+          logActivity(q.id, "Archived via Bulk Action", actor);
+        }
+        return updated;
+      }
+      return q;
+    });
+
+    saveQuotesToDisk();
+
+    res.json({
+      success: true,
+      message: `Successfully applied '${action}' to ${updatedCount} quotation(s).`,
+      quotes: quotesStore,
+    });
+  } catch (err: any) {
+    console.error("Bulk Action Error:", err);
+    res.status(500).json({ error: "Failed to execute bulk action." });
+  }
+});
+
+// 9d. Admin Notifications & Audit Logs
+app.get("/api/admin/notifications", (req, res) => {
+  res.json({ success: true, notifications: notificationsStore });
+});
+
+app.post("/api/admin/notifications/mark-read", (req, res) => {
+  const { id, all } = req.body;
+  if (all) {
+    notificationsStore = notificationsStore.map((n) => ({ ...n, isRead: true }));
+  } else if (id) {
+    notificationsStore = notificationsStore.map((n) => (n.id === id ? { ...n, isRead: true } : n));
+  }
+  saveNotificationsToDisk();
+  res.json({ success: true, notifications: notificationsStore });
+});
+
+app.get("/api/admin/activity-logs", (req, res) => {
+  res.json({ success: true, activityLogs: activityLogsStore });
 });
 
 // --- Tour Package Management Database ---

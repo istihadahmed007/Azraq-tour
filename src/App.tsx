@@ -189,6 +189,9 @@ function AppContent() {
             onRemoveItinerary={handleRemoveSavedItinerary}
             onNavigateToFeed={() => setCurrentView('feed')}
             onSelectDestination={setModalDestination}
+            onOpenFlightQuote={() => setIsFooterFlightModalOpen(true)}
+            onOpenVisaQuote={() => setIsFooterVisaModalOpen(true)}
+            onNavigate={(view) => setCurrentView(view as NavView)}
           />
         )}
 

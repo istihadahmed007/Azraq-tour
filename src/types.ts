@@ -1,9 +1,62 @@
 export type NavView = 'discover' | 'packages' | 'planner' | 'feed' | 'map' | 'profile' | 'admin';
 
-export type QuoteStatus = 'New' | 'Reviewing' | 'Quotation Prepared' | 'Sent' | 'Customer Confirmed' | 'Closed';
+export type QuoteStatus =
+  | 'New'
+  | 'Pending'
+  | 'Processing'
+  | 'Reviewing'
+  | 'Quotation Prepared'
+  | 'Quoted'
+  | 'Quoted via WhatsApp'
+  | 'Quoted via Email'
+  | 'Sent'
+  | 'Customer Confirmed'
+  | 'Booked'
+  | 'Lost'
+  | 'Expired'
+  | 'Closed'
+  | 'Archived';
+
+export type AdminRole = 'super_admin' | 'support_agent';
+
+export interface InternalNote {
+  id: string;
+  authorName: string;
+  authorRole: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  quoteId: string;
+  action: string;
+  performedBy: string;
+  details?: string;
+  timestamp: string;
+}
+
+export interface AdminNotification {
+  id: string;
+  title: string;
+  message: string;
+  quoteId?: string;
+  type: 'quote_new' | 'status_change' | 'sla_warning' | 'staff_assigned';
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole;
+  avatar: string;
+  specialty: string;
+}
 
 export interface FlightQuoteRequest {
-  id: string; // e.g. FLQ-849201
+  id: string; // e.g. FLQ-849201 or AZR-1024
   type: 'flight';
   tripType: 'One Way' | 'Round Trip' | 'Multi-City';
   from: string;
@@ -20,16 +73,22 @@ export interface FlightQuoteRequest {
   customerName: string;
   email: string;
   phone: string;
+  preferredContactMethod?: 'WhatsApp' | 'Email' | 'Phone Call';
   status: QuoteStatus;
   createdAt: string;
   updatedAt?: string;
   staffNote?: string;
+  internalNotes?: InternalNote[];
   quotedPrice?: string;
   flightOptions?: string;
+  assignedStaff?: string;
+  assignedStaffId?: string;
+  isArchived?: boolean;
+  acknowledgmentSent?: boolean;
 }
 
 export interface VisaQuoteRequest {
-  id: string; // e.g. VSQ-930214
+  id: string; // e.g. VSQ-930214 or AZR-2048
   type: 'visa';
   destinationCountry: string;
   visaType: 'Tourist' | 'Business' | 'Student' | 'Transit' | 'Medical' | 'Other';
@@ -45,12 +104,18 @@ export interface VisaQuoteRequest {
   customerName: string;
   email: string;
   phone: string;
+  preferredContactMethod?: 'WhatsApp' | 'Email' | 'Phone Call';
   status: QuoteStatus;
   createdAt: string;
   updatedAt?: string;
   staffNote?: string;
+  internalNotes?: InternalNote[];
   quotedPrice?: string;
   visaFee?: string;
+  assignedStaff?: string;
+  assignedStaffId?: string;
+  isArchived?: boolean;
+  acknowledgmentSent?: boolean;
 }
 
 export type QuoteRequest = FlightQuoteRequest | VisaQuoteRequest;
