@@ -39,8 +39,11 @@ import {
   Crown,
   Eye,
   KeyRound,
+  Activity,
+  Bell,
 } from 'lucide-react';
 import { TrackQuoteModal } from './TrackQuoteModal';
+import { UpdatesFeedTab } from './UpdatesFeedTab';
 
 interface ProfileViewProps {
   savedItineraries: Itinerary[];
@@ -71,8 +74,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     deletePost,
   } = useFeed();
 
-  // Active Navigation Tab: dashboard | quote_history | saved_destinations | itineraries | my_posts | bookmarks | settings
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'quote_history' | 'saved_destinations' | 'itineraries' | 'my_posts' | 'bookmarks' | 'settings'>('dashboard');
+  // Active Navigation Tab: dashboard | updates | quote_history | saved_destinations | itineraries | my_posts | bookmarks | settings
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'updates' | 'quote_history' | 'saved_destinations' | 'itineraries' | 'my_posts' | 'bookmarks' | 'settings'>('dashboard');
 
   // Quotes state
   const [userQuotes, setUserQuotes] = useState<QuoteRequest[]>([]);
@@ -650,54 +653,66 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
           </div>
 
-      {/* CORE 4-SECTION NAVIGATION TABS */}
+      {/* CORE 5-SECTION NAVIGATION TABS */}
       <div className="flex items-center gap-2 border-b border-white/10 pb-3.5 overflow-x-auto hide-scrollbar">
         <button
           onClick={() => setActiveTab('dashboard')}
-          className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap min-h-[44px] cursor-pointer ${
+          className={`px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap min-h-[44px] cursor-pointer ${
             activeTab === 'dashboard'
               ? 'bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 shadow-lg font-black'
               : 'bg-white/5 text-sky-100/80 hover:bg-white/10 hover:text-white'
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>1. Dashboard (Overview)</span>
+          <span>1. Dashboard Overview</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('updates')}
+          className={`px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap min-h-[44px] cursor-pointer ${
+            activeTab === 'updates'
+              ? 'bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 shadow-lg font-black'
+              : 'bg-white/5 text-sky-100/80 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          <Bell className="w-4 h-4" />
+          <span>2. 📋 Updates & Journey</span>
         </button>
 
         <button
           onClick={() => setActiveTab('quote_history')}
-          className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap min-h-[44px] cursor-pointer ${
+          className={`px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap min-h-[44px] cursor-pointer ${
             activeTab === 'quote_history'
               ? 'bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 shadow-lg font-black'
               : 'bg-white/5 text-sky-100/80 hover:bg-white/10 hover:text-white'
           }`}
         >
           <FileText className="w-4 h-4" />
-          <span>2. My Quote History ({userQuotes.length})</span>
+          <span>3. My Quote History ({userQuotes.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('saved_destinations')}
-          className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap min-h-[44px] cursor-pointer ${
+          className={`px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap min-h-[44px] cursor-pointer ${
             activeTab === 'saved_destinations'
               ? 'bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 shadow-lg font-black'
               : 'bg-white/5 text-sky-100/80 hover:bg-white/10 hover:text-white'
           }`}
         >
           <Compass className="w-4 h-4" />
-          <span>3. Saved Destinations ({savedDestinations.length})</span>
+          <span>4. Saved Destinations ({savedDestinations.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('settings')}
-          className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap min-h-[44px] cursor-pointer ${
+          className={`px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap min-h-[44px] cursor-pointer ${
             activeTab === 'settings'
               ? 'bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 shadow-lg font-black'
               : 'bg-white/5 text-sky-100/80 hover:bg-white/10 hover:text-white'
           }`}
         >
           <Settings className="w-4 h-4" />
-          <span>4. Account Settings</span>
+          <span>5. Account Settings</span>
         </button>
 
         {/* Secondary Saved Assets */}
@@ -980,14 +995,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </p>
               </div>
 
-              <button
-                onClick={loadUserQuotes}
-                className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors"
-                title="Refresh timeline updates"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingQuotes ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveTab('updates')}
+                  className="px-3.5 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400 text-amber-300 hover:text-slate-950 border border-amber-400/30 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  <span>Open Full Updates Feed</span>
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+
+                <button
+                  onClick={loadUserQuotes}
+                  className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Refresh timeline updates"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingQuotes ? 'animate-spin' : ''}`} />
+                  <span>Refresh</span>
+                </button>
+              </div>
             </div>
 
             {timelineEvents.length === 0 ? (
@@ -1104,7 +1130,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       )}
 
-      {/* SECTION 2: MY QUOTE HISTORY (CRITICAL - Sortable & Searchable Table) */}
+      {/* SECTION 2: 📋 UPDATES & JOURNEY FEED (VERTICAL TIMELINE) */}
+      {activeTab === 'updates' && (
+        <UpdatesFeedTab
+          onExploreDestinations={() => onNavigate?.('discover')}
+          onOpenFlightQuote={onOpenFlightQuote}
+          onOpenVisaQuote={onOpenVisaQuote}
+          onViewQuoteDetail={(quoteId) => {
+            const found = userQuotes.find((q) => q.id === quoteId);
+            if (found) {
+              setSelectedQuoteDetail(found);
+            } else {
+              // Fetch by quote ID
+              fetch(`/api/quotes/track?query=${encodeURIComponent(quoteId)}`)
+                .then((r) => r.json())
+                .then((d) => {
+                  if (d.success && d.quotes && d.quotes[0]) {
+                    setSelectedQuoteDetail(d.quotes[0]);
+                  }
+                })
+                .catch(() => {});
+            }
+          }}
+        />
+      )}
+
+      {/* SECTION 3: MY QUOTE HISTORY (CRITICAL - Sortable & Searchable Table) */}
       {activeTab === 'quote_history' && (
         <div className="space-y-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -120,6 +120,28 @@ export interface VisaQuoteRequest {
 
 export type QuoteRequest = FlightQuoteRequest | VisaQuoteRequest;
 
+export type TimelineDotColor = 'yellow' | 'green' | 'red' | 'blue';
+
+export interface UserFeedItem {
+  id: string;
+  feedType: 'personal' | 'announcement';
+  title: string;
+  message: string;
+  timestamp: string;
+  quoteId?: string;
+  quoteType?: 'flight' | 'visa';
+  routeOrDestination?: string;
+  status?: QuoteStatus | string;
+  dotColor: TimelineDotColor;
+  isRead?: boolean;
+  category?: 'Quote Status' | 'Trip Milestone' | 'Visa Notice' | 'System Alert' | 'Action Required';
+  actionUrl?: string;
+  actionLabel?: string;
+  quotedPrice?: string;
+  agentName?: string;
+  iconType?: 'mail' | 'phone' | 'message' | 'check' | 'plane' | 'alert' | 'info' | 'bell';
+}
+
 export type BrandTheme = 'globetrotter' | 'azraq';
 
 export interface Spot {

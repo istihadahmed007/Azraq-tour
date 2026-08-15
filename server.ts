@@ -1092,6 +1092,9 @@ app.post("/api/ai/itinerary", async (req, res) => {
 const QUOTES_DB_FILE = path.join(process.cwd(), ".quotes_db.json");
 const ACTIVITY_LOGS_FILE = path.join(process.cwd(), ".activity_logs.json");
 const NOTIFICATIONS_FILE = path.join(process.cwd(), ".admin_notifications.json");
+const USER_ACTIVITIES_FILE = path.join(process.cwd(), ".user_activities.json");
+const SYSTEM_ANNOUNCEMENTS_FILE = path.join(process.cwd(), ".system_announcements.json");
+const USER_READ_FEEDS_FILE = path.join(process.cwd(), ".user_read_feeds.json");
 
 interface InternalNoteRecord {
   id: string;
@@ -1140,6 +1143,36 @@ interface NotificationRecord {
   type: "quote_new" | "status_change" | "sla_warning" | "staff_assigned";
   isRead: boolean;
   createdAt: string;
+}
+
+export interface UserActivityDbRecord {
+  id: string;
+  userEmail: string;
+  quoteId?: string;
+  quoteType?: "flight" | "visa";
+  routeOrDestination?: string;
+  status?: string;
+  title: string;
+  message: string;
+  dotColor: "yellow" | "green" | "red" | "blue";
+  iconType?: "mail" | "phone" | "message" | "check" | "plane" | "alert" | "info" | "bell";
+  timestamp: string;
+  agentName?: string;
+  quotedPrice?: string;
+  actionUrl?: string;
+  actionLabel?: string;
+}
+
+export interface SystemAnnouncementDbRecord {
+  id: string;
+  title: string;
+  message: string;
+  dotColor: "yellow" | "green" | "red" | "blue";
+  iconType: "mail" | "phone" | "message" | "check" | "plane" | "alert" | "info" | "bell";
+  category: "Visa Notice" | "System Alert" | "Service Update";
+  timestamp: string;
+  actionUrl?: string;
+  actionLabel?: string;
 }
 
 function loadQuotesFromDisk(): QuoteRecord[] {
@@ -1307,9 +1340,141 @@ function loadNotifications(): NotificationRecord[] {
   ];
 }
 
+function loadUserActivities(): UserActivityDbRecord[] {
+  try {
+    if (fs.existsSync(USER_ACTIVITIES_FILE)) {
+      return JSON.parse(fs.readFileSync(USER_ACTIVITIES_FILE, "utf-8"));
+    }
+  } catch (err) {
+    console.error("Failed to read user activities DB file:", err);
+  }
+  // Default seeded activities for Istihad Ahmed
+  const now = Date.now();
+  return [
+    {
+      id: "uact_1",
+      userEmail: "istihadahmed1163@gmail.com",
+      quoteId: "AZR-1024",
+      quoteType: "flight",
+      routeOrDestination: "Dhaka (DAC) ➔ Bangkok (BKK)",
+      status: "Processing",
+      title: "📞 Specialist Assigned & GDS Search Initiated",
+      message: "Our senior flight specialist Rahim Chowdhury is reviewing wholesale airline tariffs and non-stop flight connections.",
+      dotColor: "yellow",
+      iconType: "phone",
+      agentName: "Rahim Chowdhury",
+      timestamp: new Date(now - 1000 * 60 * 45).toISOString(),
+    },
+    {
+      id: "uact_2",
+      userEmail: "istihadahmed1163@gmail.com",
+      quoteId: "AZR-1024",
+      quoteType: "flight",
+      routeOrDestination: "Dhaka (DAC) ➔ Bangkok (BKK)",
+      status: "New",
+      title: "📩 Quote Request for Bangkok Received",
+      message: "Your quotation request for 2 Adults, 1 Child (Round Trip) was successfully received and logged into Azraq priority queue.",
+      dotColor: "yellow",
+      iconType: "mail",
+      timestamp: new Date(now - 1000 * 60 * 60).toISOString(),
+    },
+    {
+      id: "uact_3",
+      userEmail: "istihadahmed1163@gmail.com",
+      quoteId: "FLQ-849201",
+      quoteType: "flight",
+      routeOrDestination: "San Francisco (SFO) ➔ Tokyo (HND)",
+      status: "Quoted",
+      title: "💬 Personalized Quote Dispatched via WhatsApp",
+      message: "Your official quote assessment ($3,450 / person Business Class on JAL & ANA) was prepared and sent via WhatsApp.",
+      dotColor: "green",
+      iconType: "message",
+      quotedPrice: "$3,450 / person",
+      agentName: "Istihad Ahmed",
+      timestamp: new Date(now - 1000 * 60 * 60 * 24).toISOString(),
+    },
+    {
+      id: "uact_4",
+      userEmail: "istihadahmed1163@gmail.com",
+      quoteId: "FLQ-849201",
+      quoteType: "flight",
+      routeOrDestination: "San Francisco (SFO) ➔ Tokyo (HND)",
+      status: "Booked",
+      title: "✅ Booking Confirmed & Vouchers Ready! Trip ID: FLQ-849201",
+      message: "Your Tokyo journey is confirmed. E-ticket receipts and lounge access vouchers are available.",
+      dotColor: "green",
+      iconType: "check",
+      timestamp: new Date(now - 1000 * 60 * 60 * 18).toISOString(),
+    },
+  ];
+}
+
+function loadSystemAnnouncements(): SystemAnnouncementDbRecord[] {
+  try {
+    if (fs.existsSync(SYSTEM_ANNOUNCEMENTS_FILE)) {
+      return JSON.parse(fs.readFileSync(SYSTEM_ANNOUNCEMENTS_FILE, "utf-8"));
+    }
+  } catch (err) {
+    console.error("Failed to read system announcements DB file:", err);
+  }
+  const now = Date.now();
+  return [
+    {
+      id: "sa_visa_thailand",
+      title: "🎉 New Visa Rule: Bangladeshi Travelers to Thailand Get 60-Day Visa Exemption",
+      message: "Effective Nov 2026, Bangladeshi passport holders travelling for tourism enjoy 60-day visa-free entry at all international airports in Thailand. Ensure passport validity is 6+ months.",
+      dotColor: "blue",
+      iconType: "info",
+      category: "Visa Notice",
+      timestamp: new Date(now - 1000 * 60 * 60 * 6).toISOString(),
+    },
+    {
+      id: "sa_whatsapp_247",
+      title: "📱 24/7 Dedicated WhatsApp Customer Support Active",
+      message: "Our Dhaka head office and emergency international support desk now operates 24/7 at +880 1851-172032 for real-time ticket reissues, flight amendments, and visa inquiries.",
+      dotColor: "blue",
+      iconType: "message",
+      category: "Service Update",
+      timestamp: new Date(now - 1000 * 60 * 60 * 48).toISOString(),
+    },
+    {
+      id: "sa_evisa_express",
+      title: "🛂 Express E-Visa Processing for UAE & Malaysia (24–48 Hours)",
+      message: "Consular direct processing times for Dubai tourist visas (30 & 60 Days) and Malaysia eVisa have been reduced to 24–48 hours for fast-track applications through Azraq.",
+      dotColor: "blue",
+      iconType: "info",
+      category: "Visa Notice",
+      timestamp: new Date(now - 1000 * 60 * 60 * 96).toISOString(),
+    },
+    {
+      id: "sa_flights_extra_slots",
+      title: "✈️ Additional Direct Flight Slots Added for Maldives & Singapore",
+      message: "Biman Bangladesh Airlines & Singapore Airlines have opened additional direct frequencies for the upcoming travel season. Inquire now for group & family discounts.",
+      dotColor: "blue",
+      iconType: "plane",
+      category: "System Alert",
+      timestamp: new Date(now - 1000 * 60 * 60 * 120).toISOString(),
+    },
+  ];
+}
+
+function loadReadFeeds(): Record<string, string[]> {
+  try {
+    if (fs.existsSync(USER_READ_FEEDS_FILE)) {
+      return JSON.parse(fs.readFileSync(USER_READ_FEEDS_FILE, "utf-8"));
+    }
+  } catch (err) {
+    console.error("Failed to read user read feeds DB file:", err);
+  }
+  return {};
+}
+
 let quotesStore: QuoteRecord[] = loadQuotesFromDisk();
 let activityLogsStore: ActivityRecord[] = loadActivityLogs();
 let notificationsStore: NotificationRecord[] = loadNotifications();
+let userActivitiesStore: UserActivityDbRecord[] = loadUserActivities();
+let systemAnnouncementsStore: SystemAnnouncementDbRecord[] = loadSystemAnnouncements();
+let userReadFeedsStore: Record<string, string[]> = loadReadFeeds();
 
 function saveQuotesToDisk() {
   try {
@@ -1333,6 +1498,57 @@ function saveNotificationsToDisk() {
   } catch (err) {
     console.error("Failed to save notifications DB file:", err);
   }
+}
+
+function saveUserActivitiesToDisk() {
+  try {
+    fs.writeFileSync(USER_ACTIVITIES_FILE, JSON.stringify(userActivitiesStore, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to save user activities DB file:", err);
+  }
+}
+
+function saveSystemAnnouncementsToDisk() {
+  try {
+    fs.writeFileSync(SYSTEM_ANNOUNCEMENTS_FILE, JSON.stringify(systemAnnouncementsStore, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to save system announcements DB file:", err);
+  }
+}
+
+function saveReadFeedsToDisk() {
+  try {
+    fs.writeFileSync(USER_READ_FEEDS_FILE, JSON.stringify(userReadFeedsStore, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to save read feeds DB file:", err);
+  }
+}
+
+function addUserActivity(activity: Omit<UserActivityDbRecord, "id" | "timestamp"> & { id?: string; timestamp?: string }) {
+  const newActivity: UserActivityDbRecord = {
+    id: activity.id || `uact_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    userEmail: activity.userEmail.toLowerCase().trim(),
+    quoteId: activity.quoteId,
+    quoteType: activity.quoteType,
+    routeOrDestination: activity.routeOrDestination,
+    status: activity.status,
+    title: activity.title,
+    message: activity.message,
+    dotColor: activity.dotColor,
+    iconType: activity.iconType || "info",
+    timestamp: activity.timestamp || new Date().toISOString(),
+    agentName: activity.agentName,
+    quotedPrice: activity.quotedPrice,
+    actionUrl: activity.actionUrl,
+    actionLabel: activity.actionLabel,
+  };
+
+  userActivitiesStore.unshift(newActivity);
+  if (userActivitiesStore.length > 500) {
+    userActivitiesStore = userActivitiesStore.slice(0, 500);
+  }
+  saveUserActivitiesToDisk();
+  return newActivity;
 }
 
 function logActivity(quoteId: string, action: string, performedBy: string, details?: string) {
@@ -1427,6 +1643,19 @@ app.post("/api/quotes/flight", (req, res) => {
     logActivity(id, "New Flight Quote Submitted", `${customerName} (Client)`, `Route: ${from} ✈️ ${to} on ${departureDate}. Automated acknowledgment sent.`);
     createNotification("✈️ New Flight Quote", `${customerName} requested a quote for ${from} to ${to}.`, id, "quote_new");
 
+    // Add to Client Timeline Activity Feed (Type A: Personal Trip Activity)
+    addUserActivity({
+      userEmail: email,
+      quoteId: id,
+      quoteType: "flight",
+      routeOrDestination: `${from} ✈️ ${to}`,
+      status: "New",
+      title: `📩 Quote Request for ${from} ✈️ ${to} Received`,
+      message: `Your flight quote request for ${from} ➔ ${to} (${newQuote.adults} Adult${newQuote.adults > 1 ? 's' : ''}) was received and logged into Azraq priority queue.`,
+      dotColor: "yellow",
+      iconType: "mail",
+    });
+
     res.json({
       success: true,
       message: "Flight quote request received! An acknowledgment email and status tracking link have been generated.",
@@ -1498,6 +1727,19 @@ app.post("/api/quotes/visa", (req, res) => {
     // Trigger audit log & notification
     logActivity(id, "New Visa Quote Submitted", `${customerName} (Client)`, `Destination: ${destinationCountry} (${visaType} Visa). Automated acknowledgment sent.`);
     createNotification("🛂 New Visa Quote", `${customerName} requested ${visaType} visa processing for ${destinationCountry}.`, id, "quote_new");
+
+    // Add to Client Timeline Activity Feed (Type A: Personal Trip Activity)
+    addUserActivity({
+      userEmail: email,
+      quoteId: id,
+      quoteType: "visa",
+      routeOrDestination: `${destinationCountry} (${visaType} Visa)`,
+      status: "New",
+      title: `📩 Visa Request for ${destinationCountry} Received`,
+      message: `Your ${visaType} visa application request for ${destinationCountry} (${newQuote.applicantsCount} applicant${newQuote.applicantsCount > 1 ? 's' : ''}) has been received and assigned for consular review.`,
+      dotColor: "yellow",
+      iconType: "mail",
+    });
 
     res.json({
       success: true,
@@ -1729,6 +1971,231 @@ app.get("/api/users/me/timeline", (req, res) => {
   }
 });
 
+// 7d. Unified Live Updates Feed (Personal Activity + System Announcements)
+app.get("/api/feed", (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    let token = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : "";
+    if (!token && req.headers["x-auth-token"]) {
+      token = String(req.headers["x-auth-token"]).trim();
+    }
+
+    let userEmail = "";
+    if (token && activeTokensMap.has(token)) {
+      userEmail = activeTokensMap.get(token)!;
+    } else if (req.query.email) {
+      userEmail = String(req.query.email).trim().toLowerCase();
+    }
+
+    if (!userEmail) {
+      return res.status(401).json({ error: "Unauthorized: Please provide a valid session token or email." });
+    }
+
+    const emailKey = userEmail.toLowerCase();
+    const readIds = userReadFeedsStore[emailKey] || [];
+
+    // 1. Gather personal user activities
+    let personalActivities = userActivitiesStore.filter(
+      (act) => act.userEmail.toLowerCase() === emailKey
+    );
+
+    // If user has quotes in quotesStore but no user_activities yet, derive progression milestones
+    const userQuotes = quotesStore.filter((q) => q.email.toLowerCase() === emailKey);
+    if (personalActivities.length === 0 && userQuotes.length > 0) {
+      userQuotes.forEach((q) => {
+        const dest = q.type === 'flight' 
+          ? `${q.from} ➔ ${q.to}` 
+          : `${q.destinationCountry} (${q.visaType || 'Visa'})`;
+
+        // Milestone 1: Received
+        personalActivities.push({
+          id: `uact_${q.id}_rec`,
+          userEmail: q.email,
+          quoteId: q.id,
+          quoteType: q.type,
+          routeOrDestination: dest,
+          status: 'New',
+          title: `📩 Quote Request for ${dest} Received`,
+          message: `Your quotation request was received and logged into Azraq priority queue.`,
+          dotColor: 'yellow',
+          iconType: 'mail',
+          timestamp: q.createdAt,
+        });
+
+        // Milestone 2: Reviewing / Assigned
+        if (q.assignedStaff || q.status !== 'New') {
+          personalActivities.push({
+            id: `uact_${q.id}_rev`,
+            userEmail: q.email,
+            quoteId: q.id,
+            quoteType: q.type,
+            routeOrDestination: dest,
+            status: 'Processing',
+            title: `📞 Specialist ${q.assignedStaff || 'Rahim Chowdhury'} Reviewing Options`,
+            message: `Our consultant is analyzing live wholesale GDS airline tariffs and visa appointment slots.`,
+            dotColor: 'yellow',
+            iconType: 'phone',
+            agentName: q.assignedStaff,
+            timestamp: q.updatedAt || new Date(new Date(q.createdAt).getTime() + 1000 * 60 * 30).toISOString(),
+          });
+        }
+
+        // Milestone 3: Quoted
+        if (['Quoted', 'Quoted via WhatsApp', 'Quoted via Email', 'Quotation Prepared', 'Sent', 'Customer Confirmed', 'Booked'].includes(q.status)) {
+          personalActivities.push({
+            id: `uact_${q.id}_quot`,
+            userEmail: q.email,
+            quoteId: q.id,
+            quoteType: q.type,
+            routeOrDestination: dest,
+            status: 'Quoted',
+            title: `💬 Personalized Quote Dispatched via WhatsApp`,
+            message: `Official price estimate (${q.quotedPrice || 'Wholesale rate'}) dispatched via ${q.preferredContactMethod || 'WhatsApp'}. ${q.staffNote ? 'Note: ' + q.staffNote : ''}`,
+            dotColor: 'green',
+            iconType: 'message',
+            quotedPrice: q.quotedPrice,
+            agentName: q.assignedStaff,
+            timestamp: q.updatedAt || new Date(new Date(q.createdAt).getTime() + 1000 * 60 * 90).toISOString(),
+          });
+        }
+
+        // Milestone 4: Booked
+        if (['Booked', 'Customer Confirmed'].includes(q.status)) {
+          personalActivities.push({
+            id: `uact_${q.id}_book`,
+            userEmail: q.email,
+            quoteId: q.id,
+            quoteType: q.type,
+            routeOrDestination: dest,
+            status: 'Booked',
+            title: `✅ Booking Confirmed! Trip ID: ${q.id}`,
+            message: `You confirmed your booking for ${dest}. E-tickets and embassy vouchers are issued!`,
+            dotColor: 'green',
+            iconType: 'check',
+            timestamp: q.updatedAt || new Date().toISOString(),
+          });
+        }
+      });
+    }
+
+    // 2. Gather system announcements (Utility-based only)
+    const announcements = systemAnnouncementsStore.map((sa) => ({
+      id: sa.id,
+      feedType: 'announcement' as const,
+      title: sa.title,
+      message: sa.message,
+      dotColor: sa.dotColor,
+      iconType: sa.iconType,
+      category: sa.category,
+      timestamp: sa.timestamp,
+      isRead: readIds.includes(sa.id),
+      actionUrl: sa.actionUrl,
+      actionLabel: sa.actionLabel,
+    }));
+
+    // 3. Format personal activities into feed format
+    const formattedPersonal = personalActivities.map((act) => ({
+      id: act.id,
+      feedType: 'personal' as const,
+      title: act.title,
+      message: act.message,
+      dotColor: act.dotColor,
+      iconType: act.iconType || 'info',
+      category: (act.status === 'Booked' ? 'Trip Milestone' : 'Quote Status') as any,
+      quoteId: act.quoteId,
+      quoteType: act.quoteType,
+      routeOrDestination: act.routeOrDestination,
+      status: act.status,
+      timestamp: act.timestamp,
+      agentName: act.agentName,
+      quotedPrice: act.quotedPrice,
+      isRead: readIds.includes(act.id),
+      actionUrl: act.actionUrl,
+      actionLabel: act.actionLabel,
+    }));
+
+    // 4. Merge and sort by timestamp descending
+    const combinedFeed = [...formattedPersonal, ...announcements].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    // Calculate unread count
+    const unreadCount = combinedFeed.filter((item) => !item.isRead).length;
+
+    // Social Proof LITE (Anonymous aggregated stats for the bottom section)
+    const socialProof = [
+      { id: 'sp_1', text: '✨ 12 travelers booked trips to Maldives this week.' },
+      { id: 'sp_2', text: '✨ 5 travelers are currently exploring Bali & Bangkok.' },
+      { id: 'sp_3', text: '✨ 8 express visas approved today for Dubai & Malaysia.' },
+    ];
+
+    // Pagination support
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 50);
+    const startIndex = (page - 1) * limit;
+    const paginatedFeed = combinedFeed.slice(startIndex, startIndex + limit);
+
+    res.json({
+      success: true,
+      feed: paginatedFeed,
+      total: combinedFeed.length,
+      page,
+      limit,
+      unreadCount,
+      hasPersonalActivity: formattedPersonal.length > 0,
+      socialProof,
+    });
+  } catch (err: any) {
+    console.error("GET /api/feed Error:", err);
+    res.status(500).json({ error: "Failed to load activity feed." });
+  }
+});
+
+// 7e. Mark Feed Items as Read
+app.post("/api/feed/read", (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    let token = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : "";
+    if (!token && req.headers["x-auth-token"]) {
+      token = String(req.headers["x-auth-token"]).trim();
+    }
+
+    let userEmail = "";
+    if (token && activeTokensMap.has(token)) {
+      userEmail = activeTokensMap.get(token)!;
+    } else if (req.body.email) {
+      userEmail = String(req.body.email).trim().toLowerCase();
+    }
+
+    if (!userEmail) {
+      return res.status(401).json({ error: "Unauthorized: Please provide a valid session token or email." });
+    }
+
+    const { itemIds, markAll } = req.body;
+    const emailKey = userEmail.toLowerCase();
+    const existing = new Set(userReadFeedsStore[emailKey] || []);
+
+    if (markAll) {
+      userActivitiesStore
+        .filter((act) => act.userEmail.toLowerCase() === emailKey)
+        .forEach((act) => existing.add(act.id));
+      systemAnnouncementsStore.forEach((sa) => existing.add(sa.id));
+    } else if (Array.isArray(itemIds)) {
+      itemIds.forEach((id: string) => existing.add(id));
+    } else if (typeof req.body.itemId === "string") {
+      existing.add(req.body.itemId);
+    }
+
+    userReadFeedsStore[emailKey] = Array.from(existing);
+    saveReadFeedsToDisk();
+
+    res.json({ success: true, readCount: userReadFeedsStore[emailKey].length });
+  } catch (err: any) {
+    console.error("POST /api/feed/read Error:", err);
+    res.status(500).json({ error: "Failed to update read state." });
+  }
+});
+
 
 // 8. Admin List All Quotations
 app.get("/api/quotes/admin", (req, res) => {
@@ -1775,6 +2242,56 @@ app.patch("/api/quotes/admin/:id", (req, res) => {
       targetQuote.status = status;
       logActivity(targetQuote.id, `Status updated: ${prevStatus} ➔ ${status}`, actor, `Updated by ${actor}`);
       createNotification(`Status Changed: ${targetQuote.id}`, `${targetQuote.customerName}'s quote changed to ${status}`, targetQuote.id, "status_change");
+
+      // Log to Client Timeline Activity Feed (Type A: Personal Trip Activity)
+      let title = `Status Updated: ${status}`;
+      let message = `Your quotation status was updated to ${status}.`;
+      let dotColor: "yellow" | "green" | "red" | "blue" = "yellow";
+      let iconType: any = "info";
+
+      const dest = targetQuote.type === 'flight' 
+        ? `${targetQuote.from} ➔ ${targetQuote.to}` 
+        : `${targetQuote.destinationCountry} (${targetQuote.visaType || 'Visa'})`;
+
+      if (['Processing', 'Reviewing'].includes(status)) {
+        const staff = assignedStaff || targetQuote.assignedStaff || "Rahim Chowdhury (Flight Specialist)";
+        title = `📞 Specialist Assigned: ${staff}`;
+        message = `Our specialist is reviewing live wholesale airline options, schedules, and consular slots for ${dest}.`;
+        dotColor = "yellow";
+        iconType = "phone";
+      } else if (['Quoted', 'Quoted via WhatsApp', 'Quoted via Email', 'Quotation Prepared', 'Sent'].includes(status)) {
+        const price = quotedPrice || targetQuote.quotedPrice || 'Wholesale Tariff';
+        title = `💬 Personalized Quote Prepared (${price})`;
+        message = targetQuote.staffNote 
+          ? `Quote details: ${targetQuote.staffNote}. Dispatched via ${targetQuote.preferredContactMethod || 'WhatsApp'}.`
+          : `Your official price estimate of ${price} for ${dest} was dispatched via ${targetQuote.preferredContactMethod || 'WhatsApp'}.`;
+        dotColor = "green";
+        iconType = "message";
+      } else if (['Booked', 'Customer Confirmed'].includes(status)) {
+        title = `✅ Booking Confirmed! Trip ID: ${targetQuote.id}`;
+        message = `You confirmed your booking for ${dest}! All flight e-tickets, hotel booking confirmation vouchers, and consular submission documents are finalized.`;
+        dotColor = "green";
+        iconType = "check";
+      } else if (['Expired', 'Lost', 'Closed'].includes(status)) {
+        title = `📋 Quotation ${status}: ${targetQuote.id}`;
+        message = `Quotation for ${dest} has concluded. You can request a fresh live quotation anytime.`;
+        dotColor = "yellow";
+        iconType = "info";
+      }
+
+      addUserActivity({
+        userEmail: targetQuote.email,
+        quoteId: targetQuote.id,
+        quoteType: targetQuote.type,
+        routeOrDestination: dest,
+        status: status,
+        title,
+        message,
+        dotColor,
+        iconType,
+        agentName: assignedStaff || targetQuote.assignedStaff,
+        quotedPrice: quotedPrice || targetQuote.quotedPrice,
+      });
     }
 
     if (staffNote !== undefined) targetQuote.staffNote = staffNote;

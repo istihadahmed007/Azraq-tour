@@ -100,16 +100,6 @@ export const Navigation: React.FC<NavigationProps> = ({
               )}
             </button>
             <button
-              onClick={() => onViewChange('feed')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                currentView === 'feed'
-                  ? 'bg-primary text-on-primary shadow-md font-semibold'
-                  : 'text-on-surface-variant hover:text-white hover:bg-white/10'
-              }`}
-            >
-              Feed
-            </button>
-            <button
               onClick={() => onViewChange('blog')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
                 currentView === 'blog'
@@ -160,12 +150,12 @@ export const Navigation: React.FC<NavigationProps> = ({
           <div className="flex items-center gap-2">
             {/* Quick Notifications Button */}
             <button
-              onClick={() => onViewChange('feed')}
-              className="p-2 rounded-full hover:bg-white/10 text-on-surface-variant hover:text-primary transition-colors relative"
-              title="Notifications"
+              onClick={() => onViewChange('profile')}
+              className="p-2 rounded-full hover:bg-white/10 text-on-surface-variant hover:text-primary transition-colors relative cursor-pointer"
+              title="View Journey Updates & Notifications"
             >
               <span className="material-symbols-outlined">notifications</span>
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-tertiary rounded-full"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-400 rounded-full"></span>
             </button>
 
             {/* Quick Map Button */}
@@ -431,13 +421,13 @@ export const Navigation: React.FC<NavigationProps> = ({
         </button>
 
         <button
-          onClick={() => onViewChange('feed')}
+          onClick={() => onViewChange('blog')}
           className={`flex flex-col items-center gap-1 min-h-[48px] px-2 py-1 rounded-xl transition-colors ${
-            currentView === 'feed' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-white'
+            currentView === 'blog' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-white'
           }`}
         >
-          <span className="material-symbols-outlined text-2xl">auto_awesome_motion</span>
-          <span className="text-[14px] font-medium tracking-tight">Feed</span>
+          <span className="material-symbols-outlined text-2xl">menu_book</span>
+          <span className="text-[14px] font-medium tracking-tight">Blog</span>
         </button>
 
         <button
