@@ -39,7 +39,7 @@ export const PackagesView: React.FC = () => {
   } = usePackages();
 
   return (
-    <div className="w-full min-h-screen pb-20 pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 animate-fadeIn">
+    <div className="w-full min-h-screen pb-20 pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 animate-fadeIn">
       {/* Hero Banner */}
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-sky-950 via-slate-900 to-slate-950 border border-sky-500/30 shadow-2xl p-6 sm:p-10">
         <div className="relative z-10 max-w-3xl space-y-4">

@@ -518,7 +518,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const confirmedCount = quotes.filter((q) => ['Customer Confirmed', 'Booked', 'Closed'].includes(q.status)).length;
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-20 md:pt-8 pb-24 space-y-8 animate-fade-in text-slate-100">
+    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-4 pb-24 space-y-8 animate-fade-in text-slate-100">
       {/* Top Banner & Role Switcher */}
       <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-[#0a192f] border border-amber-400/30 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
         <div className="space-y-1 z-10">

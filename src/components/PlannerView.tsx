@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ChatMessage, Itinerary, Spot } from '../types';
 import { BudgetTracker } from './BudgetTracker';
+import { EnRouteCommandCenter } from './enroute/EnRouteCommandCenter';
+import { Compass, Flame, Shield, Radio, Sparkles } from 'lucide-react';
 
 interface PlannerViewProps {
   currentItinerary: Itinerary;
@@ -17,8 +19,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   onViewOnMap,
   isSaved,
 }) => {
-  // Tab state (Itinerary timeline vs Budget & Expense tracker)
-  const [activeTab, setActiveTab] = useState<'itinerary' | 'budget'>('itinerary');
+  // Tab state (Itinerary timeline vs Budget & Expense tracker vs EnRoute Group PWA)
+  const [activeTab, setActiveTab] = useState<'itinerary' | 'budget' | 'enroute'>('itinerary');
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -172,7 +174,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-20 md:pt-10 pb-24 flex flex-col md:flex-row gap-8 h-full min-h-screen">
+    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-4 pb-24 flex flex-col md:flex-row gap-8 h-full min-h-screen">
       {/* Left Panel: Planner Controls & AI Chat */}
       <section className="w-full md:w-5/12 lg:w-4/12 flex flex-col gap-6">
         {/* Title */}
@@ -419,6 +421,37 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
             chevron_right
           </span>
         </div>
+
+        {/* Quick EnRoute Group Travel PWA Teaser */}
+        <div
+          onClick={() => setActiveTab('enroute')}
+          className={`glass-panel rounded-2xl p-4 flex items-center justify-between shadow-xl border transition-all group cursor-pointer ${
+            activeTab === 'enroute'
+              ? 'border-sky-500 bg-sky-950/60 shadow-sky-950/80 ring-2 ring-sky-500/30'
+              : 'border-indigo-500/30 hover:border-sky-400/60 bg-gradient-to-r from-indigo-950/50 via-slate-900/50 to-sky-950/50'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+              <Compass className="w-5 h-5 animate-spin-slow" />
+            </div>
+            <div>
+              <h4 className="text-xs font-extrabold text-white group-hover:text-sky-300 transition-colors flex items-center gap-1.5">
+                EnRoute Group PWA
+                <span className="px-1.5 py-0.2 rounded text-[10px] bg-sky-500/30 text-sky-300 border border-sky-400/40 font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  Live Sync
+                </span>
+              </h4>
+              <p className="text-[11px] text-slate-300">
+                Sentinel Map, 60% Swipe Voting & OCR Split
+              </p>
+            </div>
+          </div>
+          <span className="material-symbols-outlined text-sm text-sky-300 group-hover:translate-x-0.5 transition-all">
+            chevron_right
+          </span>
+        </div>
       </section>
 
       {/* Right Panel: Immersive Itinerary & Budget View */}
@@ -474,8 +507,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
             </div>
           </div>
 
-          {/* Tab Switcher: Itinerary Timeline vs Budget & Expenses */}
-          <div className="flex items-center gap-2 p-1 rounded-2xl bg-white/5 border border-white/10 mb-6 w-full sm:w-fit">
+          {/* Tab Switcher: Itinerary Timeline vs Budget & Expenses vs EnRoute PWA */}
+          <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-white/5 border border-white/10 mb-6 w-full">
             <button
               onClick={() => setActiveTab('itinerary')}
               className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
@@ -509,10 +542,31 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                 Tracker
               </span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('enroute')}
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                activeTab === 'enroute'
+                  ? 'bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-lg border-sky-300'
+                  : 'text-sky-300 hover:text-white hover:bg-sky-500/10 border-sky-500/30'
+              }`}
+            >
+              <Compass className="w-4 h-4 text-sky-300" />
+              <span>EnRoute Group PWA</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                activeTab === 'enroute' ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-300'
+              }`}>
+                Live
+              </span>
+            </button>
           </div>
 
           {/* Conditional Tab Rendering */}
-          {activeTab === 'budget' ? (
+          {activeTab === 'enroute' ? (
+            <div className="w-full h-[650px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
+              <EnRouteCommandCenter />
+            </div>
+          ) : activeTab === 'budget' ? (
             <BudgetTracker
               itinerary={currentItinerary}
               onUpdateItinerary={onUpdateItinerary}

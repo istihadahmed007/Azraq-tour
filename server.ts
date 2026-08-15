@@ -5,7 +5,9 @@ import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import { INITIAL_TOUR_PACKAGES } from "./src/data/initialPackagesData";
-import { INITIAL_BLOG_POSTS, INITIAL_SOCIAL_PROOF_ACTIVITIES } from "./src/data/blogPostsData";
+import { INITIAL_SOCIAL_PROOF_ACTIVITIES } from "./src/data/socialProofData";
+
+const INITIAL_BLOG_POSTS: any[] = [];
 
 const app = express();
 const PORT = 3000;

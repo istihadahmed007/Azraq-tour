@@ -12,32 +12,37 @@ interface NavigationProps {
   savedTripsCount: number;
 }
 
-export const Navigation: React.FC<NavigationProps> = ({
-  currentView,
-  onViewChange,
-  brandTheme,
-  onToggleBrand,
-  onNewTripClick,
-  savedTripsCount,
-}) => {
-  const { user, isGuest, openAuthModal, logout } = useAuth();
-  const isAzraq = true;
+export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
+  (
+    {
+      currentView,
+      onViewChange,
+      brandTheme,
+      onToggleBrand,
+      onNewTripClick,
+      savedTripsCount,
+    },
+    ref
+  ) => {
+    const { user, isGuest, openAuthModal, logout } = useAuth();
+    const isAzraq = true;
 
-  const brandTitle = 'Azraq Tours & Travels';
-  const brandSub = 'Luxury AI Concierge';
-  const logoUrl = BRAND_LOGOS.azraq;
+    const brandTitle = 'Azraq Tours & Travels';
+    const brandSub = 'Luxury AI Concierge';
+    const logoUrl = BRAND_LOGOS.azraq;
 
-  return (
-    <>
-      {/* Top Navigation Bar */}
-      <nav
-        aria-label="Main Navigation"
-        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-          isAzraq
-            ? 'bg-sky-900/60 backdrop-blur-xl border-b border-sky-300/30 shadow-lg'
-            : 'bg-slate-900/50 backdrop-blur-2xl border-b border-white/20 shadow-xl'
-        }`}
-      >
+    return (
+      <>
+        {/* Top Navigation Bar */}
+        <nav
+          ref={ref}
+          aria-label="Main Navigation"
+          className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+            isAzraq
+              ? 'bg-sky-900/60 backdrop-blur-xl border-b border-sky-300/30 shadow-lg'
+              : 'bg-slate-900/50 backdrop-blur-2xl border-b border-white/20 shadow-xl'
+          }`}
+        >
         <div className="flex justify-between items-center px-4 md:px-8 py-3 w-full max-w-7xl mx-auto">
           {/* Logo & Brand Name */}
           <div
@@ -66,6 +71,17 @@ export const Navigation: React.FC<NavigationProps> = ({
           {/* Desktop Nav Links */}
           <div className="hidden md:flex items-center gap-1 bg-white/5 dark:bg-white/5 p-1 rounded-full border border-white/10">
             <button
+              onClick={() => onViewChange('enroute')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+                currentView === 'enroute'
+                  ? 'bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-bold shadow-md'
+                  : 'text-sky-300 hover:text-white hover:bg-sky-500/20'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>EnRoute PWA</span>
+            </button>
+            <button
               onClick={() => onViewChange('discover')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                 currentView === 'discover'
@@ -74,6 +90,17 @@ export const Navigation: React.FC<NavigationProps> = ({
               }`}
             >
               Discover
+            </button>
+            <button
+              onClick={() => onViewChange('feed')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+                currentView === 'feed'
+                  ? 'bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 text-white font-bold shadow-md'
+                  : 'text-pink-300 hover:text-white hover:bg-pink-500/20'
+              }`}
+            >
+              <span>Travel Buddies</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse"></span>
             </button>
             <button
               onClick={() => onViewChange('packages')}
@@ -98,17 +125,6 @@ export const Navigation: React.FC<NavigationProps> = ({
               {savedTripsCount > 0 && (
                 <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
               )}
-            </button>
-            <button
-              onClick={() => onViewChange('blog')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
-                currentView === 'blog'
-                  ? 'bg-primary text-on-primary shadow-md font-semibold'
-                  : 'text-on-surface-variant hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <span>Stories & Blog</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
             </button>
             <button
               onClick={() => onViewChange('map')}
@@ -235,7 +251,10 @@ export const Navigation: React.FC<NavigationProps> = ({
       </nav>
 
       {/* Desktop Side Navigation Bar */}
-      <aside className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 z-40 bg-slate-950/40 backdrop-blur-2xl border-r border-white/20 shadow-2xl pt-24 pb-6 px-4 gap-2">
+      <aside
+        style={{ paddingTop: 'calc(var(--navbar-height, 80px) + 16px)' }}
+        className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 z-40 bg-slate-950/40 backdrop-blur-2xl border-r border-white/20 shadow-2xl pb-6 px-4 gap-2"
+      >
         <div className="px-3 mb-2">
           <h2 className="font-serif-display text-lg text-primary font-semibold">{brandTitle}</h2>
           <p className="text-xs text-outline font-medium">{brandSub}</p>
@@ -282,24 +301,15 @@ export const Navigation: React.FC<NavigationProps> = ({
             onClick={() => onViewChange('feed')}
             className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
               currentView === 'feed'
-                ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md'
+                ? 'bg-gradient-to-r from-pink-500/20 to-amber-500/20 text-pink-300 border border-pink-500/30 shadow-md font-bold'
                 : 'text-on-surface-variant hover:bg-white/5 hover:text-white hover:translate-x-1'
             }`}
           >
-            <span className="material-symbols-outlined text-xl">auto_awesome_motion</span>
-            <span>Feed</span>
-          </button>
-
-          <button
-            onClick={() => onViewChange('blog')}
-            className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium text-sm text-left ${
-              currentView === 'blog'
-                ? 'bg-primary-container/30 text-primary border border-primary/30 shadow-md'
-                : 'text-on-surface-variant hover:bg-white/5 hover:text-white hover:translate-x-1'
-            }`}
-          >
-            <span className="material-symbols-outlined text-xl">menu_book</span>
-            <span>Stories & Blog</span>
+            <span className="material-symbols-outlined text-xl text-pink-400">group</span>
+            <div className="flex items-center justify-between flex-1">
+              <span>Travel Buddies</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-300 font-bold">Social</span>
+            </div>
           </button>
 
           <button
@@ -408,6 +418,19 @@ export const Navigation: React.FC<NavigationProps> = ({
         </button>
 
         <button
+          onClick={() => onViewChange('feed')}
+          className={`flex flex-col items-center gap-1 min-h-[48px] px-2 py-1 rounded-xl transition-colors relative ${
+            currentView === 'feed' ? 'text-pink-400 font-bold' : 'text-on-surface-variant hover:text-white'
+          }`}
+        >
+          {currentView === 'feed' && (
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-400 rounded-full"></div>
+          )}
+          <span className="material-symbols-outlined text-2xl">group</span>
+          <span className="text-[12px] font-medium tracking-tight">Buddies</span>
+        </button>
+
+        <button
           onClick={() => onViewChange('planner')}
           className={`flex flex-col items-center gap-1 min-h-[48px] px-2 py-1 rounded-xl transition-colors relative ${
             currentView === 'planner' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-white'
@@ -418,16 +441,6 @@ export const Navigation: React.FC<NavigationProps> = ({
           )}
           <span className="material-symbols-outlined text-2xl">event_note</span>
           <span className="text-[14px] font-medium tracking-tight">Planner</span>
-        </button>
-
-        <button
-          onClick={() => onViewChange('blog')}
-          className={`flex flex-col items-center gap-1 min-h-[48px] px-2 py-1 rounded-xl transition-colors ${
-            currentView === 'blog' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-white'
-          }`}
-        >
-          <span className="material-symbols-outlined text-2xl">menu_book</span>
-          <span className="text-[14px] font-medium tracking-tight">Blog</span>
         </button>
 
         <button
@@ -452,4 +465,6 @@ export const Navigation: React.FC<NavigationProps> = ({
       </nav>
     </>
   );
-};
+});
+
+Navigation.displayName = 'Navigation';

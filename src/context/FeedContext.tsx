@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { FeedPost, Comment, TrendingHashtag } from '../types';
 import { useAuth } from './AuthContext';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import {
   collection,
   doc,
@@ -94,7 +94,7 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         },
         (error) => {
-          console.warn('Firestore feed listener note:', error);
+          handleFirestoreError(error, OperationType.LIST, 'feed_posts');
         }
       );
     } catch (e) {

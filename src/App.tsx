@@ -5,16 +5,16 @@ import { INITIAL_DESTINATIONS, INITIAL_KYOTO_ITINERARY } from './data/mockData';
 import { AuthProvider } from './context/AuthContext';
 import { PackageProvider } from './context/PackageContext';
 import { FeedProvider } from './context/FeedContext';
-import { BlogProvider } from './context/BlogContext';
+import { EnRouteProvider } from './context/EnRouteContext';
+import { EnRouteCommandCenter } from './components/enroute/EnRouteCommandCenter';
 import { AuthModal } from './components/AuthModal';
 import { Toast } from './components/Toast';
 import { Navigation } from './components/Navigation';
+import { ClientLayout } from './components/ClientLayout';
 import { DiscoverView } from './components/DiscoverView';
 import { PackagesView } from './components/PackagesView';
 import { PlannerView } from './components/PlannerView';
 import { FeedView } from './components/FeedView';
-import { BlogView } from './components/BlogView';
-import { SocialProofTicker } from './components/SocialProofTicker';
 import { MapView } from './components/MapView';
 import { ProfileView } from './components/ProfileView';
 import { DestinationModal } from './components/DestinationModal';
@@ -26,7 +26,7 @@ import { VisaQuoteModal } from './components/VisaQuoteModal';
 import AuthCallback from './pages/AuthCallback';
 
 function AppContent() {
-  const [currentView, setCurrentView] = useState<NavView>('discover');
+  const [currentView, setCurrentView] = useState<NavView>('enroute');
   const [brandTheme, setBrandTheme] = useState<BrandTheme>('azraq');
   const [isFooterVisaModalOpen, setIsFooterVisaModalOpen] = useState(false);
   const [isFooterFlightModalOpen, setIsFooterFlightModalOpen] = useState(false);
@@ -133,93 +133,92 @@ function AppContent() {
   const isCurrentItinerarySaved = savedItineraries.some((i) => i.id === currentItinerary.id);
 
   return (
-    <div className={`min-h-screen text-[#f0f9ff] sky-natural-bg font-sans selection:bg-[#0284c7] selection:text-white ${brandTheme === 'azraq' ? 'azraq-mode' : ''}`}>
-      {/* Top and Side Navigation */}
-      <Navigation
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        brandTheme={brandTheme}
-        onToggleBrand={handleToggleBrand}
-        onNewTripClick={() => setCurrentView('planner')}
-        savedTripsCount={savedItineraries.length}
-      />
+    <ClientLayout
+      className={`min-h-screen text-[#f0f9ff] sky-natural-bg font-sans selection:bg-[#0284c7] selection:text-white ${brandTheme === 'azraq' ? 'azraq-mode' : ''}`}
+      mainClassName="md:ml-64 transition-all duration-300 min-h-screen"
+      navbar={(navRef) => (
+        <Navigation
+          ref={navRef as React.Ref<HTMLElement>}
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          brandTheme={brandTheme}
+          onToggleBrand={handleToggleBrand}
+          onNewTripClick={() => setCurrentView('planner')}
+          savedTripsCount={savedItineraries.length}
+        />
+      )}
+    >
+      {/* Main Views */}
+      {currentView === 'enroute' && (
+        <div className="w-full h-[calc(100vh-var(--navbar-height,80px))]">
+          <EnRouteCommandCenter />
+        </div>
+      )}
 
-      {/* Main View Area */}
-      <main className="md:ml-64 transition-all duration-300">
-        {currentView === 'discover' && (
-          <DiscoverView
-            destinations={destinations}
-            onSelectDestination={setModalDestination}
-            onPlanTripPrompt={handlePlanTripPrompt}
-            onQuickGenerateItinerary={handleQuickGenerateItinerary}
-          />
-        )}
+      {currentView === 'discover' && (
+        <DiscoverView
+          destinations={destinations}
+          onSelectDestination={setModalDestination}
+          onPlanTripPrompt={handlePlanTripPrompt}
+          onQuickGenerateItinerary={handleQuickGenerateItinerary}
+        />
+      )}
 
-        {currentView === 'packages' && <PackagesView />}
+      {currentView === 'packages' && <PackagesView />}
 
-        {currentView === 'planner' && (
-          <PlannerView
-            currentItinerary={currentItinerary}
-            onUpdateItinerary={setCurrentItinerary}
-            onSaveItinerary={handleSaveItinerary}
-            onViewOnMap={handleViewOnMap}
-            isSaved={isCurrentItinerarySaved}
-          />
-        )}
+      {currentView === 'planner' && (
+        <PlannerView
+          currentItinerary={currentItinerary}
+          onUpdateItinerary={setCurrentItinerary}
+          onSaveItinerary={handleSaveItinerary}
+          onViewOnMap={handleViewOnMap}
+          isSaved={isCurrentItinerarySaved}
+        />
+      )}
 
-        {currentView === 'feed' && (
-          <FeedView
-            onSelectDestinationByName={handleSelectDestinationByName}
-            onNavigateToProfile={() => setCurrentView('profile')}
-          />
-        )}
+      {currentView === 'feed' && (
+        <FeedView
+          onSelectDestinationByName={handleSelectDestinationByName}
+          onNavigateToProfile={() => setCurrentView('profile')}
+        />
+      )}
 
-        {currentView === 'blog' && (
-          <BlogView
-            onNavigateToView={(v) => setCurrentView(v as NavView)}
-            onOpenFlightQuote={() => setIsFooterFlightModalOpen(true)}
-            onOpenVisaQuote={() => setIsFooterVisaModalOpen(true)}
-          />
-        )}
+      {currentView === 'map' && (
+        <MapView
+          destinations={destinations}
+          onSelectDestination={setModalDestination}
+          selectedSpot={mapSpot}
+        />
+      )}
 
-        {currentView === 'map' && (
-          <MapView
-            destinations={destinations}
-            onSelectDestination={setModalDestination}
-            selectedSpot={mapSpot}
-          />
-        )}
+      {currentView === 'profile' && (
+        <ProfileView
+          savedItineraries={savedItineraries}
+          onSelectItinerary={(itinerary) => {
+            setCurrentItinerary(itinerary);
+            setCurrentView('planner');
+          }}
+          onRemoveItinerary={handleRemoveSavedItinerary}
+          onNavigateToFeed={() => setCurrentView('feed')}
+          onSelectDestination={setModalDestination}
+          onOpenFlightQuote={() => setIsFooterFlightModalOpen(true)}
+          onOpenVisaQuote={() => setIsFooterVisaModalOpen(true)}
+          onNavigate={(view) => setCurrentView(view as NavView)}
+        />
+      )}
 
-        {currentView === 'profile' && (
-          <ProfileView
-            savedItineraries={savedItineraries}
-            onSelectItinerary={(itinerary) => {
-              setCurrentItinerary(itinerary);
-              setCurrentView('planner');
-            }}
-            onRemoveItinerary={handleRemoveSavedItinerary}
-            onNavigateToFeed={() => setCurrentView('feed')}
-            onSelectDestination={setModalDestination}
-            onOpenFlightQuote={() => setIsFooterFlightModalOpen(true)}
-            onOpenVisaQuote={() => setIsFooterVisaModalOpen(true)}
-            onNavigate={(view) => setCurrentView(view as NavView)}
-          />
-        )}
+      {currentView === 'admin' && (
+        <AdminDashboard onClose={() => setCurrentView('discover')} />
+      )}
 
-        {currentView === 'admin' && (
-          <AdminDashboard onClose={() => setCurrentView('discover')} />
-        )}
-
-        {/* Global Travel Agency Footer */}
+      {/* Global Travel Agency Footer */}
+      {currentView !== 'enroute' && (
         <Footer
           onNavigate={(view) => setCurrentView(view as NavView)}
           onOpenVisaQuote={() => setIsFooterVisaModalOpen(true)}
           onOpenFlightQuote={() => setIsFooterFlightModalOpen(true)}
         />
-      </main>
-
-      {/* Floating Live Social Proof Toast (Option 2 - High Conversion Proof) */}
-      <SocialProofTicker variant="toast" />
+      )}
 
       {/* Destination Inspector Modal */}
       <DestinationModal
@@ -248,7 +247,7 @@ function AppContent() {
       {/* Auth Modal & Toast Notifications */}
       <AuthModal brandTitle="Azraq Tours & Travels" />
       <Toast />
-    </div>
+    </ClientLayout>
   );
 }
 
@@ -257,9 +256,9 @@ export function App() {
     <AuthProvider>
       <PackageProvider>
         <FeedProvider>
-          <BlogProvider>
+          <EnRouteProvider>
             <AppContent />
-          </BlogProvider>
+          </EnRouteProvider>
         </FeedProvider>
       </PackageProvider>
     </AuthProvider>

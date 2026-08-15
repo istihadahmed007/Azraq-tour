@@ -26,7 +26,7 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-24 md:pt-12 pb-24 flex flex-col gap-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-4 pb-24 flex flex-col gap-8">
       {/* Map Header & Value Proposition */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/80 p-6 sm:p-8 rounded-3xl border border-sky-400/25 backdrop-blur-xl shadow-2xl">
         <div className="space-y-1 max-w-2xl">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SocialProofActivity } from '../types';
-import { INITIAL_SOCIAL_PROOF_ACTIVITIES } from '../data/blogPostsData';
+import { INITIAL_SOCIAL_PROOF_ACTIVITIES } from '../data/socialProofData';
 import { Plane, CheckCircle2, Building2, Stamp, Sparkles, Activity, X } from 'lucide-react';
 
 interface SocialProofTickerProps {

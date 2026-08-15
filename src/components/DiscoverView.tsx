@@ -113,7 +113,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
   ];
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-8 pt-24 md:pt-12 pb-24 flex flex-col gap-10">
+    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-8 pt-4 pb-24 flex flex-col gap-10">
       {/* Hero Header Section with High-Quality Cinematic Visual Backdrop */}
       <section className="relative overflow-hidden rounded-3xl border border-sky-400/25 bg-slate-950 p-6 sm:p-10 md:p-14 text-center shadow-2xl flex flex-col items-center justify-center gap-6">
         {/* Background Cinematic Visual & Gradient Overlay */}

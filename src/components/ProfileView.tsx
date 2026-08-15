@@ -347,7 +347,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-20 md:pt-8 pb-28 flex flex-col gap-8">
+    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-4 pb-28 flex flex-col gap-8">
       {/* Email Verification Warning Banner if Logged In & Unverified */}
       {!isGuest && user && !user.emailVerified && (
         <div className="bg-amber-500/20 border border-amber-400/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-100 shadow-xl backdrop-blur-xl animate-fade-in">
