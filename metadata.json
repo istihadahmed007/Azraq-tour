@@ -1,6 +1,6 @@
 {
   "name": "Azraq Tours & Travels",
-  "description": "EnRoute Mobile-First Group Travel PWA with Smart Itinerary Reshuffling, Democratized Group Voting, Sentinel Safety Maps, and OCR Receipt Splitting.",
+  "description": "Luxury AI Concierge and travel quotation platform for Bangladeshi and international travelers with tailored flight tickets, verified visa assistance, and bespoke Asian itineraries.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

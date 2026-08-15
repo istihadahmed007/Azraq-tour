@@ -18,10 +18,33 @@ export const Footer: React.FC<FooterProps> = ({
 
   return (
     <>
-      <footer className="w-full bg-slate-950 border-t border-sky-400/20 text-slate-300 pt-16 pb-12 px-4 sm:px-6 md:px-12 relative overflow-hidden">
+      <footer className="w-full bg-[#071626] border-t border-sky-500/20 text-slate-300 pt-10 pb-12 px-4 sm:px-6 md:px-12 relative overflow-hidden">
         {/* Subtle background glow effect */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/5 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+        {/* Mockup Exclusive Brand Bar */}
+        <div className="max-w-7xl mx-auto mb-10 pb-6 border-b border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse"></span>
+            <span className="font-bold text-sm sm:text-base tracking-widest uppercase text-sky-400">
+              AZRAQ TOURS & TRAVELS EXCLUSIVE
+            </span>
+          </div>
+
+          <div className="hidden md:flex items-center flex-1 mx-6">
+            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-sky-400/30 to-transparent"></div>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-300">
+            <span className="flex items-center gap-1 text-emerald-400">
+              <span className="material-symbols-outlined text-base">support_agent</span>
+              24/7 TRAVEL DESK
+            </span>
+            <span className="text-white/30">│</span>
+            <span className="text-sky-400 font-bold">Azraq</span>
+          </div>
+        </div>
 
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 pb-12 border-b border-white/10 relative z-10">
           {/* Col 1: Brand & Bio */}
@@ -53,7 +76,7 @@ export const Footer: React.FC<FooterProps> = ({
               <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 font-medium">
                 Verified Visa Guidance
               </span>
-              <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-400/20 font-medium">
+              <span className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 font-medium">
                 Direct WhatsApp Hotline
               </span>
             </div>

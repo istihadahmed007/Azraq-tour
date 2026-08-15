@@ -94,7 +94,7 @@ export const QuotationSection: React.FC<QuotationSectionProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto relative z-10">
           
           {/* Card 1: Flight Ticket Quotation */}
-          <div className="group relative rounded-3xl bg-gradient-to-b from-slate-800/95 via-slate-800/80 to-slate-900/95 border-2 border-amber-400/30 hover:border-amber-400/70 p-7 sm:p-8 shadow-xl transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 flex flex-col justify-between overflow-hidden">
+          <div className="group relative rounded-3xl bg-gradient-to-b from-slate-800/95 via-slate-800/80 to-slate-900/95 border-2 border-sky-400/30 hover:border-sky-400/70 p-7 sm:p-8 shadow-xl transition-all duration-300 hover:shadow-2xl hover:shadow-sky-500/10 flex flex-col justify-between overflow-hidden">
             {/* Background Travel Image Accent */}
             <div className="absolute top-0 right-0 w-36 h-36 opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none overflow-hidden rounded-bl-full">
               <img
@@ -105,16 +105,16 @@ export const QuotationSection: React.FC<QuotationSectionProps> = ({
             </div>
 
             <div className="space-y-4 relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
                 ✈️
               </div>
 
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-2xl font-serif-display font-bold text-white group-hover:text-amber-300 transition-colors">
+                  <h3 className="text-2xl font-serif-display font-bold text-white group-hover:text-sky-300 transition-colors">
                     Flight Ticket Quotation
                   </h3>
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-400/30">
+                  <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[11px] font-bold border border-sky-400/30">
                     Best Airfares
                   </span>
                 </div>
@@ -123,17 +123,17 @@ export const QuotationSection: React.FC<QuotationSectionProps> = ({
                 </p>
               </div>
 
-              <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-amber-200/90 font-medium">
+              <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-sky-200/90 font-medium">
                 <span className="flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-lg">
-                  <span className="material-symbols-outlined text-sm text-amber-400">check_circle</span>
+                  <span className="material-symbols-outlined text-sm text-sky-400">check_circle</span>
                   Best Fare Guarantee
                 </span>
                 <span className="flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-lg">
-                  <span className="material-symbols-outlined text-sm text-amber-400">check_circle</span>
+                  <span className="material-symbols-outlined text-sm text-sky-400">check_circle</span>
                   Flexible Dates
                 </span>
                 <span className="flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-lg">
-                  <span className="material-symbols-outlined text-sm text-amber-400">check_circle</span>
+                  <span className="material-symbols-outlined text-sm text-sky-400">check_circle</span>
                   Top Global Airlines
                 </span>
               </div>
@@ -142,7 +142,7 @@ export const QuotationSection: React.FC<QuotationSectionProps> = ({
             <div className="pt-6 relative z-10">
               <button
                 onClick={() => setIsFlightModalOpenInternal(true)}
-                className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-sm sm:text-base transition-all duration-200 ease-out shadow-lg shadow-amber-500/25 hover:scale-[1.02] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
+                className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-sky-400 to-cyan-400 hover:from-sky-300 hover:to-cyan-300 text-slate-950 font-bold text-sm sm:text-base transition-all duration-200 ease-out shadow-lg shadow-sky-500/25 hover:scale-[1.02] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
               >
                 <span>Get Flight Quotation Now</span>
                 <span className="material-symbols-outlined text-lg">arrow_forward</span>

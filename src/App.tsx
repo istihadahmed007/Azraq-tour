@@ -26,10 +26,12 @@ import { VisaQuoteModal } from './components/VisaQuoteModal';
 import AuthCallback from './pages/AuthCallback';
 
 function AppContent() {
-  const [currentView, setCurrentView] = useState<NavView>('enroute');
+  const [currentView, setCurrentView] = useState<NavView>('discover');
   const [brandTheme, setBrandTheme] = useState<BrandTheme>('azraq');
-  const [isFooterVisaModalOpen, setIsFooterVisaModalOpen] = useState(false);
-  const [isFooterFlightModalOpen, setIsFooterFlightModalOpen] = useState(false);
+  const [isVisaModalOpen, setIsVisaModalOpen] = useState(false);
+  const [visaModalCountry, setVisaModalCountry] = useState<string | undefined>(undefined);
+  const [isFlightModalOpen, setIsFlightModalOpen] = useState(false);
+  const [flightModalDest, setFlightModalDest] = useState<string | undefined>(undefined);
 
   // Handle Supabase Auth Callback URL if redirected here
   const isAuthCallbackRoute =
@@ -130,6 +132,16 @@ function AppContent() {
     }
   };
 
+  const handleOpenVisaQuote = (country?: string) => {
+    setVisaModalCountry(country);
+    setIsVisaModalOpen(true);
+  };
+
+  const handleOpenFlightQuote = (dest?: string) => {
+    setFlightModalDest(dest);
+    setIsFlightModalOpen(true);
+  };
+
   const isCurrentItinerarySaved = savedItineraries.some((i) => i.id === currentItinerary.id);
 
   return (
@@ -201,8 +213,8 @@ function AppContent() {
           onRemoveItinerary={handleRemoveSavedItinerary}
           onNavigateToFeed={() => setCurrentView('feed')}
           onSelectDestination={setModalDestination}
-          onOpenFlightQuote={() => setIsFooterFlightModalOpen(true)}
-          onOpenVisaQuote={() => setIsFooterVisaModalOpen(true)}
+          onOpenFlightQuote={() => handleOpenFlightQuote()}
+          onOpenVisaQuote={() => handleOpenVisaQuote()}
           onNavigate={(view) => setCurrentView(view as NavView)}
         />
       )}
@@ -215,8 +227,8 @@ function AppContent() {
       {currentView !== 'enroute' && (
         <Footer
           onNavigate={(view) => setCurrentView(view as NavView)}
-          onOpenVisaQuote={() => setIsFooterVisaModalOpen(true)}
-          onOpenFlightQuote={() => setIsFooterFlightModalOpen(true)}
+          onOpenVisaQuote={() => handleOpenVisaQuote()}
+          onOpenFlightQuote={() => handleOpenFlightQuote()}
         />
       )}
 
@@ -227,15 +239,23 @@ function AppContent() {
         onGenerateItinerary={handleQuickGenerateItinerary}
       />
 
-      {/* Footer Quotation Modals */}
+      {/* Quotation Modals */}
       <VisaQuoteModal
-        isOpen={isFooterVisaModalOpen}
-        onClose={() => setIsFooterVisaModalOpen(false)}
+        isOpen={isVisaModalOpen}
+        onClose={() => {
+          setIsVisaModalOpen(false);
+          setVisaModalCountry(undefined);
+        }}
+        initialCountry={visaModalCountry}
       />
 
       <FlightQuoteModal
-        isOpen={isFooterFlightModalOpen}
-        onClose={() => setIsFooterFlightModalOpen(false)}
+        isOpen={isFlightModalOpen}
+        onClose={() => {
+          setIsFlightModalOpen(false);
+          setFlightModalDest(undefined);
+        }}
+        initialDestination={flightModalDest}
       />
 
       {/* Persistent Floating WhatsApp Chat Widget */}

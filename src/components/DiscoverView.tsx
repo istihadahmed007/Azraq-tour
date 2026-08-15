@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Destination } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { HeroSection } from './HeroSection';
+import { WhyRequestQuoteSection } from './WhyRequestQuoteSection';
 import { QuotationSection } from './QuotationSection';
 import { PopularBDDestinationsSection } from './PopularBDDestinationsSection';
 import { InteractiveAsiaMap } from './InteractiveAsiaMap';
@@ -91,135 +93,37 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     return filteredDestinations.slice(0, 15);
   }, [filteredDestinations]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      onPlanTripPrompt(searchQuery.trim());
-    }
-  };
-
   const handleCardQuoteClick = (e: React.MouseEvent, countryOrName: string) => {
     e.stopPropagation();
     setDirectQuoteCountry(countryOrName);
     setIsDirectVisaModalOpen(true);
   };
 
-  const samplePrompts = [
-    "Cox's Bazar 120km Beach",
-    'Kyoto Arashiyama bamboo forest',
-    'Overwater bungalows in Maldives',
-    'Cappadocia Hot Air Balloon',
-    'Everest Base Camp Trek',
-  ];
-
   return (
     <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-8 pt-4 pb-24 flex flex-col gap-10">
-      {/* Hero Header Section with High-Quality Cinematic Visual Backdrop */}
-      <section className="relative overflow-hidden rounded-3xl border border-sky-400/25 bg-slate-950 p-6 sm:p-10 md:p-14 text-center shadow-2xl flex flex-col items-center justify-center gap-6">
-        {/* Background Cinematic Visual & Gradient Overlay */}
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <img
-            src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80"
-            alt="Luxury Asian Travel Wonders"
-            className="w-full h-full object-cover opacity-20 scale-105 filter saturate-125"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/90 to-slate-950"></div>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-sky-500/15 rounded-full blur-3xl"></div>
-        </div>
+      {/* 1. Why Request a Quote from Azraq Tours (6-Feature Row matching Capture.PNG) */}
+      <WhyRequestQuoteSection
+        onOpenVisaQuote={() => setIsDirectVisaModalOpen(true)}
+        onOpenFlightQuote={() => setIsDirectFlightModalOpen(true)}
+      />
 
-        {/* Hero Eyebrow */}
-        <div className="relative z-10 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200 text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-          <span>15 Handpicked Asian Wonders • Verified Visa & Flight Concierge</span>
-        </div>
+      {/* 2. Popular Destinations for Bangladeshi Travelers Section */}
+      <PopularBDDestinationsSection
+        onSelectDestination={onSelectDestination}
+        onPlanTripPrompt={onPlanTripPrompt}
+      />
 
-        {/* Hero Headline */}
-        <h1 className="relative z-10 text-3xl sm:text-5xl md:text-6xl font-serif-display font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#e0f2fe] via-[#7dd3fc] to-[#fcd34d] drop-shadow-md leading-tight max-w-4xl">
-          Discover Asia's Most Breathtaking Wonders
-        </h1>
+      {/* 3. Hero Section (Luxury AI Concierge & Trip Planner) */}
+      <HeroSection
+        onPlanTripPrompt={onPlanTripPrompt}
+        onRequestQuote={() => setIsDirectFlightModalOpen(true)}
+        onExploreDestinations={() => {
+          const el = document.getElementById('popular-destinations');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
 
-        {/* Hero Subtitle */}
-        <p className="relative z-10 text-sm sm:text-base md:text-lg text-slate-200 max-w-2xl font-normal leading-relaxed">
-          Explore 15 Handpicked Asian Wonders – From Cox's Bazar to Kyoto. Get Visa Guidance & Flight Quotes Instantly from licensed travel specialists.
-        </p>
-
-        {/* Primary Hero CTAs with High-Contrast Colors */}
-        <div className="relative z-10 flex flex-wrap items-center justify-center gap-3.5 pt-2">
-          <button
-            onClick={() => setIsDirectVisaModalOpen(true)}
-            className="px-6 sm:px-7 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-bold text-sm sm:text-base shadow-xl shadow-emerald-500/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer min-h-[48px]"
-          >
-            <span className="material-symbols-outlined text-lg">verified</span>
-            <span>Get Visa Quote</span>
-          </button>
-
-          <button
-            onClick={() => setIsDirectFlightModalOpen(true)}
-            className="px-6 sm:px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-sm sm:text-base shadow-xl shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer min-h-[48px]"
-          >
-            <span className="material-symbols-outlined text-lg">flight_takeoff</span>
-            <span>Flight Quotation</span>
-          </button>
-
-          <a
-            href="#featured-destinations"
-            className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/20 hover:border-sky-400/40 transition-all flex items-center gap-2 cursor-pointer min-h-[48px]"
-          >
-            <span>Explore 15 Wonders</span>
-            <span className="material-symbols-outlined text-lg">arrow_downward</span>
-          </a>
-        </div>
-
-        {/* Hero Search Bar */}
-        <form
-          onSubmit={handleSearchSubmit}
-          className="relative z-10 w-full max-w-3xl mt-2 rounded-2xl md:rounded-full p-2 flex flex-col sm:flex-row items-center gap-2 shadow-2xl bg-slate-900/90 border border-sky-400/30 backdrop-blur-xl"
-        >
-          <div className="flex items-center w-full px-3 py-2 sm:py-0">
-            <span className="material-symbols-outlined text-sky-400 mr-2">search</span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search destinations, cities, countries, or activities..."
-              className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-white placeholder:text-slate-400 text-sm sm:text-base font-normal"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="text-xs sm:text-sm text-slate-400 hover:text-white px-2 cursor-pointer"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            className="w-full sm:w-auto min-h-[48px] bg-sky-500 text-slate-950 hover:bg-sky-400 font-bold text-sm sm:text-base px-6 py-3 rounded-xl sm:rounded-full transition-all duration-200 ease-out flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 shrink-0 cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-lg">auto_awesome</span>
-            <span>Search & Plan</span>
-          </button>
-        </form>
-
-        {/* Quick Sample Suggestions */}
-        <div className="relative z-10 flex flex-wrap items-center justify-center gap-2 max-w-3xl">
-          <span className="text-xs text-slate-400 font-medium">Quick searches:</span>
-          {samplePrompts.map((prompt, idx) => (
-            <button
-              key={idx}
-              onClick={() => setSearchQuery(prompt)}
-              className="text-xs px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-sky-300 transition-all border border-white/10 cursor-pointer"
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Official Travel Agency Visa & Flight Quotation Section */}
+      {/* 4. Official Travel Agency Visa & Flight Quotation Section */}
       <QuotationSection
         initialVisaCountry={directQuoteCountry}
         isVisaModalOpenExternal={isDirectVisaModalOpen}
@@ -229,12 +133,6 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
           setIsDirectFlightModalOpen(false);
           setDirectQuoteCountry(undefined);
         }}
-      />
-
-      {/* Dedicated Popular Destinations for Bangladeshi Travelers Section */}
-      <PopularBDDestinationsSection
-        onSelectDestination={onSelectDestination}
-        onPlanTripPrompt={onPlanTripPrompt}
       />
 
       {/* Interactive Asia Travel Map Explorer (Option A - Direct Visual Discovery) */}
