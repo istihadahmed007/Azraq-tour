@@ -147,7 +147,7 @@ function AppContent() {
   return (
     <ClientLayout
       className={`min-h-screen text-[#f0f9ff] sky-natural-bg font-sans selection:bg-[#0284c7] selection:text-white ${brandTheme === 'azraq' ? 'azraq-mode' : ''}`}
-      mainClassName="md:ml-64 transition-all duration-300 min-h-screen"
+      mainClassName="md:ml-72 transition-all duration-300 min-h-screen"
       navbar={(navRef) => (
         <Navigation
           ref={navRef as React.Ref<HTMLElement>}
