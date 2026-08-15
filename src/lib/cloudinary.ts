@@ -1,5 +1,5 @@
 /**
- * Cloudinary Direct Upload & Transformation Utility for Travel Buddies
+ * Cloudinary Media Upload & Optimization Utility for Azraq Tours & Travels
  */
 
 export interface CloudinaryUploadResult {
@@ -10,41 +10,90 @@ export interface CloudinaryUploadResult {
   width: number;
   height: number;
   duration?: number;
+  optimize_url?: string;
+  auto_crop_url?: string;
 }
 
+/**
+ * Generates an optimized Cloudinary delivery URL with auto format and auto quality
+ */
 export function getOptimizedMediaUrl(
-  url: string,
+  urlOrPublicId: string,
   options: {
     width?: number;
     height?: number;
-    crop?: 'fill' | 'scale' | 'thumb' | 'limit';
+    crop?: 'fill' | 'scale' | 'thumb' | 'limit' | 'auto';
+    gravity?: 'auto' | 'face' | 'center';
     quality?: string | number;
     format?: 'auto' | 'webp' | 'mp4';
   } = {}
 ): string {
-  if (!url) return '';
-  if (!url.includes('cloudinary.com')) {
-    // If not a Cloudinary URL (e.g., Unsplash or Direct URL), return clean URL
-    return url;
+  if (!urlOrPublicId) return '';
+
+  const {
+    width,
+    height,
+    crop = 'limit',
+    gravity,
+    quality = 'auto',
+    format = 'auto',
+  } = options;
+
+  // If it's already a full Cloudinary URL
+  if (urlOrPublicId.includes('cloudinary.com')) {
+    const transformations = [`f_${format}`, `q_${quality}`];
+    if (crop) transformations.push(`c_${crop}`);
+    if (gravity) transformations.push(`g_${gravity}`);
+    if (width) transformations.push(`w_${width}`);
+    if (height) transformations.push(`h_${height}`);
+
+    const transformString = transformations.join(',');
+    return urlOrPublicId.replace('/upload/', `/upload/${transformString}/`);
   }
 
-  const { width = 1080, height, crop = 'limit', quality = 'auto', format = 'auto' } = options;
-  const transformations = [`f_${format}`, `q_${quality}`, `c_${crop}`, `w_${width}`];
+  // If it's not a Cloudinary asset (e.g. Unsplash URL), return clean URL
+  if (urlOrPublicId.startsWith('http://') || urlOrPublicId.startsWith('https://')) {
+    return urlOrPublicId;
+  }
+
+  // If it's a public_id, build the URL
+  const env = (import.meta as any).env || {};
+  const cloudName = env.VITE_CLOUDINARY_CLOUD_NAME || 'vd722ywp';
+  const transformations = [`f_${format}`, `q_${quality}`];
+  if (crop) transformations.push(`c_${crop}`);
+  if (gravity) transformations.push(`g_${gravity}`);
+  if (width) transformations.push(`w_${width}`);
   if (height) transformations.push(`h_${height}`);
 
-  const transformString = transformations.join(',');
-  return url.replace('/upload/', `/upload/${transformString}/`);
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${transformations.join(',')}/${urlOrPublicId}`;
 }
 
+/**
+ * Generates an auto-cropped square thumbnail (e.g. 500x500 auto-gravity)
+ */
+export function getAutoCropUrl(
+  urlOrPublicId: string,
+  size = 500
+): string {
+  return getOptimizedMediaUrl(urlOrPublicId, {
+    width: size,
+    height: size,
+    crop: 'auto',
+    gravity: 'auto',
+    format: 'auto',
+    quality: 'auto',
+  });
+}
+
+/**
+ * Uploads an image or video file to Cloudinary
+ * Tries server-side /api/cloudinary/upload first for secure authenticated processing,
+ * then falls back to direct client-side upload or local preview.
+ */
 export async function uploadToCloudinary(
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<CloudinaryUploadResult> {
-  const env = (import.meta as any).env || {};
-  const cloudName = env.VITE_CLOUDINARY_CLOUD_NAME || 'azraq-tour';
-  const uploadPreset = env.VITE_CLOUDINARY_UPLOAD_PRESET || 'travel_buddies_unsigned';
-
-  // 1. Validate file type
   const isVideo = file.type.startsWith('video/');
   const isImage = file.type.startsWith('image/');
 
@@ -52,13 +101,55 @@ export async function uploadToCloudinary(
     throw new Error('Unsupported file type. Please upload a JPG, PNG, WEBP image or MP4 video.');
   }
 
-  // 2. Validate file size (max 50MB)
   const MAX_SIZE_BYTES = 50 * 1024 * 1024;
   if (file.size > MAX_SIZE_BYTES) {
     throw new Error('File size exceeds the 50MB limit.');
   }
 
-  // Check if live Cloudinary endpoint is available, or use direct Base64 / Local Blob upload
+  // Step 1: Try Server-side Proxy Upload (Uses backend credentials securely)
+  try {
+    if (onProgress) onProgress(20);
+    const base64Data = await fileToBase64(file);
+    if (onProgress) onProgress(50);
+
+    const response = await fetch('/api/cloudinary/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        file: base64Data,
+        folder: isVideo ? 'travel_buddies_videos' : 'travel_buddies_photos',
+        resource_type: isVideo ? 'video' : 'image',
+        tags: ['travel_buddies', 'azraq_tour'],
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.secure_url) {
+        if (onProgress) onProgress(100);
+        return {
+          secure_url: data.secure_url,
+          public_id: data.public_id,
+          resource_type: data.resource_type || (isVideo ? 'video' : 'image'),
+          format: data.format || (isVideo ? 'mp4' : 'jpg'),
+          width: data.width || 1080,
+          height: data.height || 1080,
+          duration: data.duration,
+          optimize_url: data.optimize_url,
+          auto_crop_url: data.auto_crop_url,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Server-side Cloudinary upload failed, attempting direct upload:', err);
+  }
+
+  // Step 2: Fallback to Direct Unsigned Upload
+  const env = (import.meta as any).env || {};
+  const cloudName = env.VITE_CLOUDINARY_CLOUD_NAME || 'vd722ywp';
+  const uploadPreset = env.VITE_CLOUDINARY_UPLOAD_PRESET || 'travel_buddies_unsigned';
   const resourceType = isVideo ? 'video' : 'image';
   const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
 
@@ -67,7 +158,7 @@ export async function uploadToCloudinary(
   formData.append('upload_preset', uploadPreset);
   formData.append('folder', 'travel_buddies');
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', endpoint, true);
 
@@ -93,26 +184,25 @@ export async function uploadToCloudinary(
             height: res.height || 1080,
             duration: res.duration,
           });
-        } catch (e) {
-          reject(new Error('Failed to parse Cloudinary response'));
+          return;
+        } catch {
+          // fallback to local blob
         }
-      } else {
-        // If Cloudinary preset is not configured in current sandbox, gracefully produce local object URL / base64 for seamless live preview
-        console.warn('Cloudinary upload returned non-200, creating local Blob preview URL:', xhr.responseText);
-        const localBlobUrl = URL.createObjectURL(file);
-        resolve({
-          secure_url: localBlobUrl,
-          public_id: `local_${Date.now()}`,
-          resource_type: isVideo ? 'video' : 'image',
-          format: isVideo ? 'mp4' : 'jpg',
-          width: 1080,
-          height: 1080,
-        });
       }
+
+      // Step 3: Local Blob fallback for preview
+      const localBlobUrl = URL.createObjectURL(file);
+      resolve({
+        secure_url: localBlobUrl,
+        public_id: `local_${Date.now()}`,
+        resource_type: isVideo ? 'video' : 'image',
+        format: isVideo ? 'mp4' : 'jpg',
+        width: 1080,
+        height: 1080,
+      });
     };
 
     xhr.onerror = () => {
-      console.warn('Cloudinary network error, falling back to local Blob URL');
       const localBlobUrl = URL.createObjectURL(file);
       resolve({
         secure_url: localBlobUrl,
@@ -127,3 +217,13 @@ export async function uploadToCloudinary(
     xhr.send(formData);
   });
 }
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+}
+

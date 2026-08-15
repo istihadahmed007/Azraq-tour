@@ -4,6 +4,7 @@ import fs from "fs";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
+import { v2 as cloudinary } from "cloudinary";
 import { INITIAL_TOUR_PACKAGES } from "./src/data/initialPackagesData";
 import { INITIAL_SOCIAL_PROOF_ACTIVITIES } from "./src/data/socialProofData";
 
@@ -12,7 +13,24 @@ const INITIAL_BLOG_POSTS: any[] = [];
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
+
+// --- Cloudinary Server Configuration & Client Helper ---
+function getCloudinary() {
+  const cloud_name = process.env.CLOUDINARY_CLOUD_NAME || "vd722ywp";
+  const api_key = process.env.CLOUDINARY_API_KEY || "897229884945796";
+  const api_secret = process.env.CLOUDINARY_API_SECRET;
+
+  cloudinary.config({
+    cloud_name,
+    api_key,
+    api_secret: api_secret || undefined,
+    secure: true,
+  });
+
+  return cloudinary;
+}
 
 // Initialize Gemini API client lazily on request or if API key exists
 function getGenAI() {
@@ -2893,6 +2911,174 @@ app.post("/api/ai/verify-post", async (req, res) => {
   } catch (err: any) {
     console.error("Error in /api/ai/verify-post:", err);
     res.status(500).json({ error: err.message || "Failed to verify post" });
+  }
+});
+
+// ========================================================
+// --- Cloudinary Media Upload & Optimization Endpoints ---
+// ========================================================
+
+// 1. Get Cloudinary Status & Config (safe)
+app.get("/api/cloudinary/config", (req, res) => {
+  const cloud_name = process.env.CLOUDINARY_CLOUD_NAME || "vd722ywp";
+  const api_key = process.env.CLOUDINARY_API_KEY || "897229884945796";
+  const hasSecret = Boolean(process.env.CLOUDINARY_API_SECRET);
+
+  res.json({
+    success: true,
+    cloud_name,
+    api_key,
+    has_secret: hasSecret,
+  });
+});
+
+// 2. Upload Image or Video to Cloudinary
+app.post("/api/cloudinary/upload", async (req, res) => {
+  try {
+    const {
+      file,
+      image,
+      folder = "azraq_media",
+      public_id,
+      tags = ["azraq", "travel"],
+      resource_type = "auto",
+      transformation,
+    } = req.body;
+
+    const mediaSource = file || image;
+    if (!mediaSource) {
+      return res.status(400).json({
+        error: "Missing 'file' or 'image' payload (base64 string, data URI, or remote image URL).",
+      });
+    }
+
+    const cld = getCloudinary();
+    const uploadOptions: any = {
+      folder,
+      resource_type,
+      tags,
+      overwrite: true,
+      invalidate: true,
+    };
+
+    if (public_id) uploadOptions.public_id = public_id;
+    if (transformation) uploadOptions.transformation = transformation;
+
+    const result = await cld.uploader.upload(mediaSource, uploadOptions);
+
+    // Generate auto-format and auto-quality optimized URL
+    const optimizeUrl = cld.url(result.public_id, {
+      fetch_format: "auto",
+      quality: "auto",
+      secure: true,
+    });
+
+    // Generate square auto-crop URL
+    const autoCropUrl = cld.url(result.public_id, {
+      crop: "auto",
+      gravity: "auto",
+      width: 500,
+      height: 500,
+      secure: true,
+    });
+
+    res.json({
+      success: true,
+      public_id: result.public_id,
+      secure_url: result.secure_url,
+      optimize_url: optimizeUrl,
+      auto_crop_url: autoCropUrl,
+      format: result.format,
+      width: result.width,
+      height: result.height,
+      bytes: result.bytes,
+      resource_type: result.resource_type,
+      created_at: result.created_at,
+    });
+  } catch (err: any) {
+    console.error("Cloudinary Server Upload Error:", err);
+    res.status(500).json({
+      error: err.message || "Cloudinary upload failed.",
+    });
+  }
+});
+
+// 3. Generate Optimized & Transformed Delivery URLs
+app.post("/api/cloudinary/optimize-url", (req, res) => {
+  try {
+    const {
+      public_id,
+      fetch_format = "auto",
+      quality = "auto",
+      crop = "auto",
+      gravity = "auto",
+      width = 500,
+      height = 500,
+    } = req.body;
+
+    if (!public_id) {
+      return res.status(400).json({ error: "public_id is required" });
+    }
+
+    const cld = getCloudinary();
+
+    const optimizeUrl = cld.url(public_id, {
+      fetch_format,
+      quality,
+      secure: true,
+    });
+
+    const autoCropUrl = cld.url(public_id, {
+      crop,
+      gravity,
+      width,
+      height,
+      secure: true,
+    });
+
+    res.json({
+      success: true,
+      public_id,
+      optimize_url: optimizeUrl,
+      auto_crop_url: autoCropUrl,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to transform URL." });
+  }
+});
+
+// 4. Generate Upload Signature for Direct Client Uploads (optional)
+app.post("/api/cloudinary/sign", (req, res) => {
+  try {
+    const { folder = "azraq_media", tags = "azraq" } = req.body;
+    const api_secret = process.env.CLOUDINARY_API_SECRET;
+    const api_key = process.env.CLOUDINARY_API_KEY || "897229884945796";
+    const cloud_name = process.env.CLOUDINARY_CLOUD_NAME || "vd722ywp";
+
+    if (!api_secret) {
+      return res.status(400).json({
+        error: "CLOUDINARY_API_SECRET is not configured on the server.",
+      });
+    }
+
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const cld = getCloudinary();
+    const signature = cld.utils.api_sign_request(
+      { timestamp, folder, tags },
+      api_secret
+    );
+
+    res.json({
+      success: true,
+      signature,
+      timestamp,
+      api_key,
+      cloud_name,
+      folder,
+      tags,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to sign upload request." });
   }
 });
 
