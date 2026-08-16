@@ -84,7 +84,7 @@ export const TrackQuoteModal: React.FC<TrackQuoteModalProps> = ({
                 Track Quotation Request
               </h2>
               <p className="text-xs text-sky-200/80">
-                Check real-time processing status of your flight or visa quote
+                Check real-time processing status of your package or visa quote
               </p>
             </div>
           </div>

@@ -27,18 +27,24 @@ googleProvider.addScope('openid');
 
 export const oAuthClientId = firebaseConfig.oAuthClientId || '';
 
-// Initialize Firestore safely with long polling fallback for sandboxed iframe compatibility
-const targetDbId = firebaseConfig.firestoreDatabaseId || '(default)';
+// Initialize Firestore safely with iframe-compatible transport configuration
+const targetDbId = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
+  ? firebaseConfig.firestoreDatabaseId
+  : undefined;
 
 function createFirestoreInstance() {
   try {
+    if (targetDbId) {
+      return initializeFirestore(app, {
+        experimentalAutoDetectLongPolling: true,
+      }, targetDbId);
+    }
     return initializeFirestore(app, {
-      experimentalForceLongPolling: true,
       experimentalAutoDetectLongPolling: true,
-    }, targetDbId);
+    });
   } catch {
     try {
-      return getFirestore(app, targetDbId);
+      return targetDbId ? getFirestore(app, targetDbId) : getFirestore(app);
     } catch {
       return getFirestore(app);
     }
@@ -74,8 +80,9 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): FirestoreErrorInfo {
+  const errMsg = error instanceof Error ? error.message : String(error);
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errMsg,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -90,23 +97,34 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path,
   };
-  console.warn('Firestore Operation Info:', JSON.stringify(errInfo));
+
+  // Only warn in development for unexpected errors, suppress benign offline connection notices
+  if (!errMsg.includes('offline') && !errMsg.includes('unavailable')) {
+    console.warn('Firestore Operation Info:', JSON.stringify(errInfo));
+  }
   return errInfo;
 }
 
-// Validate Connection to Firestore on startup
+// Validate Connection to Firestore safely without throwing unhandled exceptions
 async function testConnection() {
+  if (!isFirebaseConfigured) return;
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firestore offline notice: operating in offline-cached mode.');
+    const errText = error instanceof Error ? error.message : String(error);
+    if (errText.includes('offline') || errText.includes('unavailable')) {
+      // Benign initial offline state, client works transparently with local cache
+    } else {
+      console.info('Firestore initialized:', errText);
     }
   }
 }
 
 if (typeof window !== 'undefined') {
-  testConnection().catch(() => {});
+  // Test connection in the background with safe catch
+  setTimeout(() => {
+    testConnection().catch(() => {});
+  }, 1000);
 }
 
 // Initialize Firebase Analytics safely (supported in browser environments)

@@ -62,5 +62,19 @@
       },
       "required": ["userEmail"]
     }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "User profiles collection"
+    },
+    "/feed_posts/{postId}": {
+      "schema": "feed_posts",
+      "description": "Community travel stories and posts"
+    },
+    "/quotes/{quoteId}": {
+      "schema": "quotes",
+      "description": "Flight and visa quotation inquiries"
+    }
   }
 }

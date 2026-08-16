@@ -35,7 +35,7 @@ export const ContactView: React.FC = () => {
           <span>Get in Touch</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-[#071A33] tracking-tight">
-          Contact Azraq Tours & Travels
+          Contact Azraq
         </h1>
         <p className="text-slate-600 text-base leading-relaxed">
           Have a question about a package, visa requirements, or customized itinerary? Reach out to our Dhaka travel desk.
@@ -52,7 +52,7 @@ export const ContactView: React.FC = () => {
               </div>
               <h2 className="text-2xl font-bold text-[#071A33]">Message Sent!</h2>
               <p className="text-sm text-slate-600 max-w-md mx-auto">
-                Thank you for contacting us, {name}. A dedicated travel specialist from Azraq Tours will respond to your request via phone/WhatsApp within 2 hours.
+                Thank you for contacting us, {name}. A dedicated travel specialist from Azraq will respond to your request via phone/WhatsApp within 2 hours.
               </p>
               <button
                 onClick={() => setSubmitted(false)}
@@ -110,7 +110,6 @@ export const ContactView: React.FC = () => {
                   >
                     <option value="Tour Package Inquiry">Tour Package Inquiry</option>
                     <option value="Visa Assistance">Visa Assistance</option>
-                    <option value="Flight Quotation">Flight Quotation</option>
                     <option value="Custom Family Trip">Custom Family Trip</option>
                     <option value="Corporate / Group Travel">Corporate / Group Travel</option>
                   </select>
@@ -170,6 +169,19 @@ export const ContactView: React.FC = () => {
               </div>
 
               <div className="flex items-start gap-3">
+                <Mail className="w-4 h-4 text-[#0D6EFD] shrink-0 mt-1" />
+                <div>
+                  <p className="font-semibold text-slate-900">Email Inquiries</p>
+                  <a
+                    href="mailto:istihadahmed1163@gmail.com"
+                    className="text-xs text-[#0D6EFD] font-mono hover:underline block mt-0.5"
+                  >
+                    istihadahmed1163@gmail.com
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
                 <Clock className="w-4 h-4 text-[#0D6EFD] shrink-0 mt-1" />
                 <div>
                   <p className="font-semibold text-slate-900">Working Hours</p>
@@ -183,10 +195,10 @@ export const ContactView: React.FC = () => {
           <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-3">
             <h4 className="text-sm font-bold text-emerald-900">Instant WhatsApp Chat</h4>
             <p className="text-xs text-emerald-800 leading-relaxed">
-              Prefer chatting directly on WhatsApp for immediate flight fares and visa requirements?
+              Prefer chatting directly on WhatsApp for immediate package details and visa requirements?
             </p>
             <a
-              href="https://wa.me/8801851172032?text=Hello%20Azraq%20Tours!%20I%20have%20an%20inquiry."
+              href="https://wa.me/8801851172032?text=Hello%20Azraq!%20I%20have%20an%20inquiry."
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors"

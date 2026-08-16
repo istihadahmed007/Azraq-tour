@@ -14,13 +14,13 @@ export const AboutView: React.FC<AboutViewProps> = ({ onNavigateToContact, onOpe
       <div className="max-w-3xl space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-[#0D6EFD] text-xs font-bold uppercase tracking-wider">
           <Award className="w-3.5 h-3.5" />
-          <span>About Azraq Tours & Travels</span>
+          <span>About Azraq</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold text-[#071A33] tracking-tight leading-tight">
           Curating Exceptional Journeys Across Asia
         </h1>
         <p className="text-slate-600 text-base sm:text-lg leading-relaxed">
-          Founded with a mission to eliminate travel stress, Azraq Tours & Travels provides bespoke itineraries, authorized visa documentation, and best-value airline ticketing for travelers exploring Asia and beyond.
+          Founded with a mission to eliminate travel stress, Azraq provides bespoke itineraries, authorized visa documentation, and curated holiday experiences for travelers exploring Asia and beyond.
         </p>
       </div>
 
@@ -73,7 +73,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ onNavigateToContact, onOpe
           <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">Dhaka Head Office</span>
           <h2 className="text-2xl sm:text-3xl font-bold">Visit or Contact Our Travel Desk</h2>
           <p className="text-sm text-slate-300">
-            Our experienced ticketing and visa desk is located in Dhaka, ready to assist with custom quotes, group packages, or individual getaways.
+            Our experienced concierge and visa desk is located in Dhaka, ready to assist with custom quotes, group packages, or individual getaways.
           </p>
         </div>
 
@@ -103,9 +103,12 @@ export const AboutView: React.FC<AboutViewProps> = ({ onNavigateToContact, onOpe
               <Mail className="w-4 h-4" />
               <span>Inquiries</span>
             </div>
-            <p className="text-sm text-slate-200">
-              support@azraqtravels.com
-            </p>
+            <a
+              href="mailto:istihadahmed1163@gmail.com"
+              className="text-sm text-slate-200 hover:text-sky-400 transition-colors block"
+            >
+              istihadahmed1163@gmail.com
+            </a>
           </div>
         </div>
       </div>

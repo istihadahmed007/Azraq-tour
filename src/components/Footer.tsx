@@ -6,13 +6,11 @@ import { NavView } from '../types';
 interface FooterProps {
   onNavigate?: (view: NavView) => void;
   onOpenVisaQuote?: () => void;
-  onOpenFlightQuote?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   onNavigate,
   onOpenVisaQuote,
-  onOpenFlightQuote,
 }) => {
   const [activeLegalModal, setActiveLegalModal] = useState<'faq' | 'terms' | 'privacy' | null>(null);
   const currentYear = new Date().getFullYear();
@@ -34,13 +32,13 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/10 border border-slate-700">
                 <img
                   src={BRAND_LOGOS.azraq}
-                  alt="Azraq Tours & Travels Logo"
+                  alt="Azraq Logo"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white tracking-tight">
-                  Azraq Tours & Travels
+                <h3 className="text-xl font-bold text-white tracking-tight">
+                  Azraq
                 </h3>
                 <p className="text-xs text-sky-400 font-medium">
                   Curated Asian Escapes & Travel Services
@@ -49,7 +47,7 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
 
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-sm">
-              Tailored flight tickets, verified visa assistance, and bespoke tour packages designed for Bangladeshi and international travelers.
+              Verified visa assistance, custom itineraries, and curated tour packages designed for Bangladeshi and international travelers.
             </p>
 
             <div className="pt-2 space-y-1.5 text-xs text-slate-300">
@@ -65,7 +63,9 @@ export const Footer: React.FC<FooterProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-sky-400" />
-                <span>support@azraqtravels.com</span>
+                <a href="mailto:istihadahmed1163@gmail.com" className="hover:text-white transition-colors">
+                  istihadahmed1163@gmail.com
+                </a>
               </div>
             </div>
           </div>
@@ -141,14 +141,6 @@ export const Footer: React.FC<FooterProps> = ({
                   Visa Assistance
                 </button>
               </li>
-              <li>
-                <button
-                  onClick={() => handleNav('flights')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  Flight Quotation
-                </button>
-              </li>
             </ul>
           </div>
 
@@ -199,7 +191,7 @@ export const Footer: React.FC<FooterProps> = ({
 
         {/* Bottom Bar */}
         <div className="max-w-7xl mx-auto pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {currentYear} Azraq Tours & Travels. All rights reserved.</p>
+          <p>© {currentYear} Azraq. All rights reserved.</p>
           <div className="flex items-center gap-4 text-slate-400 text-[11px]">
             <span>Official Travel Agency</span>
             <span>•</span>
@@ -224,11 +216,11 @@ export const Footer: React.FC<FooterProps> = ({
                 <h3 className="text-lg font-bold text-[#071A33]">Frequently Asked Questions</h3>
                 <div className="space-y-2 text-xs text-slate-600 max-h-80 overflow-y-auto pr-1">
                   <p className="font-bold text-slate-800">How do I request a customized package?</p>
-                  <p>Click "Plan My Trip" in the top navigation or contact our desk on WhatsApp.</p>
+                  <p>Click "Trip Planner" in the navigation or contact our desk on WhatsApp.</p>
                   <p className="font-bold text-slate-800 pt-2">What documents are required for tourist visas?</p>
                   <p>Check our dedicated Visa tab for full country checklists including passport validity, bank statements, and NOC requirements.</p>
-                  <p className="font-bold text-slate-800 pt-2">How fast do I receive flight quotations?</p>
-                  <p>Our ticketing team provides GDS seat availability and fare breakdowns within 2 hours during office hours.</p>
+                  <p className="font-bold text-slate-800 pt-2">How fast do I receive package quotes?</p>
+                  <p>Our concierge team provides customized holiday quotes and hotel breakdowns within 2 hours during office hours.</p>
                 </div>
               </div>
             )}
@@ -237,7 +229,7 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="space-y-3">
                 <h3 className="text-lg font-bold text-[#071A33]">Privacy Policy</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Azraq Tours & Travels collects personal details such as names, passport details, contact numbers, and travel dates strictly to process airline bookings and visa applications. We do not sell or share personal traveler data with unauthorized third parties.
+                  Azraq collects personal details such as names, passport details, contact numbers, and travel dates strictly to process hotel bookings and visa applications. We do not sell or share personal traveler data with unauthorized third parties.
                 </p>
               </div>
             )}
@@ -246,7 +238,7 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="space-y-3">
                 <h3 className="text-lg font-bold text-[#071A33]">Terms & Conditions</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Flight fares and hotel rates are subject to airline and property availability until confirmed with tickets/vouchers. Visa approval is strictly at the discretion of respective foreign embassies.
+                  Package rates and hotel rooms are subject to property availability until confirmed with booking vouchers. Visa approval is strictly at the discretion of respective foreign embassies.
                 </p>
               </div>
             )}

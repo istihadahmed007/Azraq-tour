@@ -47,7 +47,6 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
       { id: 'destinations', label: 'Destinations', icon: <Compass className="w-4 h-4" /> },
       { id: 'packages', label: 'Tour Packages', icon: <Package className="w-4 h-4" /> },
       { id: 'visa', label: 'Visa Assistance', icon: <FileCheck2 className="w-4 h-4" /> },
-      { id: 'flights', label: 'Flight Quotes', icon: <Plane className="w-4 h-4" /> },
       { id: 'planner', label: 'Travel Planner', icon: <Sparkles className="w-4 h-4" /> },
       { id: 'feed', label: 'Travel Buddies', icon: <Users className="w-4 h-4" /> },
     ];
@@ -69,18 +68,18 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
           <button
             onClick={() => handleNavigate('discover')}
             className="flex items-center gap-3 cursor-pointer text-left group shrink-0 focus:outline-none"
-            aria-label="Azraq Tours & Travels Home"
+            aria-label="Azraq Home"
           >
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden shadow-xs border border-white/20 bg-white flex items-center justify-center group-hover:scale-105 transition-transform">
               <img
                 src={BRAND_LOGOS.azraq}
-                alt="Azraq Tours & Travels"
+                alt="Azraq"
                 className="w-full h-full object-cover"
               />
             </div>
             <div>
-              <span className="text-base sm:text-lg font-bold text-white tracking-tight block group-hover:text-sky-300 transition-colors leading-tight font-sans">
-                Azraq Tours & Travels
+              <span className="text-xl sm:text-2xl font-bold text-white tracking-tight block group-hover:text-sky-300 transition-colors leading-tight font-sans">
+                Azraq
               </span>
             </div>
           </button>
@@ -155,7 +154,7 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
             <button
               onClick={() => {
                 if (onOpenQuote) onOpenQuote();
-                else handleNavigate('flights');
+                else handleNavigate('packages');
               }}
               className="px-5 py-2.5 rounded-xl bg-[#0D6EFD] hover:bg-blue-600 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95"
             >
@@ -168,7 +167,7 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
             <button
               onClick={() => {
                 if (onOpenQuote) onOpenQuote();
-                else handleNavigate('flights');
+                else handleNavigate('packages');
               }}
               className="px-3 py-1.5 rounded-lg bg-[#0D6EFD] text-white text-xs font-bold shadow-xs flex items-center gap-1 cursor-pointer"
             >
@@ -214,7 +213,7 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
               <button
                 onClick={() => {
                   if (onOpenQuote) onOpenQuote();
-                  else handleNavigate('flights');
+                  else handleNavigate('packages');
                   setMobileMenuOpen(false);
                 }}
                 className="w-full py-3 rounded-xl bg-[#0D6EFD] text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer"

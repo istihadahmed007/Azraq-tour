@@ -228,14 +228,14 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       destination: 'Trip to Maldives',
       rating: 5,
       photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
-      review: 'Azraq Tours organized our Maldives resort stay and speed boat transfers smoothly. The price was transparent with zero hidden fees.',
+      review: 'Azraq organized our Maldives resort stay and speed boat transfers smoothly. The price was transparent with zero hidden fees.',
     },
     {
       name: 'Shakil Mahmud',
       destination: 'Trip to Dubai',
       rating: 5,
       photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
-      review: 'Secured our UAE tourist visa in 48 hours and provided the best group airfares from Dhaka. Extremely responsive and reliable.',
+      review: 'Secured our UAE tourist visa in 48 hours and provided an exceptional holiday itinerary. Extremely responsive and reliable.',
     },
     {
       name: 'Anika Tabassum',
@@ -270,7 +270,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             </h1>
 
             <p className="text-base sm:text-lg text-slate-200 leading-relaxed font-normal max-w-xl">
-              Personalized flights, visas, and itineraries crafted<br className="hidden sm:inline" /> for Bangladeshi travelers.
+              Personalized visas, curated tour packages, and bespoke itineraries crafted<br className="hidden sm:inline" /> for Bangladeshi travelers.
             </p>
 
             {/* Exactly Two Action Buttons */}
@@ -278,7 +278,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               <button
                 onClick={() => {
                   if (onOpenQuote) onOpenQuote();
-                  else if (onNavigateToView) onNavigateToView('flights');
+                  else if (onNavigateToView) onNavigateToView('packages');
                 }}
                 className="px-7 py-3.5 rounded-xl bg-[#0D6EFD] hover:bg-blue-600 text-white font-bold text-base shadow-lg hover:shadow-blue-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-95"
               >
@@ -642,7 +642,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         </div>
       </section>
 
-      {/* 5. TRAVEL SERVICES (4 Clean Service Cards) */}
+      {/* 5. TRAVEL SERVICES (3 Clean Service Cards) */}
       <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#071A33] tracking-tight font-sans">
@@ -653,30 +653,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Flight Assistance */}
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between hover:border-[#0D6EFD]/40 transition-colors">
-            <div className="space-y-3">
-              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#0D6EFD] flex items-center justify-center">
-                <Plane className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-[#071A33]">Flight Assistance</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Flight search, quotation and booking support across top international airlines.
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                if (onNavigateToView) onNavigateToView('flights');
-                else if (onOpenFlightModal) onOpenFlightModal();
-              }}
-              className="text-xs font-bold text-[#0D6EFD] hover:underline flex items-center gap-1 cursor-pointer pt-2"
-            >
-              <span>Get Flight Quote</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Visa Assistance */}
           <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between hover:border-teal-500/40 transition-colors">
             <div className="space-y-3">
@@ -685,7 +662,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               </div>
               <h3 className="text-base font-bold text-[#071A33]">Visa Assistance</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Visa requirements, documentation checklist and application submission guidance.
+                Visa requirements, documentation checklist and application submission guidance for Asian destinations.
               </p>
             </div>
             <button
@@ -708,7 +685,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               </div>
               <h3 className="text-base font-bold text-[#071A33]">Tour Packages</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Curated travel packages for popular Asian destinations with verified accommodations.
+                Curated travel packages for popular Asian destinations with verified accommodations and transfers.
               </p>
             </div>
             <button
@@ -730,7 +707,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               </div>
               <h3 className="text-base font-bold text-[#071A33]">Custom Trips</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Personalized itineraries tailored to your schedule, family preferences, and budget.
+                Personalized itineraries tailored to your schedule, family preferences, and budget with Dhaka support.
               </p>
             </div>
             <button
@@ -1000,7 +977,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#071A33] tracking-tight font-sans">
-            Why Choose Azraq Tours & Travels
+            Why Choose Azraq
           </h2>
           <p className="text-sm text-slate-500">
             Committed to clarity, honesty, and professional travel execution.

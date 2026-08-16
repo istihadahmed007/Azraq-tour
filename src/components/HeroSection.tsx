@@ -75,14 +75,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-serif-display font-extrabold text-white tracking-tight leading-[1.15] drop-shadow-md">
-            Your Gateway to <br className="hidden sm:inline" />
+            Your trusted partner for <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-sky-100 to-[#22C7C9]">
-              Curated Asian Escapes
-            </span>
+              unforgettable journeys
+            </span> <br className="hidden sm:inline" />
+            from Bangladesh
           </h1>
 
           <p className="text-sm sm:text-base md:text-lg text-sky-100/90 leading-relaxed font-normal max-w-xl">
-            Personalized flights, visas, and itineraries crafted for Bangladeshi travelers.
+            Azraq provides end-to-end visa assistance, curated Asian tour packages, and bespoke itineraries tailored for Bangladeshi travelers.
           </p>
 
           {/* Hero CTAs */}
@@ -103,6 +104,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <span>Explore Destinations</span>
             </button>
           </div>
+
+          {/* Trust line near CTAs */}
+          <p className="text-xs text-sky-200/80 font-medium tracking-wide pt-1 flex items-center gap-2">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#22C7C9]" />
+            <span>Personalized planning • Transparent pricing • Support from Dhaka</span>
+          </p>
         </div>
 
         {/* Translucent Travel Planning Bar near bottom of hero */}
@@ -186,50 +193,61 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
       </section>
 
-      {/* 2. Four-Column Trust Strip (Light sky-blue aesthetic #EAF7FF) */}
+      {/* 2. Five-Pillar Trust Strip (Light sky-blue aesthetic #EAF7FF) */}
       <section className="w-full rounded-2xl p-5 sm:p-6 bg-[#EAF7FF] border border-sky-200 shadow-sm">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-slate-800">
-          {/* Col 1 */}
-          <div className="flex items-center gap-3.5 p-2">
-            <div className="w-11 h-11 rounded-xl bg-[#0D6EFD]/10 text-[#0D6EFD] flex items-center justify-center shrink-0 border border-[#0D6EFD]/20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-slate-800">
+          {/* Pillar 1 */}
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-white/70 border border-sky-100 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-[#0D6EFD]/10 text-[#0D6EFD] flex items-center justify-center shrink-0 border border-[#0D6EFD]/20">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-[#071A33]">Dhaka-Based Support</h4>
+              <p className="text-[11px] text-slate-600">Direct office assistance</p>
+            </div>
+          </div>
+
+          {/* Pillar 2 */}
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-white/70 border border-sky-100 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-[#0D6EFD]/10 text-[#0D6EFD] flex items-center justify-center shrink-0 border border-[#0D6EFD]/20">
               <Coins className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-[#071A33]">Personalized Pricing</h4>
-              <p className="text-[11px] sm:text-xs text-slate-600">Quotes tailored to you</p>
+              <h4 className="text-xs font-bold text-[#071A33]">Transparent Quotations</h4>
+              <p className="text-[11px] text-slate-600">Clear BDT pricing, no surprises</p>
             </div>
           </div>
 
-          {/* Col 2 */}
-          <div className="flex items-center gap-3.5 p-2">
-            <div className="w-11 h-11 rounded-xl bg-[#22C7C9]/15 text-teal-700 flex items-center justify-center shrink-0 border border-[#22C7C9]/30">
+          {/* Pillar 3 */}
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-white/70 border border-sky-100 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-[#22C7C9]/15 text-teal-700 flex items-center justify-center shrink-0 border border-[#22C7C9]/30">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-[#071A33]">Visa Assistance</h4>
-              <p className="text-[11px] sm:text-xs text-slate-600">End-to-end visa support</p>
+              <h4 className="text-xs font-bold text-[#071A33]">Visa Guidance</h4>
+              <p className="text-[11px] text-slate-600">Document audit & checklists</p>
             </div>
           </div>
 
-          {/* Col 3 */}
-          <div className="flex items-center gap-3.5 p-2">
-            <div className="w-11 h-11 rounded-xl bg-[#0D6EFD]/10 text-[#0D6EFD] flex items-center justify-center shrink-0 border border-[#0D6EFD]/20">
-              <Plane className="w-5 h-5" />
+          {/* Pillar 4 */}
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-white/70 border border-sky-100 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0 border border-amber-500/20">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-[#071A33]">Top Airline Options</h4>
-              <p className="text-[11px] sm:text-xs text-slate-600">Best routes, best fares</p>
+              <h4 className="text-xs font-bold text-[#071A33]">Verified Stays</h4>
+              <p className="text-[11px] text-slate-600">Handpicked 3★ to 5★ hotels</p>
             </div>
           </div>
 
-          {/* Col 4 */}
-          <div className="flex items-center gap-3.5 p-2">
-            <div className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0 border border-amber-500/20">
+          {/* Pillar 5 */}
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-white/70 border border-sky-100 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-500/30">
               <Headphones className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-[#071A33]">24/7 Travel Support</h4>
-              <p className="text-[11px] sm:text-xs text-slate-600">We’re here anytime</p>
+              <h4 className="text-xs font-bold text-[#071A33]">24/7 WhatsApp Desk</h4>
+              <p className="text-[11px] text-slate-600">+880 1851-172032</p>
             </div>
           </div>
         </div>

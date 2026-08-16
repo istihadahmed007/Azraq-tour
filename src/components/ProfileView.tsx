@@ -543,11 +543,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div className="glass-card rounded-3xl p-6 border border-white/10 space-y-3 bg-slate-900/80">
               <div className="w-12 h-12 rounded-2xl bg-sky-500/20 text-sky-300 flex items-center justify-center">
-                <Plane className="w-6 h-6" />
+                <Stamp className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-bold text-white font-serif-display">Live Airfare & Visa Tracking</h3>
+              <h3 className="text-sm font-bold text-white font-serif-display">Package & Visa Tracking</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Check status updates in real-time as our IATA-certified ticketing specialists lock wholesale airline fares.
+                Check status updates in real-time as our visa specialists verify documents and curate holiday arrangements.
               </p>
             </div>
 
@@ -1743,7 +1743,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
                   <a
                     href={`https://wa.me/8801851172032?text=${encodeURIComponent(
-                      `Hello Azraq Tours! Inquiring regarding my quotation request ID: ${selectedQuoteDetail.id} for ${
+                      `Hello Azraq! Inquiring regarding my quotation request ID: ${selectedQuoteDetail.id} for ${
                         selectedQuoteDetail.type === 'flight'
                           ? `${(selectedQuoteDetail as any).from} to ${(selectedQuoteDetail as any).to}`
                           : (selectedQuoteDetail as any).destinationCountry

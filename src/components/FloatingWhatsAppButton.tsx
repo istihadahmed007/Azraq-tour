@@ -7,7 +7,7 @@ interface FloatingWhatsAppButtonProps {
 
 export const FloatingWhatsAppButton: React.FC<FloatingWhatsAppButtonProps> = ({
   phoneNumber = '8801851172032',
-  defaultMessage = 'Hello Azraq Tours & Travels! I would like to inquire about a Flight or Visa quotation.',
+  defaultMessage = 'Hello Azraq! I would like to inquire about tour packages or visa assistance.',
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -32,7 +32,7 @@ export const FloatingWhatsAppButton: React.FC<FloatingWhatsAppButtonProps> = ({
         rel="noreferrer"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        aria-label="Contact Azraq Tours on WhatsApp"
+        aria-label="Contact Azraq on WhatsApp"
         className="group relative flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white shadow-2xl hover:shadow-emerald-500/40 hover:scale-110 active:scale-95 transition-all duration-300 border-2 border-white/20"
       >
         {/* Pulse rings */}

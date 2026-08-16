@@ -12,7 +12,6 @@ import { ClientLayout } from './components/ClientLayout';
 import { DiscoverView } from './components/DiscoverView';
 import { DestinationsView } from './components/DestinationsView';
 import { VisaView } from './components/VisaView';
-import { FlightsView } from './components/FlightsView';
 import { AboutView } from './components/AboutView';
 import { ContactView } from './components/ContactView';
 import { PackagesView } from './components/PackagesView';
@@ -24,7 +23,6 @@ import { DestinationModal } from './components/DestinationModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Footer } from './components/Footer';
 import { FloatingWhatsAppButton } from './components/FloatingWhatsAppButton';
-import { FlightQuoteModal } from './components/FlightQuoteModal';
 import { VisaQuoteModal } from './components/VisaQuoteModal';
 import AuthCallback from './pages/AuthCallback';
 
@@ -33,8 +31,6 @@ function AppContent() {
   const [brandTheme, setBrandTheme] = useState<BrandTheme>('azraq');
   const [isVisaModalOpen, setIsVisaModalOpen] = useState(false);
   const [visaModalCountry, setVisaModalCountry] = useState<string | undefined>(undefined);
-  const [isFlightModalOpen, setIsFlightModalOpen] = useState(false);
-  const [flightModalDest, setFlightModalDest] = useState<string | undefined>(undefined);
 
   // Handle Supabase Auth Callback URL if redirected here
   const isAuthCallbackRoute =
@@ -145,11 +141,6 @@ function AppContent() {
     setIsVisaModalOpen(true);
   };
 
-  const handleOpenFlightQuote = (dest?: string) => {
-    setFlightModalDest(dest);
-    setIsFlightModalOpen(true);
-  };
-
   const isCurrentItinerarySaved = savedItineraries.some((i) => i.id === currentItinerary.id);
 
   return (
@@ -165,7 +156,7 @@ function AppContent() {
           onToggleBrand={handleToggleBrand}
           onNewTripClick={() => handleNavigate('planner')}
           savedTripsCount={savedItineraries.length}
-          onOpenQuote={() => handleOpenFlightQuote()}
+          onOpenQuote={() => handleOpenVisaQuote()}
         />
       )}
     >
@@ -179,8 +170,7 @@ function AppContent() {
             onQuickGenerateItinerary={handleQuickGenerateItinerary}
             onNavigateToView={handleNavigate}
             onOpenVisaModal={handleOpenVisaQuote}
-            onOpenFlightModal={handleOpenFlightQuote}
-            onOpenQuote={() => handleOpenFlightQuote()}
+            onOpenQuote={() => handleOpenVisaQuote()}
           />
         )}
 
@@ -196,10 +186,6 @@ function AppContent() {
 
         {currentView === 'visa' && (
           <VisaView onOpenVisaQuote={handleOpenVisaQuote} />
-        )}
-
-        {currentView === 'flights' && (
-          <FlightsView onOpenFlightModal={handleOpenFlightQuote} />
         )}
 
         {currentView === 'about' && (
@@ -222,7 +208,6 @@ function AppContent() {
             onSelectDestination={setModalDestination}
             onQuickGenerateItinerary={handleQuickGenerateItinerary}
             onOpenVisaQuote={handleOpenVisaQuote}
-            onOpenFlightQuote={handleOpenFlightQuote}
           />
         )}
 
@@ -251,7 +236,6 @@ function AppContent() {
             onRemoveItinerary={handleRemoveSavedItinerary}
             onNavigateToFeed={() => handleNavigate('feed')}
             onSelectDestination={setModalDestination}
-            onOpenFlightQuote={() => handleOpenFlightQuote()}
             onOpenVisaQuote={() => handleOpenVisaQuote()}
             onNavigate={(view) => handleNavigate(view)}
           />
@@ -266,7 +250,6 @@ function AppContent() {
       <Footer
         onNavigate={handleNavigate}
         onOpenVisaQuote={() => handleOpenVisaQuote()}
-        onOpenFlightQuote={() => handleOpenFlightQuote()}
       />
 
       {/* Destination Inspector Modal */}
@@ -286,23 +269,14 @@ function AppContent() {
         initialCountry={visaModalCountry}
       />
 
-      <FlightQuoteModal
-        isOpen={isFlightModalOpen}
-        onClose={() => {
-          setIsFlightModalOpen(false);
-          setFlightModalDest(undefined);
-        }}
-        initialDestination={flightModalDest}
-      />
-
       {/* Persistent Floating WhatsApp Chat Widget */}
       <FloatingWhatsAppButton
         phoneNumber="8801851172032"
-        defaultMessage="Hello Azraq Tours & Travels! I would like to inquire about a Flight / Visa Quotation."
+        defaultMessage="Hello Azraq! I would like to inquire about tour packages or visa assistance."
       />
 
       {/* Auth Modal & Toast Notifications */}
-      <AuthModal brandTitle="Azraq Tours & Travels" />
+      <AuthModal brandTitle="Azraq" />
       <Toast />
     </ClientLayout>
   );
