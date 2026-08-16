@@ -27,7 +27,7 @@ googleProvider.addScope('openid');
 
 export const oAuthClientId = firebaseConfig.oAuthClientId || '';
 
-// Initialize Firestore safely with iframe-compatible transport configuration
+// Initialize Firestore safely with reliable transport configuration
 const targetDbId = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
   ? firebaseConfig.firestoreDatabaseId
   : undefined;
@@ -36,11 +36,11 @@ function createFirestoreInstance() {
   try {
     if (targetDbId) {
       return initializeFirestore(app, {
-        experimentalAutoDetectLongPolling: true,
+        experimentalForceLongPolling: true,
       }, targetDbId);
     }
     return initializeFirestore(app, {
-      experimentalAutoDetectLongPolling: true,
+      experimentalForceLongPolling: true,
     });
   } catch {
     try {
@@ -98,8 +98,8 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path,
   };
 
-  // Only warn in development for unexpected errors, suppress benign offline connection notices
-  if (!errMsg.includes('offline') && !errMsg.includes('unavailable')) {
+  // Log in development if not an expected offline transition
+  if (!errMsg.includes('offline') && !errMsg.includes('unavailable') && !errMsg.includes('could not be completed')) {
     console.warn('Firestore Operation Info:', JSON.stringify(errInfo));
   }
   return errInfo;
@@ -111,20 +111,17 @@ async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
-    const errText = error instanceof Error ? error.message : String(error);
-    if (errText.includes('offline') || errText.includes('unavailable')) {
-      // Benign initial offline state, client works transparently with local cache
-    } else {
-      console.info('Firestore initialized:', errText);
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.info('Firestore initialized in offline mode.');
     }
   }
 }
 
 if (typeof window !== 'undefined') {
-  // Test connection in the background with safe catch
+  // Test connection after bootstrap
   setTimeout(() => {
     testConnection().catch(() => {});
-  }, 1000);
+  }, 1500);
 }
 
 // Initialize Firebase Analytics safely (supported in browser environments)

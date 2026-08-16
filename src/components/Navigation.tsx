@@ -43,7 +43,8 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
     const { user, isGuest, openAuthModal, logout } = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    const navLinks: { id: NavView; label: string; icon: React.ReactNode }[] = [
+    const navLinks: { id: NavView; label: string; icon: React.ReactNode; badge?: string }[] = [
+      { id: 'flights', label: 'Flights', icon: <Plane className="w-4 h-4" /> },
       { id: 'destinations', label: 'Destinations', icon: <Compass className="w-4 h-4" /> },
       { id: 'packages', label: 'Tour Packages', icon: <Package className="w-4 h-4" /> },
       { id: 'visa', label: 'Visa Assistance', icon: <FileCheck2 className="w-4 h-4" /> },

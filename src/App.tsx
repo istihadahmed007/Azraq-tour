@@ -11,6 +11,7 @@ import { Navigation } from './components/Navigation';
 import { ClientLayout } from './components/ClientLayout';
 import { DiscoverView } from './components/DiscoverView';
 import { DestinationsView } from './components/DestinationsView';
+import { FlightsView } from './components/FlightsView';
 import { VisaView } from './components/VisaView';
 import { AboutView } from './components/AboutView';
 import { ContactView } from './components/ContactView';
@@ -24,13 +25,16 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { Footer } from './components/Footer';
 import { FloatingWhatsAppButton } from './components/FloatingWhatsAppButton';
 import { VisaQuoteModal } from './components/VisaQuoteModal';
+import { FlightSearchParams } from './components/AzraqTripFinder';
 import AuthCallback from './pages/AuthCallback';
+import { AZRAQ_AGENCY_CONFIG } from './data/agencyConfig';
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<NavView>('discover');
   const [brandTheme, setBrandTheme] = useState<BrandTheme>('azraq');
   const [isVisaModalOpen, setIsVisaModalOpen] = useState(false);
   const [visaModalCountry, setVisaModalCountry] = useState<string | undefined>(undefined);
+  const [activeFlightParams, setActiveFlightParams] = useState<FlightSearchParams | undefined>(undefined);
 
   // Handle Supabase Auth Callback URL if redirected here
   const isAuthCallbackRoute =
@@ -50,13 +54,22 @@ function AppContent() {
   const [modalDestination, setModalDestination] = useState<Destination | null>(null);
   const [mapSpot, setMapSpot] = useState<Spot | undefined>(undefined);
 
-  // Toggle brand theme (GlobeTrotter AI vs Azraq Tours & Travels)
+  // Toggle brand theme
   const handleToggleBrand = () => {
     setBrandTheme((prev) => (prev === 'globetrotter' ? 'azraq' : 'globetrotter'));
   };
 
-  const handleNavigate = (view: NavView | string) => {
+  const handleNavigate = (view: NavView | string, extra?: any) => {
+    if (extra?.params) {
+      setActiveFlightParams(extra.params);
+    }
     setCurrentView(view as NavView);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSearchFlights = (params: FlightSearchParams) => {
+    setActiveFlightParams(params);
+    setCurrentView('flights');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -169,8 +182,18 @@ function AppContent() {
             onPlanTripPrompt={handlePlanTripPrompt}
             onQuickGenerateItinerary={handleQuickGenerateItinerary}
             onNavigateToView={handleNavigate}
+            onSearchFlights={handleSearchFlights}
             onOpenVisaModal={handleOpenVisaQuote}
             onOpenQuote={() => handleOpenVisaQuote()}
+          />
+        )}
+
+        {currentView === 'flights' && (
+          <FlightsView
+            initialParams={activeFlightParams}
+            onOpenFlightModal={() => {}}
+            onNavigateToView={handleNavigate}
+            onOpenVisaQuote={handleOpenVisaQuote}
           />
         )}
 
@@ -271,8 +294,8 @@ function AppContent() {
 
       {/* Persistent Floating WhatsApp Chat Widget */}
       <FloatingWhatsAppButton
-        phoneNumber="8801851172032"
-        defaultMessage="Hello Azraq! I would like to inquire about tour packages or visa assistance."
+        phoneNumber={AZRAQ_AGENCY_CONFIG.whatsappNumber}
+        defaultMessage="Hello Azraq! I would like to inquire about tour packages, flights, or visa assistance."
       />
 
       {/* Auth Modal & Toast Notifications */}

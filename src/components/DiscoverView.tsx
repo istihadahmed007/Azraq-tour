@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Destination } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { usePackages } from '../context/PackageContext';
@@ -17,20 +17,25 @@ import {
   Clock,
   Calendar,
   Users,
-  ChevronDown,
   ChevronRight,
   Tag,
   Headphones,
-  Check,
+  ExternalLink,
+  MessageCircle,
+  CheckCircle2,
 } from 'lucide-react';
-import { getOptimizedUnsplashUrl, getUnsplashSrcSet } from '../utils/imageOptimization';
+import { getOptimizedUnsplashUrl } from '../utils/imageOptimization';
+import { AzraqTripFinder, FlightSearchParams } from './AzraqTripFinder';
+import { AZRAQ_AGENCY_CONFIG } from '../data/agencyConfig';
+import { POPULAR_AIRPORTS } from '../data/flightsData';
 
 interface DiscoverViewProps {
   destinations: Destination[];
   onSelectDestination: (destination: Destination) => void;
   onPlanTripPrompt: (promptText: string) => void;
   onQuickGenerateItinerary: (destName: string) => void;
-  onNavigateToView?: (view: string) => void;
+  onNavigateToView?: (view: string, extra?: any) => void;
+  onSearchFlights?: (params: FlightSearchParams) => void;
   onOpenVisaModal?: (country?: string) => void;
   onOpenFlightModal?: (dest?: string) => void;
   onOpenQuote?: () => void;
@@ -42,6 +47,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
   onPlanTripPrompt,
   onQuickGenerateItinerary,
   onNavigateToView,
+  onSearchFlights,
   onOpenVisaModal,
   onOpenFlightModal,
   onOpenQuote,
@@ -49,207 +55,160 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
   const { requireAuth, showToast } = useAuth();
   const { packages, setActivePackageModal } = usePackages();
 
-  // Search Bar interactive states
-  const [selectedDest, setSelectedDest] = useState('');
-  const [selectedDates, setSelectedDates] = useState('');
-  const [travelerCount, setTravelerCount] = useState(1);
-  const [travelClass, setTravelClass] = useState('Economy');
+  // Curated 4 Popular Destinations for Bangladeshi travelers matching user's exact aesthetic
+  const bangladeshiCuratedDestinations = useMemo(
+    () => [
+      {
+        id: 'dest-bangkok',
+        name: 'Bangkok',
+        country: 'Thailand',
+        code: 'BKK',
+        rating: 4.8,
+        reviews: '1,420 reviews',
+        imageUrl:
+          'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=80',
+        routePrice: 'BDT 26,500',
+        visaType: 'Sticker / eVisa',
+      },
+      {
+        id: 'dest-dubai',
+        name: 'Dubai',
+        country: 'UAE',
+        code: 'DXB',
+        rating: 4.9,
+        reviews: '2,180 reviews',
+        imageUrl:
+          'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80',
+        routePrice: 'BDT 48,000',
+        visaType: '30/60-Day Tourist',
+      },
+      {
+        id: 'dest-kuala-lumpur',
+        name: 'Kuala Lumpur',
+        country: 'Malaysia',
+        code: 'KUL',
+        rating: 4.7,
+        reviews: '1,890 reviews',
+        imageUrl:
+          'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=80',
+        routePrice: 'BDT 32,000',
+        visaType: 'eVisa Support',
+      },
+      {
+        id: 'dest-maldives',
+        name: 'Maldives',
+        country: 'Maldives',
+        code: 'MLE',
+        rating: 4.9,
+        reviews: '960 reviews',
+        imageUrl:
+          'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80',
+        routePrice: 'BDT 43,000',
+        visaType: 'Free 30-Day On Arrival',
+      },
+    ],
+    []
+  );
 
-  // Dropdown open states
-  const [openDestMenu, setOpenDestMenu] = useState(false);
-  const [openDateMenu, setOpenDateMenu] = useState(false);
-  const [openTravelerMenu, setOpenTravelerMenu] = useState(false);
-
-  // Search filter query
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const destMenuRef = useRef<HTMLDivElement>(null);
-  const dateMenuRef = useRef<HTMLDivElement>(null);
-  const travelerMenuRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdowns on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (destMenuRef.current && !destMenuRef.current.contains(event.target as Node)) {
-        setOpenDestMenu(false);
-      }
-      if (dateMenuRef.current && !dateMenuRef.current.contains(event.target as Node)) {
-        setOpenDateMenu(false);
-      }
-      if (travelerMenuRef.current && !travelerMenuRef.current.contains(event.target as Node)) {
-        setOpenTravelerMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Popular destinations specifically matching the Bangladesh traveler curation in the screenshot
-  const bangladeshiCuratedDestinations = [
-    {
-      id: 'dest-maldives',
-      name: 'Maldives',
-      country: 'Maldives',
-      rating: '4.9',
-      reviews: '1.2K+',
-      imageUrl: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80',
-      description: 'Luxury overwater villas, crystal lagoons, and coral reefs.',
-    },
-    {
-      id: 'dest-dubai',
-      name: 'Dubai',
-      country: 'United Arab Emirates',
-      rating: '4.8',
-      reviews: '980+',
-      imageUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80',
-      description: 'Futuristic Burj Khalifa skyline, luxury shopping, and desert safaris.',
-    },
-    {
-      id: 'dest-kl',
-      name: 'Kuala Lumpur',
-      country: 'Malaysia',
-      rating: '4.7',
-      reviews: '860+',
-      imageUrl: 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=80',
-      description: 'Iconic Petronas Twin Towers, cultural markets, and shopping.',
-    },
-    {
-      id: 'dest-bangkok',
-      name: 'Bangkok',
-      country: 'Thailand',
-      rating: '4.6',
-      reviews: '750+',
-      imageUrl: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=80',
-      description: 'Vibrant street food, magnificent temples like Wat Arun, and boat cruises.',
-    },
-  ];
-
-  // Quick destinations for the search dropdown
-  const quickDestinations = [
-    { name: 'Maldives', country: 'Maldives' },
-    { name: 'Dubai', country: 'United Arab Emirates' },
-    { name: 'Kuala Lumpur', country: 'Malaysia' },
-    { name: 'Bangkok', country: 'Thailand' },
-    { name: 'Bali', country: 'Indonesia' },
-    { name: 'Singapore', country: 'Singapore' },
-  ];
-
-  // Featured 4 Tour Packages for homepage
+  // Featured Tour Packages
   const featuredPackages = useMemo(() => {
     return packages.slice(0, 4);
   }, [packages]);
 
-  const handlePlanMyTripSubmit = () => {
-    const dest = selectedDest || searchQuery || 'Maldives';
-    const dates = selectedDates || 'Upcoming Vacation';
-    const travelers = `${travelerCount} Traveler${travelerCount > 1 ? 's' : ''}, ${travelClass}`;
-    
-    if (onNavigateToView) {
-      onNavigateToView('planner');
-    }
-    onPlanTripPrompt(`Trip to ${dest} for ${travelers} during ${dates}`);
-  };
+  const sampleBuddies = [
+    {
+      id: 'b1',
+      name: 'Tanvir Hossain',
+      destination: 'Bangkok, Thailand',
+      dates: 'Nov 12 – 18',
+      style: 'Culinary & Shopping',
+      avatar:
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    },
+    {
+      id: 'b2',
+      name: 'Nusrat Jahan',
+      destination: 'Kuala Lumpur, Malaysia',
+      dates: 'Dec 02 – 08',
+      style: 'Family & City Walk',
+      avatar:
+        'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
+    },
+    {
+      id: 'b3',
+      name: 'Rahat Chowdhury',
+      destination: 'Dubai & Abu Dhabi',
+      dates: 'Nov 20 – 27',
+      style: 'Luxury & Adventure',
+      avatar:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    },
+    {
+      id: 'b4',
+      name: 'Samira Ahmed',
+      destination: 'Malé, Maldives',
+      dates: 'Dec 15 – 20',
+      style: 'Resort & Relaxation',
+      avatar:
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+    },
+  ];
+
+  const testimonials = [
+    {
+      name: 'Farhan Rahman',
+      destination: 'Family Holiday in Bangkok & Pattaya',
+      review:
+        'Azraq handled our 6-member family visas and flights flawlessly. Everything from the private airport transfer to the halal dining recommendations was spot on.',
+      rating: 5,
+      photo:
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    },
+    {
+      name: 'Sadia Karim',
+      destination: 'Couple Honeymoon in Maldives',
+      review:
+        'The water villa package booked through Azraq was unbelievable value. They verified all speed boat transfers and flight layovers from Dhaka ahead of time.',
+      rating: 5,
+      photo:
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    },
+    {
+      name: 'Dr. Tariqul Islam',
+      destination: 'Medical & Leisure in Singapore',
+      review:
+        'Fast e-visa processing and immediate flight rebooking support when our return schedule changed. True professional concierge service for Bangladeshi professionals.',
+      rating: 5,
+      photo:
+        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80',
+    },
+  ];
 
   const handleCardClick = (destName: string) => {
-    const matched = destinations.find((d) => d.name.toLowerCase() === destName.toLowerCase());
-    if (matched) {
-      onSelectDestination(matched);
+    const found = destinations.find(
+      (d) =>
+        d.name.toLowerCase().includes(destName.toLowerCase()) ||
+        d.country.toLowerCase().includes(destName.toLowerCase())
+    );
+    if (found) {
+      onSelectDestination(found);
     } else {
       onQuickGenerateItinerary(destName);
     }
   };
 
-  // Search Results preview
-  const searchResults = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return [];
-    return destinations
-      .filter(
-        (d) =>
-          d.name.toLowerCase().includes(q) ||
-          d.country.toLowerCase().includes(q) ||
-          d.description.toLowerCase().includes(q)
-      )
-      .slice(0, 5);
-  }, [searchQuery, destinations]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    if (searchResults.length > 0) {
-      onSelectDestination(searchResults[0]);
-    } else {
-      if (onNavigateToView) {
-        onNavigateToView('destinations');
-      }
+  const handleFlightSearchTrigger = (params: FlightSearchParams) => {
+    if (onSearchFlights) {
+      onSearchFlights(params);
+    } else if (onNavigateToView) {
+      onNavigateToView('flights', { params });
     }
   };
-
-  // 4 Travel Buddies Profiles
-  const sampleBuddies = [
-    {
-      id: 'buddy-1',
-      name: 'Nusrat Jahan',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      destination: 'Bali, Indonesia',
-      dates: 'Oct 15 – Oct 22',
-      style: 'Culture & Photography',
-    },
-    {
-      id: 'buddy-2',
-      name: 'Tanvir Hasan',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-      destination: 'Bangkok, Thailand',
-      dates: 'Nov 05 – Nov 12',
-      style: 'Food & Sightseeing',
-    },
-    {
-      id: 'buddy-3',
-      name: 'Sadia Rahman',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
-      destination: 'Kuala Lumpur, Malaysia',
-      dates: 'Dec 01 – Dec 07',
-      style: 'Shopping & Leisure',
-    },
-    {
-      id: 'buddy-4',
-      name: 'Farhan Ahmed',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
-      destination: 'Dubai, UAE',
-      dates: 'Nov 20 – Nov 27',
-      style: 'Adventure & Desert Safari',
-    },
-  ];
-
-  // 3 Testimonials
-  const testimonials = [
-    {
-      name: 'Raisa Chowdhury',
-      destination: 'Trip to Maldives',
-      rating: 5,
-      photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
-      review: 'Azraq organized our Maldives resort stay and speed boat transfers smoothly. The price was transparent with zero hidden fees.',
-    },
-    {
-      name: 'Shakil Mahmud',
-      destination: 'Trip to Dubai',
-      rating: 5,
-      photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
-      review: 'Secured our UAE tourist visa in 48 hours and provided an exceptional holiday itinerary. Extremely responsive and reliable.',
-    },
-    {
-      name: 'Anika Tabassum',
-      destination: 'Family Trip to Thailand',
-      rating: 5,
-      photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80',
-      review: 'Our Bangkok and Pattaya holiday package was thoroughly arranged. Punctual private drivers, great hotels, and helpful travel tips.',
-    },
-  ];
 
   return (
     <div className="w-full bg-[#F4F8FA] text-slate-900 flex flex-col gap-12 sm:gap-16 pb-20">
       {/* 1. HERO SECTION: Full-Screen Natural Thai Limestone Karst & Turquoise Ocean Background */}
-      <section className="relative w-full min-h-[580px] sm:min-h-[640px] lg:min-h-[700px] flex items-center bg-[#071A33] text-white overflow-visible">
+      <section className="relative w-full min-h-[620px] sm:min-h-[680px] lg:min-h-[760px] flex flex-col justify-between bg-[#071A33] text-white overflow-visible pb-16">
         {/* Full-Bleed High Resolution Natural Landscape Photograph */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <img
@@ -257,244 +216,83 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             alt="Lush tropical limestone karst cliffs with traditional longtail boat on turquoise ocean"
             className="w-full h-full object-cover object-center transform scale-100"
           />
-          {/* Subtle natural lighting overlays for perfect readability while maintaining vibrant photography */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#071A33]/90 via-[#071A33]/55 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#071A33]/70 via-transparent to-transparent" />
+          {/* Natural lighting overlays for perfect readability while maintaining vibrant photography */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#071A33]/95 via-[#071A33]/65 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#071A33]/85 via-transparent to-transparent" />
         </div>
 
-        {/* Center-Left Hero Content with Generous Whitespace */}
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="max-w-2xl text-left space-y-6">
+        {/* Center-Left Hero Content */}
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-8">
+          <div className="max-w-2xl text-left space-y-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-sky-400/30 text-sky-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+              <span>Official Dhaka Travel Concierge & Booking Engine</span>
+            </div>
+
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.1] font-sans">
               Your Gateway to<br />Curated Asian Escapes
             </h1>
 
             <p className="text-base sm:text-lg text-slate-200 leading-relaxed font-normal max-w-xl">
-              Personalized visas, curated tour packages, and bespoke itineraries crafted<br className="hidden sm:inline" /> for Bangladeshi travelers.
+              Compare routes, discover better fares, and let Azraq arrange the rest of your journey — personalized visas, vetted hotels, and bespoke itineraries for Bangladeshi travelers.
             </p>
 
-            {/* Exactly Two Action Buttons */}
-            <div className="flex flex-wrap items-center gap-4 pt-2">
+            {/* Exactly Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3.5 pt-2">
               <button
                 onClick={() => {
-                  if (onOpenQuote) onOpenQuote();
-                  else if (onNavigateToView) onNavigateToView('packages');
+                  if (onNavigateToView) onNavigateToView('flights');
                 }}
                 className="px-7 py-3.5 rounded-xl bg-[#0D6EFD] hover:bg-blue-600 text-white font-bold text-base shadow-lg hover:shadow-blue-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-95"
               >
-                <span>Request a Quote</span>
-                <ArrowRight className="w-4 h-4" />
+                <Plane className="w-4 h-4" />
+                <span>Search Flights</span>
               </button>
 
               <button
                 onClick={() => {
-                  const el = document.getElementById('popular-destinations');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  else if (onNavigateToView) onNavigateToView('destinations');
+                  if (onNavigateToView) onNavigateToView('planner');
+                  else onPlanTripPrompt('Custom Asian Itinerary');
                 }}
-                className="px-6 py-3.5 rounded-full bg-[#071A33]/40 hover:bg-[#071A33]/60 text-white backdrop-blur-md border border-white/30 hover:border-white/60 font-semibold text-base transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                className="px-6 py-3.5 rounded-xl bg-white/15 hover:bg-white/25 text-white backdrop-blur-md border border-white/30 font-semibold text-base transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
               >
-                <span>Explore Destinations</span>
-                <MapPin className="w-4 h-4 text-sky-300" />
+                <Sparkles className="w-4 h-4 text-purple-300" />
+                <span>Plan a Custom Trip</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (onOpenQuote) onOpenQuote();
+                }}
+                className="px-5 py-3.5 rounded-xl text-slate-300 hover:text-white font-semibold text-sm hover:underline cursor-pointer"
+              >
+                Request a Quote
               </button>
             </div>
           </div>
         </div>
 
-        {/* 2. FLOATING DARK BLUE BOOKING / SEARCH BAR (Overlapping bottom of Hero) */}
-        <div className="absolute -bottom-12 left-0 right-0 z-30 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[#0B1E38]/95 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-slate-700/60 shadow-2xl">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-              {/* Section 1: Where do you want to go? */}
-              <div ref={destMenuRef} className="relative md:col-span-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpenDestMenu(!openDestMenu);
-                    setOpenDateMenu(false);
-                    setOpenTravelerMenu(false);
-                  }}
-                  className="w-full text-left p-3 rounded-xl bg-slate-900/60 hover:bg-slate-900/80 border border-slate-700/60 flex items-center justify-between gap-3 cursor-pointer transition-colors group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <MapPin className="w-5 h-5 text-sky-400 shrink-0" />
-                    <div className="truncate">
-                      <p className="text-xs text-slate-300 font-medium">Where do you want to go?</p>
-                      <p className="text-sm font-semibold text-white truncate">
-                        {selectedDest || 'Search destinations'}
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-white shrink-0" />
-                </button>
-
-                {/* Destination Dropdown */}
-                {openDestMenu && (
-                  <div className="absolute top-full mt-2 left-0 w-full sm:w-80 bg-[#0B1E38] border border-slate-700 rounded-xl shadow-2xl p-3 z-50 animate-fadeIn space-y-2">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">
-                      Popular Asian Escapes
-                    </p>
-                    <div className="grid grid-cols-1 gap-1">
-                      {quickDestinations.map((d) => (
-                        <button
-                          key={d.name}
-                          onClick={() => {
-                            setSelectedDest(d.name);
-                            setOpenDestMenu(false);
-                          }}
-                          className="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-200 hover:text-white hover:bg-blue-600/30 transition-colors text-left cursor-pointer"
-                        >
-                          <span className="font-semibold">{d.name}</span>
-                          <span className="text-xs text-slate-400">{d.country}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Section 2: Travel dates */}
-              <div ref={dateMenuRef} className="relative md:col-span-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpenDateMenu(!openDateMenu);
-                    setOpenDestMenu(false);
-                    setOpenTravelerMenu(false);
-                  }}
-                  className="w-full text-left p-3 rounded-xl bg-slate-900/60 hover:bg-slate-900/80 border border-slate-700/60 flex items-center justify-between gap-3 cursor-pointer transition-colors group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Calendar className="w-5 h-5 text-sky-400 shrink-0" />
-                    <div className="truncate">
-                      <p className="text-xs text-slate-300 font-medium">Travel dates</p>
-                      <p className="text-sm font-semibold text-white truncate">
-                        {selectedDates || 'Select dates'}
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-white shrink-0" />
-                </button>
-
-                {/* Date Presets Dropdown */}
-                {openDateMenu && (
-                  <div className="absolute top-full mt-2 left-0 w-full sm:w-72 bg-[#0B1E38] border border-slate-700 rounded-xl shadow-2xl p-3 z-50 animate-fadeIn space-y-1">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1 mb-2">
-                      Quick Seasons & Windows
-                    </p>
-                    {[
-                      'Upcoming Weekend Getaway',
-                      'Next Month (Flexible 5-7 Days)',
-                      'Winter Vacation (Dec – Jan)',
-                      'Upcoming Eid Holiday Break',
-                    ].map((season) => (
-                      <button
-                        key={season}
-                        onClick={() => {
-                          setSelectedDates(season);
-                          setOpenDateMenu(false);
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-200 hover:text-white hover:bg-blue-600/30 transition-colors cursor-pointer"
-                      >
-                        {season}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Section 3: Travelers & Class */}
-              <div ref={travelerMenuRef} className="relative md:col-span-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpenTravelerMenu(!openTravelerMenu);
-                    setOpenDestMenu(false);
-                    setOpenDateMenu(false);
-                  }}
-                  className="w-full text-left p-3 rounded-xl bg-slate-900/60 hover:bg-slate-900/80 border border-slate-700/60 flex items-center justify-between gap-3 cursor-pointer transition-colors group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Users className="w-5 h-5 text-sky-400 shrink-0" />
-                    <div className="truncate">
-                      <p className="text-xs text-slate-300 font-medium">Travelers</p>
-                      <p className="text-sm font-semibold text-white truncate">
-                        {travelerCount} Traveler{travelerCount > 1 ? 's' : ''}, {travelClass}
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-white shrink-0" />
-                </button>
-
-                {/* Traveler selection Popover */}
-                {openTravelerMenu && (
-                  <div className="absolute top-full mt-2 left-0 w-full sm:w-72 bg-[#0B1E38] border border-slate-700 rounded-xl shadow-2xl p-4 z-50 animate-fadeIn space-y-3 text-white">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">Number of Travelers</span>
-                      <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-1">
-                        <button
-                          onClick={() => setTravelerCount(Math.max(1, travelerCount - 1))}
-                          className="w-7 h-7 rounded bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center font-bold"
-                        >
-                          -
-                        </button>
-                        <span className="w-6 text-center font-bold text-sm">{travelerCount}</span>
-                        <button
-                          onClick={() => setTravelerCount(travelerCount + 1)}
-                          className="w-7 h-7 rounded bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center font-bold"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-700">
-                      <p className="text-xs font-semibold text-slate-400 mb-1.5">Cabin Preference</p>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {['Economy', 'Business'].map((cls) => (
-                          <button
-                            key={cls}
-                            onClick={() => {
-                              setTravelClass(cls);
-                              setOpenTravelerMenu(false);
-                            }}
-                            className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-colors ${
-                              travelClass === cls
-                                ? 'bg-[#0D6EFD] text-white'
-                                : 'bg-slate-800 text-slate-300 hover:text-white'
-                            }`}
-                          >
-                            {cls}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Section 4: Plan my trip Button */}
-              <div className="md:col-span-2">
-                <button
-                  type="button"
-                  onClick={handlePlanMyTripSubmit}
-                  className="w-full py-3.5 px-4 rounded-xl bg-[#0D6EFD] hover:bg-blue-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-                >
-                  <span>Plan my trip</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* AZRAQ TRIP FINDER (Interactive Booking Module Embedded in Hero) */}
+        <div className="relative z-20 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
+          <AzraqTripFinder
+            initialMode="flights"
+            onSearchFlights={handleFlightSearchTrigger}
+            onNavigateToView={(view, extra) => {
+              if (extra?.prompt) onPlanTripPrompt(extra.prompt);
+              else if (onNavigateToView) onNavigateToView(view);
+            }}
+            onOpenVisaModal={onOpenVisaModal}
+            onOpenQuoteModal={onOpenQuote}
+          />
         </div>
       </section>
 
-      {/* 3. VALUE PROPOSITION / FEATURE HIGHLIGHTS BAR */}
-      <section className="mt-14 sm:mt-16 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 py-4">
+      {/* 2. VALUE PROPOSITION / FEATURE HIGHLIGHTS BAR */}
+      <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 py-2">
           {/* Personalized Pricing */}
-          <div className="flex items-center gap-4 p-3 sm:p-4 rounded-2xl bg-white/70 border border-slate-200/60 shadow-xs hover:shadow-sm transition-shadow">
-            <div className="w-12 h-12 rounded-full bg-teal-50/80 text-teal-600 flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-blue-50 text-[#0D6EFD] flex items-center justify-center shrink-0">
               <Tag className="w-5 h-5" />
             </div>
             <div>
@@ -504,8 +302,8 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
           </div>
 
           {/* Visa Assistance */}
-          <div className="flex items-center gap-4 p-3 sm:p-4 rounded-2xl bg-white/70 border border-slate-200/60 shadow-xs hover:shadow-sm transition-shadow">
-            <div className="w-12 h-12 rounded-full bg-teal-50/80 text-teal-600 flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
@@ -515,8 +313,8 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
           </div>
 
           {/* Top Airline Options */}
-          <div className="flex items-center gap-4 p-3 sm:p-4 rounded-2xl bg-white/70 border border-slate-200/60 shadow-xs hover:shadow-sm transition-shadow">
-            <div className="w-12 h-12 rounded-full bg-teal-50/80 text-teal-600 flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
               <Plane className="w-5 h-5" />
             </div>
             <div>
@@ -526,8 +324,8 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
           </div>
 
           {/* 24/7 Travel Support */}
-          <div className="flex items-center gap-4 p-3 sm:p-4 rounded-2xl bg-white/70 border border-slate-200/60 shadow-xs hover:shadow-sm transition-shadow">
-            <div className="w-12 h-12 rounded-full bg-teal-50/80 text-teal-600 flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
               <Headphones className="w-5 h-5" />
             </div>
             <div>
@@ -538,7 +336,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         </div>
       </section>
 
-      {/* 4. POPULAR DESTINATIONS FOR BANGLADESHI TRAVELERS (Exact 4 Card Layout) */}
+      {/* 3. POPULAR DESTINATIONS FOR BANGLADESHI TRAVELERS */}
       <section id="popular-destinations" className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="space-y-1">
@@ -546,7 +344,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               Popular destinations for Bangladeshi travelers
             </h2>
             <p className="text-sm text-slate-500">
-              Handpicked places, unforgettable experiences.
+              Handpicked places, direct flight connections, and verified visa documentation.
             </p>
           </div>
 
@@ -561,16 +359,18 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
           </button>
         </div>
 
-        {/* 4 Card Destination Grid matching user image layout */}
+        {/* 4 Card Destination Grid with Flight shortcut & explore action */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {bangladeshiCuratedDestinations.map((dest) => (
             <div
               key={dest.id}
-              onClick={() => handleCardClick(dest.name)}
-              className="group bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-xl border border-slate-200/80 transition-all duration-300 cursor-pointer flex flex-col"
+              className="group bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-xl border border-slate-200/80 transition-all duration-300 flex flex-col justify-between"
             >
               {/* Destination Image with top-left badge */}
-              <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-slate-100">
+              <div
+                className="relative h-48 sm:h-52 w-full overflow-hidden bg-slate-100 cursor-pointer"
+                onClick={() => handleCardClick(dest.name)}
+              >
                 <img
                   src={dest.imageUrl}
                   alt={dest.name}
@@ -582,24 +382,63 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                   <MapPin className="w-3 h-3 text-white" />
                   <span>{dest.name}</span>
                 </div>
+
+                {/* Top-Right Fare estimate */}
+                <div className="absolute top-3 right-3 bg-[#071A33]/85 backdrop-blur-md px-2.5 py-1 rounded-full text-sky-300 font-mono text-[11px] font-bold shadow-sm">
+                  From {dest.routePrice}
+                </div>
               </div>
 
               {/* Card Footer Details */}
-              <div className="p-4 sm:p-5 flex items-center justify-between gap-2">
+              <div className="p-4 sm:p-5 flex flex-col justify-between gap-3 flex-1">
                 <div>
-                  <h3 className="text-base font-bold text-[#071A33] tracking-tight group-hover:text-[#0D6EFD] transition-colors">
-                    {dest.name}
-                  </h3>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-bold text-slate-800">{dest.rating}</span>
-                    <span className="text-xs text-slate-400">({dest.reviews})</span>
+                  <div className="flex items-center justify-between">
+                    <h3
+                      onClick={() => handleCardClick(dest.name)}
+                      className="text-base font-bold text-[#071A33] tracking-tight group-hover:text-[#0D6EFD] transition-colors cursor-pointer"
+                    >
+                      {dest.name}, {dest.country}
+                    </h3>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <span className="text-xs font-bold text-slate-800">{dest.rating}</span>
+                    </div>
                   </div>
+                  <p className="text-xs text-slate-500 mt-1">Visa: {dest.visaType}</p>
                 </div>
 
-                <div className="flex items-center gap-1 text-xs font-bold text-[#0D6EFD] group-hover:text-blue-700 transition-colors">
-                  <span>Explore</span>
-                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const airport = POPULAR_AIRPORTS.find((a) => a.code === dest.code) || POPULAR_AIRPORTS[4];
+                      handleFlightSearchTrigger({
+                        tripType: 'round',
+                        origin: POPULAR_AIRPORTS[0],
+                        destination: airport,
+                        departureDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        returnDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        adults: 1,
+                        children: 0,
+                        infants: 0,
+                        cabinClass: 'Economy',
+                        currency: 'BDT',
+                      });
+                    }}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#0D6EFD] hover:underline cursor-pointer"
+                  >
+                    <Plane className="w-3.5 h-3.5" />
+                    <span>Find Flights</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCardClick(dest.name)}
+                    className="text-xs font-bold text-slate-700 hover:text-[#0D6EFD] flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <span>Details</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -607,53 +446,111 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         </div>
       </section>
 
-      {/* 4. FULL-WIDTH VISUAL BREAK: "Discover the World" (Aerial Tropical Island Photograph) */}
-      <section className="relative w-full h-[400px] sm:h-[480px] overflow-hidden my-4">
-        <img
-          src="https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=2400&q=85"
-          alt="Aerial tropical island lagoon, pristine turquoise waters and white sand reef"
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
-        <div className="absolute inset-0 flex items-center">
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-            <div className="max-w-xl text-white space-y-4">
-              <span className="text-xs font-bold uppercase tracking-widest text-sky-300 block">
-                Pristine Escapes
+      {/* 4. "COMPARE FLIGHTS, THEN TRAVEL WITH CONFIDENCE" (Concierge & Partner Workflow) */}
+      <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-xs space-y-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="max-w-2xl space-y-2">
+              <span className="text-xs font-bold text-[#0D6EFD] uppercase tracking-wider">
+                Intelligent Travel Booking
               </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
-                Discover the World
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#071A33] tracking-tight font-sans">
+                Compare Flights, Then Travel with Confidence
               </h2>
-              <p className="text-sm sm:text-base text-slate-200 leading-relaxed">
-                From untouched island beaches to lush tropical rainforests, explore breathtaking sanctuaries tailored for unforgettable journeys.
+              <p className="text-sm text-slate-600">
+                Azraq combines global airfare search via Travelpayouts with personalized Dhaka concierge care.
               </p>
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    if (onNavigateToView) onNavigateToView('destinations');
-                  }}
-                  className="px-6 py-3 rounded-xl bg-white text-[#071A33] hover:bg-slate-100 font-bold text-sm shadow-md transition-colors cursor-pointer"
-                >
-                  Explore All Destinations
-                </button>
+            </div>
+
+            <button
+              onClick={() => {
+                if (onNavigateToView) onNavigateToView('flights');
+              }}
+              className="px-6 py-3 rounded-xl bg-[#0D6EFD] hover:bg-blue-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer self-start md:self-auto"
+            >
+              <span>Open Flight Comparison</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* 3 Step Workflow Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#0D6EFD] flex items-center justify-center font-bold text-sm">
+                  1
+                </div>
+                <h3 className="text-base font-bold text-[#071A33]">Search & Compare Routes</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Real-time ticket comparison across Biman, Thai Airways, Emirates, Malaysia Airlines, and 700+ partner carriers.
+                </p>
               </div>
+              <span className="text-[11px] font-semibold text-[#0D6EFD]">Best market fares from Dhaka</span>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                  2
+                </div>
+                <h3 className="text-base font-bold text-[#071A33]">Choose Partner or Concierge Hold</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Book directly with certified global partners or request our Dhaka travel desk to hold tickets offline on your behalf.
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-emerald-700">Flexible ticketing support</span>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm">
+                  3
+                </div>
+                <h3 className="text-base font-bold text-[#071A33]">Complete Visas & Hotel Care</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Once your flights are settled, our specialists arrange embassy paperwork, airport transfers, and luxury accommodation.
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-purple-700">All-in-one travel peace of mind</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. TRAVEL SERVICES (3 Clean Service Cards) */}
+      {/* 5. COMPREHENSIVE TRAVEL SERVICES (4 Clean Service Cards) */}
       <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#071A33] tracking-tight font-sans">
             Comprehensive Travel Services
           </h2>
           <p className="text-sm text-slate-500">
-            Dedicated solutions designed for hassle-free leisure and business trips.
+            Dedicated solutions designed for hassle-free leisure, business trips, and family vacations.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Partner Airfare Search */}
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between hover:border-blue-500/40 transition-colors">
+            <div className="space-y-3">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#0D6EFD] flex items-center justify-center">
+                <Plane className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold text-[#071A33]">Partner Airfares</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Live flight search across international carriers with transparent pricing and flexible booking options.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                if (onNavigateToView) onNavigateToView('flights');
+              }}
+              className="text-xs font-bold text-[#0D6EFD] hover:underline flex items-center gap-1 cursor-pointer pt-2"
+            >
+              <span>Search Flights</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           {/* Visa Assistance */}
           <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between hover:border-teal-500/40 transition-colors">
             <div className="space-y-3">
@@ -724,7 +621,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         </div>
       </section>
 
-      {/* 6. PACKAGES: Light Background + Beautiful Destination Images */}
+      {/* 6. CURATED TOUR PACKAGES */}
       <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="space-y-1.5">
@@ -752,8 +649,15 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             const pkgTitle = pkg.package_name || (pkg as any).title || 'Curated Package';
             const pkgDest = pkg.destination_name || pkg.country || (pkg as any).destination || 'Asia';
             const pkgPrice = pkg.price || (pkg as any).priceStartingFrom || 0;
-            const pkgDuration = pkg.duration || ((pkg as any).durationDays ? `${(pkg as any).durationDays}D / ${(pkg as any).durationNights || 0}N` : 'Custom');
-            const pkgImage = (pkg.images && pkg.images.length > 0) ? pkg.images[0] : 'https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=800&q=75';
+            const pkgDuration =
+              pkg.duration ||
+              ((pkg as any).durationDays
+                ? `${(pkg as any).durationDays}D / ${(pkg as any).durationNights || 0}N`
+                : 'Custom');
+            const pkgImage =
+              pkg.images && pkg.images.length > 0
+                ? pkg.images[0]
+                : 'https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=800&q=75';
 
             return (
               <div
@@ -813,7 +717,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         </div>
       </section>
 
-      {/* 7. VISA: Minimal Clean Section */}
+      {/* 7. VISA ASSISTANCE MADE SIMPLE */}
       <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-3xl border border-slate-200/80 p-8 sm:p-12 shadow-xs space-y-8">
           <div className="max-w-2xl space-y-2">
@@ -856,7 +760,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
 
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
             <p className="text-xs text-slate-500">
-              Guidance available for Thailand, Malaysia, Singapore, UAE, Maldives, and more.
+              Guidance available for Thailand, Malaysia, Singapore, UAE, Maldives, and Nepal.
             </p>
             <button
               onClick={() => {
@@ -871,43 +775,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         </div>
       </section>
 
-      {/* 8. FULL-WIDTH VISUAL BREAK: "Your Journey Starts Here" (Mountain Sunset Photograph) */}
-      <section className="relative w-full h-[400px] sm:h-[480px] overflow-hidden my-4">
-        <img
-          src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2400&q=85"
-          alt="Majestic mountain peaks bathed in golden sunset glow"
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
-        <div className="absolute inset-0 flex items-center">
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-            <div className="max-w-xl text-white space-y-4">
-              <span className="text-xs font-bold uppercase tracking-widest text-sky-300 block">
-                Inspiring Horizons
-              </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
-                Your Journey Starts Here
-              </h2>
-              <p className="text-sm sm:text-base text-slate-200 leading-relaxed">
-                Every memorable adventure begins with a vision. Let our travel experts guide your route from itinerary planning to the final flight home.
-              </p>
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    if (onNavigateToView) onNavigateToView('planner');
-                    else onPlanTripPrompt('Plan my trip');
-                  }}
-                  className="px-6 py-3 rounded-xl bg-white text-[#071A33] hover:bg-slate-100 font-bold text-sm shadow-md transition-colors cursor-pointer"
-                >
-                  Start Custom Itinerary
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 9. TRAVEL BUDDIES: Clean Social-Style Cards */}
+      {/* 8. TRAVEL BUDDIES */}
       <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="space-y-1.5">
@@ -953,9 +821,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
                   <span>{buddy.dates}</span>
                 </div>
-                <div className="text-[11px] text-[#0D6EFD] font-semibold">
-                  {buddy.style}
-                </div>
+                <div className="text-[11px] text-[#0D6EFD] font-semibold">{buddy.style}</div>
               </div>
 
               <button
@@ -973,14 +839,14 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         </div>
       </section>
 
-      {/* 10. WHY CHOOSE AZRAQ (4-Item Credibility Section) */}
+      {/* 9. WHY CHOOSE AZRAQ */}
       <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#071A33] tracking-tight font-sans">
             Why Choose Azraq
           </h2>
           <p className="text-sm text-slate-500">
-            Committed to clarity, honesty, and professional travel execution.
+            Committed to clarity, honesty, and professional travel execution from Bangladesh.
           </p>
         </div>
 
@@ -1027,7 +893,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         </div>
       </section>
 
-      {/* 11. TESTIMONIALS: Soft Neutral Background */}
+      {/* 10. TESTIMONIALS */}
       <section className="w-full bg-slate-100/70 py-16">
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -1035,7 +901,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               What Our Travelers Say
             </h2>
             <p className="text-sm text-slate-500">
-              Real feedback from Bangladeshi travelers who booked with Azraq Tours.
+              Real feedback from Bangladeshi travelers who booked flights and packages with Azraq.
             </p>
           </div>
 
@@ -1073,7 +939,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         </div>
       </section>
 
-      {/* 12. FINAL CTA: Full-Width Sunset/Nature Background Image */}
+      {/* 11. FINAL CTA */}
       <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
         <div className="relative rounded-3xl overflow-hidden text-white p-8 sm:p-14 text-center space-y-6 shadow-2xl">
           {/* Panoramic Sunset Photography */}
@@ -1103,6 +969,14 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               </button>
               <button
                 onClick={() => {
+                  if (onNavigateToView) onNavigateToView('flights');
+                }}
+                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm sm:text-base shadow-lg transition-all cursor-pointer active:scale-98"
+              >
+                Search Flights
+              </button>
+              <button
+                onClick={() => {
                   if (onNavigateToView) onNavigateToView('contact');
                 }}
                 className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border border-white/30 font-bold text-sm sm:text-base transition-all cursor-pointer active:scale-98"
@@ -1116,4 +990,3 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     </div>
   );
 };
-
