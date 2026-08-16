@@ -1,4 +1,16 @@
-export type NavView = 'enroute' | 'discover' | 'packages' | 'planner' | 'feed' | 'map' | 'profile' | 'admin';
+export type NavView =
+  | 'discover'
+  | 'destinations'
+  | 'packages'
+  | 'visa'
+  | 'flights'
+  | 'feed'
+  | 'planner'
+  | 'about'
+  | 'contact'
+  | 'map'
+  | 'profile'
+  | 'admin';
 
 export type QuoteStatus =
   | 'New'
@@ -567,196 +579,6 @@ export interface UserTripTimelineEvent {
   dotColor: 'yellow' | 'blue' | 'green' | 'purple' | 'gray';
   agentName?: string;
   actionType?: string;
-}
-
-// ==========================================
-// ENROUTE PWA GROUP TRAVEL ARCHITECTURE
-// ==========================================
-
-export interface EnRouteUser {
-  userId: string;
-  displayName: string;
-  email: string;
-  avatar: string;
-  currentLatLng: { lat: number; lng: number };
-  role: 'admin' | 'member';
-  batteryLevel?: number;
-  lastSeen?: string;
-  isOnline?: boolean;
-  color?: string;
-}
-
-export type ItineraryItemType = 'Anchor' | 'Bubble';
-export type ItineraryItemStatus = 'Confirmed' | 'Proposed' | 'Rejected' | 'Active' | 'Completed';
-
-export interface ItineraryItem {
-  itemId: string;
-  tripId: string;
-  venueName: string;
-  placeId: string;
-  category: 'food' | 'culture' | 'activity' | 'transit' | 'hotel';
-  startTime: string; // "15:00"
-  endTime: string;   // "16:30"
-  type: ItineraryItemType;
-  status: ItineraryItemStatus;
-  location: { lat: number; lng: number; address: string };
-  cost: number;
-  indoor: boolean;
-  imageUrl: string;
-  rating?: number;
-  notes?: string;
-  originalPlan?: string;
-  bufferMinutes?: number;
-  weatherSensitive?: boolean;
-  voteStats?: {
-    totalVotes: number;
-    yesVotes: number;
-    consensusPercent: number;
-    requiredConsensus: number;
-  };
-}
-
-export interface EnRouteVote {
-  voteId: string;
-  tripId: string;
-  userId: string;
-  placeId: string;
-  swipe: boolean; // true = like, false = pass
-  timestamp: string;
-}
-
-export type SafetyPinCategory =
-  | 'Caution'
-  | 'Pickpockets'
-  | 'Suspicious Activity'
-  | 'Heavy Crowds'
-  | 'Peaceful Demo'
-  | 'Beautiful Vibe'
-  | 'Scam Alert';
-
-export interface SafetyPin {
-  pinId: string;
-  tripId?: string | null;
-  userId: string;
-  userName: string;
-  userAvatar: string;
-  latLng: { lat: number; lng: number };
-  category: SafetyPinCategory;
-  description: string;
-  createdAt: string;
-  expiresAt: string; // 2 hour TTL
-  upvotes: number;
-  isExpired?: boolean;
-}
-
-export interface ReceiptItem {
-  id: string;
-  name: string;
-  price: number;
-  claimedBy: string[]; // userIds
-}
-
-export interface EnRouteReceipt {
-  receiptId: string;
-  tripId: string;
-  venueName: string;
-  uploadedBy: string;
-  imageUrl: string;
-  date: string;
-  subtotal: number;
-  tax: number;
-  tip: number;
-  total: number;
-  currency: string;
-  parsedItems: ReceiptItem[];
-  settlements: Record<string, number>; // userId: amountOwed
-  status: 'draft' | 'settled';
-}
-
-export interface SwipePlace {
-  placeId: string;
-  name: string;
-  category: 'Tapas Bar' | 'Restaurant' | 'Café' | 'Museum' | 'Scenic Lookout' | 'Nightlife';
-  rating: number;
-  reviewsCount: number;
-  priceLevel: 1 | 2 | 3 | 4; // $ to $$
-  priceText: string;
-  distanceMeters: number;
-  walkingTimeMins: number;
-  latLng: { lat: number; lng: number };
-  address: string;
-  imageUrl: string;
-  indoor: boolean;
-  tags: string[];
-  specialty: string;
-  openingHours: string;
-  voteCount: number;
-  yesVotes: number;
-  consensusPercent: number;
-  userVoted?: 'like' | 'pass';
-  memberVotes?: { userId: string; swipe: boolean }[];
-}
-
-export interface CompromiseFilters {
-  maxPriceLevel: number;
-  maxWalkingMins: number;
-  indoorOnly: boolean;
-  cuisine: string;
-}
-
-export interface DetourProposal {
-  id: string;
-  cautionPinId: string;
-  cautionCategory: SafetyPinCategory;
-  anchorEventId: string;
-  anchorVenueName: string;
-  distanceToAnchorMeters: number;
-  reason: string;
-  originalRoute: {
-    name: string;
-    durationMins: number;
-    polyline: [number, number][];
-  };
-  proposedRoute: {
-    name: string;
-    detourName: string;
-    durationMins: number;
-    additionalMins: number;
-    polyline: [number, number][];
-  };
-  status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-}
-
-export interface EnRouteTrip {
-  tripId: string;
-  title: string;
-  destination: string;
-  adminId: string;
-  startDate: string;
-  endDate: string;
-  dailyBudget: number;
-  currency: string;
-  centroidLatLng: { lat: number; lng: number };
-  members: EnRouteUser[];
-  activeRoute?: {
-    name: string;
-    durationMins: number;
-    distanceKm: number;
-    coordinates: [number, number][];
-  };
-}
-
-export interface GroupActivityMessage {
-  id: string;
-  tripId: string;
-  senderId: string;
-  senderName: string;
-  senderAvatar: string;
-  type: 'chat' | 'system' | 'safety_alert' | 'vote_update' | 'detour_proposal' | 'itinerary_reshuffle' | 'bill_settled';
-  text: string;
-  timestamp: string;
-  payload?: any;
 }
 
 

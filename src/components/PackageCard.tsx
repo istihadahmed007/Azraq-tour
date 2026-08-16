@@ -2,6 +2,7 @@ import React from 'react';
 import { TourPackage } from '../types';
 import { getVisaFeeForDestination } from '../data/visaRequirementsData';
 import { Calendar, Users, MapPin, ArrowRight, FileText, CheckCircle2, DollarSign, FileCheck } from 'lucide-react';
+import { getOptimizedUnsplashUrl, getUnsplashSrcSet } from '../utils/imageOptimization';
 
 interface PackageCardProps {
   pkg: TourPackage;
@@ -17,15 +18,18 @@ export const PackageCard: React.FC<PackageCardProps> = ({
   const displayImage =
     pkg.images && pkg.images.length > 0
       ? pkg.images[0]
-      : 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80';
+      : 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=75';
 
   return (
     <div className="group bg-slate-900/90 rounded-2xl overflow-hidden border border-sky-500/20 shadow-xl hover:shadow-2xl hover:border-sky-400/50 transition-all duration-300 flex flex-col h-full">
       {/* Hero Image & Badges */}
       <div className="relative h-56 overflow-hidden">
         <img
-          src={displayImage}
+          src={getOptimizedUnsplashUrl(displayImage, 800, 75)}
+          srcSet={getUnsplashSrcSet(displayImage, [400, 800, 1000], 75)}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
           alt={pkg.package_name}
+          loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />

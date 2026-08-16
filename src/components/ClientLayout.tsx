@@ -95,12 +95,7 @@ export function ClientLayout({
           </div>
         )}
 
-        <main
-          className={mainClassName}
-          style={{
-            paddingTop: `${navbarHeight}px`,
-          }}
-        >
+        <main className={mainClassName}>
           {children}
         </main>
       </div>

@@ -98,7 +98,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART6: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=75"],
     highlights: ["2 Nights Kuala Lumpur 3-Star Hotel", "2 Nights Singapore 3-Star Hotel", "KL Airport Pick-up & Singapore Drop-off"]
   },
 
@@ -181,7 +181,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART6: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Half-Day Bangkok Temple & City Tour", "Wat Traimit & Wat Pho Reclining Buddha", "2 Nights 3-Star Hotel with Breakfast", "Airport Return Transfers"]
   },
 
@@ -261,7 +261,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART6: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1588258524675-c61919a008c2?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1588258524675-c61919a008c2?auto=format&fit=crop&w=800&q=75"],
     highlights: ["BEST WESTERN Colombo 4-Star Hotel", "Daily Breakfast & Dinner (Half Board) Included", "Colombo City Tour & Lotus Tower Exploration", "Private Transfers with Chauffeur Guide"]
   },
 
@@ -339,7 +339,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART6: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=75"],
     highlights: ["2 Nights 3-Star Hotel with Breakfast", "Airport Return Pick-up & Drop", "Free time for shopping at MBK & Pratunam"]
   }
 ];

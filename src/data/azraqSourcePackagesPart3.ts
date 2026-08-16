@@ -80,7 +80,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART3: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Merlion Park, Chinatown & Little India Guided Tour", "Private Changi Airport Transfers", "Ariana Hotel Singapore Stay"]
   },
 
@@ -210,7 +210,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART3: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights Hulhumale Beach & Island Exploration", "3 Nights Colombo Heritage & City Tour", "Galle Face Green & Gangaramaya Temple", "All Airport Return Transfers Included"]
   },
 
@@ -318,7 +318,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART3: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=75"],
     highlights: ["2 Nights Hulhumale Maldives", "2 Nights Colombo Sri Lanka", "Galle Face Green & Independence Square", "Return Airport Transfers"]
   },
 
@@ -387,7 +387,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART3: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Bangkok Hospital & MedPark specialist booking", "Jetanin IVF & Samitivej Hospital coordination", "Official confirmation within 2-7 days"]
   },
 
@@ -456,7 +456,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART3: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=75"],
     highlights: ["44 Premier Super Specialty Hospitals in India", "Apollo, Fortis, Medanta, Kokilaben & Manipal", "Fast 2-7 Days Processing", "Official Medical Visa Support Letter"]
   }
 ];

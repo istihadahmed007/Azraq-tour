@@ -98,8 +98,9 @@ export const QuotationSection: React.FC<QuotationSectionProps> = ({
             {/* Background Travel Image Accent */}
             <div className="absolute top-0 right-0 w-36 h-36 opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none overflow-hidden rounded-bl-full">
               <img
-                src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=600&q=80"
+                src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=300&q=70"
                 alt="Airplane in sky"
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -155,8 +156,9 @@ export const QuotationSection: React.FC<QuotationSectionProps> = ({
             {/* Background Travel Image Accent */}
             <div className="absolute top-0 right-0 w-36 h-36 opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none overflow-hidden rounded-bl-full">
               <img
-                src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80"
+                src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=300&q=70"
                 alt="Passport & Visa"
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             </div>

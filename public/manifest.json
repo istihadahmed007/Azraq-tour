@@ -1,0 +1,76 @@
+{
+  "name": "Azraq Tours & Travels – Luxury Travel Concierge",
+  "short_name": "Azraq Tours",
+  "description": "Personalized visa assistance, flight quotes, and curated Asian destination guides for Bangladeshi travelers.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#072244",
+  "theme_color": "#0284c7",
+  "lang": "en-BD",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Get a Flight Quote",
+      "short_name": "Flight Quote",
+      "description": "Request instant flight quotes for Asian and international routes",
+      "url": "/?intent=flight-quote",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Visa Assistance",
+      "short_name": "Visa Help",
+      "description": "Personalized visa requirement checks & application services",
+      "url": "/?intent=visa",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "WhatsApp Travel Desk",
+      "short_name": "WhatsApp 24/7",
+      "description": "Connect directly with Azraq 24/7 travel desk on WhatsApp",
+      "url": "https://wa.me/8801851172032",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

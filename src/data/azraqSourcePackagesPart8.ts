@@ -86,7 +86,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART8: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights Budget Hotel Stay in Thamel", "Airport Return Pick & Drop Included", "Free days for Thamel & Kathmandu Exploration"]
   },
 
@@ -174,7 +174,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART8: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights Budget Hotel Stay in KL", "Airport Return Pick & Drop Included", "Free exploration of Bukit Bintang & Chinatown"]
   },
 
@@ -262,7 +262,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART8: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights Sukhumvit Budget Hotel Stay", "Airport Return Pick & Drop Included", "Free days for Pratunam & MBK shopping"]
   },
 
@@ -351,7 +351,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART8: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1588258524675-c61919a008c2?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1588258524675-c61919a008c2?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights Budget Colombo Stay", "Airport Return Pick & Drop Included", "Free exploration of Galle Face Green & Pettah"]
   },
 
@@ -450,7 +450,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART8: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1584646098378-0874589d76b1?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1584646098378-0874589d76b1?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights 3-Star Hotel in Sanyuanli Market Hub", "Daily Breakfast Included", "Airport Return Transfers Included"]
   },
 
@@ -547,7 +547,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART8: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["The Bund & Huangpu River Waterfront", "Shanghai Museum & Former French Concession", "Nanjing Road Pedestrian Shopping Street", "Private 5-Seater Vehicle City Tour"]
   },
 
@@ -643,7 +643,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART8: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Terracotta Warriors & Horses Museum", "Xi'an Ancient City Wall Excursion", "8-Hour Private Car City Tour", "Private 5-Seater Airport Transfers"]
   },
 
@@ -735,7 +735,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART8: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Tianmen Mountain & Heaven's Gate (Tianmen Cave)", "Glass Skywalk & Avatar-inspired Landscapes", "Private 5-Seater Vehicle & Professional Driver", "Zhangjiajie Hehua Airport Return Transfers"]
   }
 ];

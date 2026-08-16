@@ -21,6 +21,7 @@ import {
   Clock,
   Sparkles
 } from 'lucide-react';
+import { getOptimizedUnsplashUrl } from '../utils/imageOptimization';
 
 interface PackageDetailModalProps {
   pkg: TourPackage | null;
@@ -68,7 +69,7 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
         <div className="overflow-y-auto flex-1 custom-scrollbar">
           {/* Hero Banner */}
           <div className="relative h-64 sm:h-80 w-full overflow-hidden">
-            <img src={heroImage} alt={pkg.package_name} className="w-full h-full object-cover" />
+            <img src={getOptimizedUnsplashUrl(heroImage, 1000, 80)} alt={pkg.package_name} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
 
             <div className="absolute bottom-6 left-6 right-6 space-y-2">

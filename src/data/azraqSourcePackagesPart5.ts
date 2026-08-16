@@ -116,7 +116,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART5: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Tiger's Nest (Taktsang) Monastery Hike", "Dochula Pass 108 Chortens & Punakha Dzong", "Buddha Dordenma & Simply Bhutan Museum", "SDF Included & Licensed English Guide"]
   },
 
@@ -214,7 +214,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART5: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Marina Bay Sands SkyPark Observation Deck", "Gardens by the Bay Flower Dome & Cloud Forest", "Supertree Grove Light Show", "Half-Day Singapore City Tour"]
   },
 
@@ -337,7 +337,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART5: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights KL + 2 Nights Singapore", "Kuala Lumpur Half-Day City Tour", "Singapore Merlion & Chinatown City Tour", "All Airport Return Transfers"]
   },
 
@@ -482,7 +482,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART5: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Genting Highlands Tour en-route Batu Caves", "Marina Bay Sands SkyPark Observation Deck", "Gardens by the Bay Flower Dome & Cloud Forest", "Kuala Lumpur & Singapore City Tours"]
   }
 ];

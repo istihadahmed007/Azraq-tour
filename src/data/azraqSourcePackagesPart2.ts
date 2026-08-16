@@ -129,7 +129,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART2: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Kuala Lumpur Petronas & Batu Caves", "Singapore City Leisure", "Bangkok City Tour", "Complete 3-Country Airport Transfers"]
   },
 
@@ -271,7 +271,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART2: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights KL + 3 Nights Singapore + 3 Nights Bangkok", "Complete City Tours in all 3 capitals", "All Airport Transfers included"]
   },
 
@@ -366,7 +366,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART2: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Half-Day Kuala Lumpur City Tour", "3 Nights 3-Star Hotel with Breakfast", "Airport Return Transfers"]
   },
 
@@ -447,7 +447,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART2: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=75"],
     highlights: ["2 Nights 3-Star Hotel with Breakfast", "Airport Return Transfers", "Free day for shopping & exploration"]
   }
 ];

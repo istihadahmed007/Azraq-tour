@@ -25,7 +25,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Thailand",
     country: "Thailand",
     description: "Bangkok Grand Palace, Pattaya Coral Island, floating markets, and exotic culinary delights.",
-    image: "https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 4
   },
@@ -34,7 +34,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Nepal",
     country: "Nepal",
     description: "Kathmandu UNESCO heritage sites, Nagarkot sunrise mountain views, Pokhara Annapurna panorama.",
-    image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 5
   },
@@ -43,7 +43,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Malaysia",
     country: "Malaysia",
     description: "Kuala Lumpur Petronas Towers, Batu Caves, Genting Highlands cable cars, and Bukit Bintang shopping.",
-    image: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 4
   },
@@ -52,7 +52,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Singapore",
     country: "Singapore",
     description: "Marina Bay Sands SkyPark, Gardens by the Bay Flower Dome, Merlion Park, and Sentosa Island.",
-    image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 2
   },
@@ -61,7 +61,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Thailand, Malaysia & Singapore Combo",
     country: "Combo (Thailand, Singapure, Malaysia)",
     description: "Complete Trination Southeast Asia packages with city tours, hotel stays, and airport transfers.",
-    image: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 3
   },
@@ -70,7 +70,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Singapore & Malaysia Combo",
     country: "Combo (Singapore, Malaysia)",
     description: "Twin capital experiences featuring Genting Highlands, Marina Bay Sands SkyPark, and city sightseeing.",
-    image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 3
   },
@@ -79,7 +79,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Maldives & Sri Lanka Combo",
     country: "Combo (Maldives, Srilanka)",
     description: "Tropical Hulhumale & Maafushi island escapes combined with Colombo, Kandy and Nuwara Eliya tea hills.",
-    image: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 3
   },
@@ -88,7 +88,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Bhutan",
     country: "Bhutan",
     description: "Tiger's Nest (Taktsang) Monastery, Buddha Dordenma, Dochula Pass 108 Chortens with SDF included.",
-    image: "https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 2
   },
@@ -97,7 +97,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Sri Lanka",
     country: "Srilanka",
     description: "Colombo Lotus Tower, Galle Face Green, Gangaramaya Temple, and shopping precincts.",
-    image: "https://images.unsplash.com/photo-1588258524675-c61919a008c2?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1588258524675-c61919a008c2?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 2
   },
@@ -106,7 +106,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Indonesia (Bali)",
     country: "Indonesia",
     description: "Ubud cultural heritage, Kintamani Mount Batur volcano, ATV adventure, and Uluwatu cliff Kecak dance.",
-    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 2
   },
@@ -115,7 +115,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "China",
     country: "China",
     description: "Shanghai Bund waterfront, Guangzhou Sanyuanli wholesale, Xi'an Terracotta Warriors, Zhangjiajie Tianmen Mountain.",
-    image: "https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 4
   },
@@ -124,7 +124,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Medical Tourism & Hospital Appointments",
     country: "Hospital Appointment",
     description: "Specialist doctor appointment bookings across 10 top Thailand hospitals and 44 super-specialty hospitals in India.",
-    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 2
   },
@@ -133,7 +133,7 @@ export const INITIAL_DESTINATIONS: DestinationRecord[] = [
     name: "Budget Tours",
     country: "Budget Tour",
     description: "Cost-effective, essential accommodation and transfer packages for Nepal, Malaysia, Bangkok and Sri Lanka.",
-    image: "https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=75",
     active: true,
     packageCount: 4
   }

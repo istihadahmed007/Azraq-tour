@@ -1,15 +1,42 @@
-import React, { useState } from 'react';
-import { ChatMessage, Itinerary, Spot } from '../types';
+import React, { useState, useEffect } from 'react';
+import { ChatMessage, Destination, Itinerary, Spot } from '../types';
 import { BudgetTracker } from './BudgetTracker';
-import { EnRouteCommandCenter } from './enroute/EnRouteCommandCenter';
-import { Compass, Flame, Shield, Radio, Sparkles } from 'lucide-react';
+import { InteractiveAsiaMap } from './InteractiveAsiaMap';
+import {
+  MapPin,
+  Calendar,
+  Sparkles,
+  DollarSign,
+  Compass,
+  Luggage,
+  Share2,
+  Bookmark,
+  BookmarkCheck,
+  Send,
+  Sliders,
+  ChevronRight,
+  Sun,
+  Lightbulb,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  RotateCw,
+  FileCheck2,
+  Plane,
+} from 'lucide-react';
 
 interface PlannerViewProps {
   currentItinerary: Itinerary;
   onUpdateItinerary: (itinerary: Itinerary) => void;
   onSaveItinerary: (itinerary: Itinerary) => void;
-  onViewOnMap: (spot?: Spot) => void;
+  onViewOnMap?: (spot?: Spot) => void;
   isSaved: boolean;
+  destinations?: Destination[];
+  onSelectDestination?: (destination: Destination) => void;
+  onQuickGenerateItinerary?: (destName: string) => void;
+  onOpenVisaQuote?: (country?: string) => void;
+  onOpenFlightQuote?: (dest?: string) => void;
+  initialTab?: 'itinerary' | 'map' | 'budget';
 }
 
 export const PlannerView: React.FC<PlannerViewProps> = ({
@@ -18,16 +45,29 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   onSaveItinerary,
   onViewOnMap,
   isSaved,
+  destinations = [],
+  onSelectDestination,
+  onQuickGenerateItinerary,
+  onOpenVisaQuote,
+  onOpenFlightQuote,
+  initialTab = 'itinerary',
 }) => {
-  // Tab state (Itinerary timeline vs Budget & Expense tracker vs EnRoute Group PWA)
-  const [activeTab, setActiveTab] = useState<'itinerary' | 'budget' | 'enroute'>('itinerary');
+  // Tab state (Itinerary timeline vs Interactive Route Map vs Budget & Expense tracker)
+  const [activeTab, setActiveTab] = useState<'itinerary' | 'map' | 'budget'>(initialTab);
+
+  // Sync initialTab when it changes
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       id: 'msg-1',
       sender: 'ai',
-      text: 'I can help you plan a trip, find family-friendly spots in Europe, calculate estimated travel budgets, or suggest packing lists.',
+      text: 'I can help you plan a trip, find family-friendly spots across Asia, calculate estimated travel budgets, or suggest packing lists.',
       timestamp: 'Just now',
     },
   ]);
@@ -49,6 +89,13 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
 
   // Expanded days state
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({ 1: true, 2: true });
+
+  // Update destinationInput when currentItinerary changes
+  useEffect(() => {
+    if (currentItinerary.destination) {
+      setDestinationInput(currentItinerary.destination);
+    }
+  }, [currentItinerary.destination]);
 
   const toggleVibe = (vibe: string) => {
     if (selectedVibes.includes(vibe)) {
@@ -111,8 +158,9 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     }
   };
 
-  const handleGenerateItinerary = async () => {
-    if (!destinationInput.trim() || isGenerating) return;
+  const handleGenerateItinerary = async (targetDest?: string) => {
+    const dest = (targetDest || destinationInput).trim();
+    if (!dest || isGenerating) return;
     setIsGenerating(true);
 
     try {
@@ -120,7 +168,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          destination: destinationInput.trim(),
+          destination: dest,
           startDate,
           endDate,
           vibes: selectedVibes,
@@ -132,7 +180,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         const newItinerary: Itinerary = {
           id: Date.now().toString(),
           title: data.title,
-          destination: data.destination || destinationInput,
+          destination: data.destination || dest,
           durationDays: data.durationDays || 5,
           weatherSummary: data.weatherSummary || '18°C Mild Weather',
           aiSummary: data.aiSummary || 'Generated custom AI itinerary.',
@@ -143,6 +191,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         };
 
         onUpdateItinerary(newItinerary);
+        setActiveTab('itinerary');
 
         // Auto expand all days
         const expanded: Record<number, boolean> = {};
@@ -157,6 +206,22 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleMapQuickGenerate = (destName: string) => {
+    setDestinationInput(destName);
+    if (onQuickGenerateItinerary) {
+      onQuickGenerateItinerary(destName);
+    } else {
+      handleGenerateItinerary(destName);
+    }
+  };
+
+  const handleSpotViewOnMap = (spot?: Spot) => {
+    if (onViewOnMap) {
+      onViewOnMap(spot);
+    }
+    setActiveTab('map');
   };
 
   const togglePackingCheck = (itemKey: string) => {
@@ -179,16 +244,17 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
       <section className="w-full md:w-5/12 lg:w-4/12 flex flex-col gap-6">
         {/* Title */}
         <div>
-          <h2 className="font-serif-display text-2xl md:text-3xl ai-gradient-text font-bold">
-            Where to next?
+          <h2 className="font-serif-display text-2xl md:text-3xl text-white font-bold flex items-center gap-2.5">
+            <span>Where to next?</span>
+            <Sparkles className="w-5 h-5 text-sky-400" />
           </h2>
-          <p className="text-xs md:text-sm text-on-surface-variant mt-1 font-normal">
-            I'm your AI travel concierge. Let's build your perfect itinerary.
+          <p className="text-xs md:text-sm text-slate-300 mt-1 font-normal">
+            Your personalized AI travel planner with interactive Asia maps & quotes.
           </p>
         </div>
 
         {/* AI Chat Box */}
-        <div className="glass-panel rounded-2xl p-4 flex flex-col gap-3 shadow-xl border border-white/10">
+        <div className="bg-slate-900/90 rounded-2xl p-4 flex flex-col gap-3 shadow-xl border border-slate-700/80 backdrop-blur-md">
           <div className="max-h-52 overflow-y-auto hide-scrollbar flex flex-col gap-3 pr-1">
             {chatMessages.map((msg) => (
               <div
@@ -198,16 +264,16 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                 }`}
               >
                 {msg.sender === 'ai' && (
-                  <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+                  <div className="w-7 h-7 rounded-full bg-blue-600/30 border border-blue-400/40 flex items-center justify-center shrink-0 mt-0.5 text-sky-300">
+                    <Sparkles className="w-4 h-4" />
                   </div>
                 )}
 
                 <div
                   className={`max-w-[85%] p-3 rounded-xl text-xs md:text-sm font-normal leading-relaxed ${
                     msg.sender === 'user'
-                      ? 'bg-primary text-on-primary rounded-tr-none'
-                      : 'bg-surface-container/60 text-on-surface border border-white/10 rounded-tl-none'
+                      ? 'bg-[#0D6EFD] text-white rounded-tr-none'
+                      : 'bg-slate-800/90 text-slate-200 border border-slate-700 rounded-tl-none'
                   }`}
                 >
                   {msg.text}
@@ -216,8 +282,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
             ))}
 
             {isChatLoading && (
-              <div className="flex gap-2 items-center text-xs text-primary animate-pulse">
-                <span className="material-symbols-outlined text-sm">auto_awesome</span>
+              <div className="flex gap-2 items-center text-xs text-sky-400 animate-pulse">
+                <RotateCw className="w-3.5 h-3.5 animate-spin" />
                 <span>Generating advice...</span>
               </div>
             )}
@@ -228,68 +294,72 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
               type="text"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              placeholder="e.g., Best family-friendly destinations in Europe"
-              className="w-full glass-input text-xs md:text-sm text-on-surface py-2.5 pl-3 pr-10 rounded-xl focus:ring-0"
+              placeholder="e.g., Best family-friendly spots in Bali or Dubai"
+              className="w-full bg-slate-800/80 text-xs md:text-sm text-white py-2.5 pl-3 pr-10 rounded-xl border border-slate-700 focus:outline-none focus:border-blue-500 placeholder:text-slate-400"
             />
             <button
               type="submit"
               disabled={isChatLoading}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-secondary transition-colors p-1"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-sky-400 hover:text-sky-300 transition-colors p-1 cursor-pointer disabled:opacity-40"
             >
-              <span className="material-symbols-outlined text-lg">send</span>
+              <Send className="w-4 h-4" />
             </button>
           </form>
         </div>
 
         {/* Parameters Widget */}
-        <div className="glass-panel rounded-2xl p-5 flex flex-col gap-4 shadow-xl border border-white/10">
-          <h3 className="font-serif-display text-lg text-primary flex items-center gap-2 font-semibold">
-            <span className="material-symbols-outlined text-lg">tune</span> Parameters
+        <div className="bg-slate-900/90 rounded-2xl p-5 flex flex-col gap-4 shadow-xl border border-slate-700/80 backdrop-blur-md">
+          <h3 className="text-base text-sky-400 flex items-center gap-2 font-bold font-sans">
+            <Sliders className="w-4 h-4" />
+            <span>Trip Parameters</span>
           </h3>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-on-surface-variant font-medium">Destination</label>
-            <input
-              type="text"
-              value={destinationInput}
-              onChange={(e) => setDestinationInput(e.target.value)}
-              placeholder="Enter city or country"
-              className="glass-input p-2.5 text-xs md:text-sm text-on-surface rounded-xl w-full bg-transparent border border-white/15 focus:border-primary"
-            />
+            <label className="text-xs text-slate-300 font-medium">Destination</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={destinationInput}
+                onChange={(e) => setDestinationInput(e.target.value)}
+                placeholder="Enter city or country (e.g. Maldives, Bangkok, Dubai)"
+                className="p-2.5 text-xs md:text-sm text-white rounded-xl w-full bg-slate-800/80 border border-slate-700 focus:outline-none focus:border-blue-500 pl-8"
+              />
+              <MapPin className="w-4 h-4 text-sky-400 absolute left-2.5 top-3" />
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-on-surface-variant font-medium">Dates</label>
+            <label className="text-xs text-slate-300 font-medium">Dates</label>
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="glass-input p-2 text-xs text-on-surface rounded-xl bg-transparent border border-white/15"
+                className="p-2 text-xs text-white rounded-xl bg-slate-800/80 border border-slate-700 focus:outline-none focus:border-blue-500"
               />
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="glass-input p-2 text-xs text-on-surface rounded-xl bg-transparent border border-white/15"
+                className="p-2 text-xs text-white rounded-xl bg-slate-800/80 border border-slate-700 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-xs text-on-surface-variant font-medium">Vibe / Interests</label>
+            <label className="text-xs text-slate-300 font-medium">Vibe / Interests</label>
             <div className="flex flex-wrap gap-1.5">
-              {['Culture', 'Food', 'Nature', 'Luxury', 'Adventure', 'Nightlife'].map((vibe) => {
+              {['Culture', 'Food', 'Nature', 'Luxury', 'Adventure', 'Shopping'].map((vibe) => {
                 const active = selectedVibes.includes(vibe);
                 return (
                   <button
                     key={vibe}
                     type="button"
                     onClick={() => toggleVibe(vibe)}
-                    className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                    className={`text-xs px-3 py-1 rounded-full border transition-all cursor-pointer ${
                       active
-                        ? 'bg-tertiary/20 text-tertiary-fixed border-tertiary-fixed/40 font-semibold'
-                        : 'bg-white/5 text-on-surface-variant border-white/15 hover:bg-white/10'
+                        ? 'bg-blue-600/30 text-sky-300 border-sky-400/50 font-semibold'
+                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
                     }`}
                   >
                     {vibe}
@@ -301,7 +371,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddVibe(true)}
-                  className="text-xs px-2.5 py-1 rounded-full bg-white/5 text-on-surface-variant border border-white/15 hover:bg-white/10"
+                  className="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700 hover:text-white cursor-pointer"
                 >
                   + Add
                 </button>
@@ -312,12 +382,12 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                     value={customVibeInput}
                     onChange={(e) => setCustomVibeInput(e.target.value)}
                     placeholder="Custom vibe"
-                    className="glass-input text-xs px-2 py-0.5 rounded-lg w-24 text-on-surface"
+                    className="text-xs px-2 py-0.5 rounded-lg w-24 text-white bg-slate-800 border border-slate-600"
                   />
                   <button
                     type="button"
                     onClick={handleAddCustomVibe}
-                    className="text-xs px-2 py-0.5 rounded-lg bg-primary text-on-primary font-medium"
+                    className="text-xs px-2 py-0.5 rounded-lg bg-[#0D6EFD] text-white font-medium cursor-pointer"
                   >
                     Add
                   </button>
@@ -327,47 +397,106 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           </div>
 
           <button
-            onClick={handleGenerateItinerary}
+            onClick={() => handleGenerateItinerary()}
             disabled={isGenerating}
-            className="w-full bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 mt-2 shadow-lg hover:scale-[0.99] active:scale-95 disabled:opacity-50"
+            className="w-full bg-[#0D6EFD] hover:bg-blue-600 text-white py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-blue-500/25 active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {isGenerating ? (
               <>
-                <span className="material-symbols-outlined text-lg animate-spin">sync</span>
+                <RotateCw className="w-4 h-4 animate-spin" />
                 <span>Generating Itinerary...</span>
               </>
             ) : (
               <>
-                <span className="material-symbols-outlined text-lg">auto_awesome</span>
-                <span>Generate Itinerary</span>
+                <Sparkles className="w-4 h-4 text-sky-200" />
+                <span>Generate AI Itinerary</span>
               </>
             )}
           </button>
         </div>
 
+        {/* Quick Map Tab Switcher Teaser in Left Panel */}
+        <div
+          onClick={() => setActiveTab('map')}
+          className={`rounded-2xl p-4 flex items-center justify-between shadow-xl border transition-all group cursor-pointer ${
+            activeTab === 'map'
+              ? 'bg-blue-900/40 border-sky-400 ring-1 ring-sky-400'
+              : 'bg-slate-900/90 border-slate-700/80 hover:border-sky-400/50'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400 group-hover:scale-110 transition-transform">
+              <Compass className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-white group-hover:text-sky-300 transition-colors flex items-center gap-1.5">
+                <span>Interactive Asia Map</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] bg-sky-500/20 text-sky-300 font-semibold">
+                  Live Map
+                </span>
+              </h4>
+              <p className="text-[11px] text-slate-300">
+                Dhaka flight corridors, visas & pins
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-sky-300 group-hover:translate-x-0.5 transition-all" />
+        </div>
+
+        {/* Quick Budget & Expenses Navigation Teaser */}
+        <div
+          onClick={() => setActiveTab('budget')}
+          className={`rounded-2xl p-4 flex items-center justify-between shadow-xl border transition-all group cursor-pointer ${
+            activeTab === 'budget'
+              ? 'bg-emerald-950/40 border-emerald-400 ring-1 ring-emerald-400'
+              : 'bg-slate-900/90 border-slate-700/80 hover:border-emerald-400/50'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+              <DollarSign className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-1.5">
+                <span>Trip Budget & Expenses</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 font-semibold">
+                  Active
+                </span>
+              </h4>
+              <p className="text-[11px] text-slate-300">
+                Track flights, hotels & spot costs
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-300 group-hover:translate-x-0.5 transition-all" />
+        </div>
+
         {/* Smart Packing List Accordion */}
-        <div className="glass-panel rounded-2xl p-4 flex flex-col gap-3 shadow-xl border border-white/10">
+        <div className="bg-slate-900/90 rounded-2xl p-4 flex flex-col gap-3 shadow-xl border border-slate-700/80">
           <div
             onClick={() => setIsPackingOpen(!isPackingOpen)}
             className="flex justify-between items-center cursor-pointer select-none"
           >
-            <h3 className="font-serif-display text-base text-primary flex items-center gap-2 font-semibold">
-              <span className="material-symbols-outlined text-lg">luggage</span> Smart Packing
+            <h3 className="text-sm font-bold text-sky-400 flex items-center gap-2 font-sans">
+              <Luggage className="w-4 h-4" />
+              <span>Smart Packing List</span>
             </h3>
-            <span className="material-symbols-outlined text-on-surface-variant text-sm">
-              {isPackingOpen ? 'expand_less' : 'expand_more'}
-            </span>
+            {isPackingOpen ? (
+              <ChevronUp className="w-4 h-4 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            )}
           </div>
 
-          <p className="text-xs text-on-surface-variant">
-            Auto-generated based on weather ({currentItinerary.weatherSummary}).
+          <p className="text-xs text-slate-400">
+            Auto-generated for {currentItinerary.destination} ({currentItinerary.weatherSummary}).
           </p>
 
           {isPackingOpen && (
-            <div className="flex flex-col gap-3 pt-2 border-t border-white/10">
+            <div className="flex flex-col gap-3 pt-2 border-t border-slate-800">
               {currentItinerary.packingList?.map((catGroup, cIdx) => (
                 <div key={cIdx} className="flex flex-col gap-1.5">
-                  <h4 className="text-xs font-semibold text-secondary uppercase tracking-wider">
+                  <h4 className="text-[11px] font-bold text-sky-300 uppercase tracking-wider">
                     {catGroup.category}
                   </h4>
                   <div className="flex flex-col gap-1">
@@ -377,15 +506,15 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                       return (
                         <label
                           key={iIdx}
-                          className="flex items-center gap-2 text-xs text-on-surface cursor-pointer hover:text-white"
+                          className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer hover:text-white"
                         >
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => togglePackingCheck(itemKey)}
-                            className="rounded border-white/20 bg-white/5 text-primary focus:ring-0"
+                            className="rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-0"
                           />
-                          <span className={isChecked ? 'line-through text-outline' : ''}>
+                          <span className={isChecked ? 'line-through text-slate-500' : ''}>
                             {item}
                           </span>
                         </label>
@@ -397,84 +526,30 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
             </div>
           )}
         </div>
-
-        {/* Quick Budget & Expenses Navigation Teaser */}
-        <div
-          onClick={() => setActiveTab('budget')}
-          className="glass-panel rounded-2xl p-4 flex items-center justify-between shadow-xl border border-sky-400/20 hover:border-primary/50 cursor-pointer transition-all group bg-gradient-to-r from-sky-950/40 to-slate-900/40"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-xl">account_balance_wallet</span>
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-white group-hover:text-primary transition-colors flex items-center gap-1.5">
-                Trip Budget & Expenses
-                <span className="px-1.5 py-0.2 rounded text-[10px] bg-emerald-500/20 text-emerald-300 font-semibold">Active</span>
-              </h4>
-              <p className="text-[11px] text-sky-200/70">
-                Track flights, hotels & spot costs
-              </p>
-            </div>
-          </div>
-          <span className="material-symbols-outlined text-sm text-outline group-hover:text-primary group-hover:translate-x-0.5 transition-all">
-            chevron_right
-          </span>
-        </div>
-
-        {/* Quick EnRoute Group Travel PWA Teaser */}
-        <div
-          onClick={() => setActiveTab('enroute')}
-          className={`glass-panel rounded-2xl p-4 flex items-center justify-between shadow-xl border transition-all group cursor-pointer ${
-            activeTab === 'enroute'
-              ? 'border-sky-500 bg-sky-950/60 shadow-sky-950/80 ring-2 ring-sky-500/30'
-              : 'border-indigo-500/30 hover:border-sky-400/60 bg-gradient-to-r from-indigo-950/50 via-slate-900/50 to-sky-950/50'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-              <Compass className="w-5 h-5 animate-spin-slow" />
-            </div>
-            <div>
-              <h4 className="text-xs font-extrabold text-white group-hover:text-sky-300 transition-colors flex items-center gap-1.5">
-                EnRoute Group PWA
-                <span className="px-1.5 py-0.2 rounded text-[10px] bg-sky-500/30 text-sky-300 border border-sky-400/40 font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  Live Sync
-                </span>
-              </h4>
-              <p className="text-[11px] text-slate-300">
-                Sentinel Map, 60% Swipe Voting & OCR Split
-              </p>
-            </div>
-          </div>
-          <span className="material-symbols-outlined text-sm text-sky-300 group-hover:translate-x-0.5 transition-all">
-            chevron_right
-          </span>
-        </div>
       </section>
 
-      {/* Right Panel: Immersive Itinerary & Budget View */}
+      {/* Right Panel: Immersive Itinerary, Interactive Map, & Budget Views */}
       <section className="w-full md:w-7/12 lg:w-8/12 flex flex-col gap-6 relative">
-        <div className="glass-panel rounded-2xl p-6 md:p-8 min-h-full border border-white/15 shadow-2xl relative">
+        <div className="bg-slate-900/90 rounded-2xl p-6 md:p-8 min-h-full border border-slate-700/80 shadow-2xl relative flex flex-col">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-white/10 pb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-800 pb-6">
             <div>
-              <span className="text-xs text-secondary font-semibold uppercase tracking-widest">
-                {currentItinerary.destination}
+              <span className="text-xs text-sky-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{currentItinerary.destination}</span>
               </span>
-              <h2 className="font-serif-display text-2xl md:text-4xl text-white font-bold mt-1">
+              <h2 className="text-2xl md:text-3xl text-white font-extrabold mt-1 tracking-tight font-sans">
                 {currentItinerary.title}
               </h2>
-              <p className="text-xs md:text-sm text-on-surface-variant flex items-center gap-3 mt-2">
+              <p className="text-xs md:text-sm text-slate-300 flex items-center gap-3 mt-2">
                 <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm">calendar_today</span>
-                  {startDate} - {endDate}
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{startDate} - {endDate}</span>
                 </span>
                 <span>•</span>
-                <span className="flex items-center gap-1 text-tertiary">
-                  <span className="material-symbols-outlined text-sm">wb_sunny</span>
-                  {currentItinerary.weatherSummary}
+                <span className="flex items-center gap-1 text-amber-300">
+                  <Sun className="w-3.5 h-3.5" />
+                  <span>{currentItinerary.weatherSummary}</span>
                 </span>
               </p>
             </div>
@@ -485,137 +560,213 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                   navigator.clipboard.writeText(window.location.href);
                   alert('Trip itinerary link copied to clipboard!');
                 }}
-                className="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-on-surface hover:text-primary transition-colors border border-white/20 cursor-pointer"
+                className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition-colors border border-slate-700 cursor-pointer"
                 title="Share Itinerary"
               >
-                <span className="material-symbols-outlined text-lg">share</span>
+                <Share2 className="w-4 h-4" />
               </button>
 
               <button
                 onClick={() => onSaveItinerary(currentItinerary)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border cursor-pointer ${
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border cursor-pointer ${
                   isSaved
-                    ? 'bg-primary text-on-primary border-primary shadow-lg'
-                    : 'bg-white/10 text-white border-white/20 hover:bg-primary/20'
+                    ? 'bg-[#0D6EFD] text-white border-blue-500 shadow-lg'
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
                 }`}
                 title={isSaved ? 'Saved to Profile' : 'Save Itinerary'}
               >
-                <span className="material-symbols-outlined text-lg">
-                  {isSaved ? 'bookmark_added' : 'bookmark'}
-                </span>
+                {isSaved ? (
+                  <BookmarkCheck className="w-4 h-4 text-white" />
+                ) : (
+                  <Bookmark className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
 
-          {/* Tab Switcher: Itinerary Timeline vs Budget & Expenses vs EnRoute PWA */}
-          <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-white/5 border border-white/10 mb-6 w-full">
+          {/* 3-Tab Switcher: Itinerary Timeline vs Interactive Asia Map vs Budget */}
+          <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800 mb-6 w-full">
+            {/* Tab 1: Itinerary Timeline */}
             <button
               onClick={() => setActiveTab('itinerary')}
-              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 activeTab === 'itinerary'
-                  ? 'bg-primary text-on-primary shadow-md'
-                  : 'text-on-surface-variant hover:text-white hover:bg-white/5'
+                  ? 'bg-[#0D6EFD] text-white shadow-md'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <span className="material-symbols-outlined text-sm">calendar_month</span>
+              <Calendar className="w-4 h-4" />
               <span>Itinerary Timeline</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                activeTab === 'itinerary' ? 'bg-black/20 text-white' : 'bg-white/10 text-outline'
-              }`}>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                  activeTab === 'itinerary'
+                    ? 'bg-black/20 text-white'
+                    : 'bg-slate-800 text-slate-400'
+                }`}
+              >
                 {currentItinerary.days?.length || 0} Days
               </span>
             </button>
 
+            {/* Tab 2: Interactive Asia & Route Map */}
             <button
-              onClick={() => setActiveTab('budget')}
-              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                activeTab === 'budget'
-                  ? 'bg-primary text-on-primary shadow-md'
-                  : 'text-on-surface-variant hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <span className="material-symbols-outlined text-sm">attach_money</span>
-              <span>Budget & Expenses</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                activeTab === 'budget' ? 'bg-black/20 text-white' : 'bg-emerald-500/20 text-emerald-300'
-              }`}>
-                Tracker
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('enroute')}
-              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border ${
-                activeTab === 'enroute'
-                  ? 'bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-lg border-sky-300'
-                  : 'text-sky-300 hover:text-white hover:bg-sky-500/10 border-sky-500/30'
+              onClick={() => setActiveTab('map')}
+              className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === 'map'
+                  ? 'bg-[#0D6EFD] text-white shadow-md'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
               <Compass className="w-4 h-4 text-sky-300" />
-              <span>EnRoute Group PWA</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                activeTab === 'enroute' ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-300'
-              }`}>
-                Live
+              <span>Interactive Map</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                  activeTab === 'map'
+                    ? 'bg-black/20 text-white'
+                    : 'bg-sky-500/20 text-sky-300'
+                }`}
+              >
+                Live Map
+              </span>
+            </button>
+
+            {/* Tab 3: Budget & Expenses */}
+            <button
+              onClick={() => setActiveTab('budget')}
+              className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === 'budget'
+                  ? 'bg-[#0D6EFD] text-white shadow-md'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <DollarSign className="w-4 h-4 text-emerald-300" />
+              <span>Budget & Expenses</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                  activeTab === 'budget'
+                    ? 'bg-black/20 text-white'
+                    : 'bg-emerald-500/20 text-emerald-300'
+                }`}
+              >
+                Tracker
               </span>
             </button>
           </div>
 
-          {/* Conditional Tab Rendering */}
-          {activeTab === 'enroute' ? (
-            <div className="w-full h-[650px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
-              <EnRouteCommandCenter />
+          {/* Conditional Content Rendering */}
+          {activeTab === 'map' ? (
+            /* TAB 2: INTERACTIVE ASIA & ROUTE MAP VIEW */
+            <div className="flex flex-col gap-5 flex-1">
+              {/* Map Info Bar */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 rounded-xl bg-slate-950/80 border border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">
+                      Corridor Map: {currentItinerary.destination || 'Asian Escapes'}
+                    </h4>
+                    <p className="text-[11px] text-slate-400">
+                      Explore flight paths from Dhaka HQ, visa classifications, and tourist spots.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  {onOpenVisaQuote && (
+                    <button
+                      onClick={() => onOpenVisaQuote(currentItinerary.destination)}
+                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <FileCheck2 className="w-3.5 h-3.5" />
+                      <span>Visa Quote</span>
+                    </button>
+                  )}
+                  {onOpenFlightQuote && (
+                    <button
+                      onClick={() => onOpenFlightQuote(currentItinerary.destination)}
+                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <Plane className="w-3.5 h-3.5" />
+                      <span>Flight Quote</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Leaflet Interactive Asia Map */}
+              <div className="w-full rounded-2xl overflow-hidden border border-slate-800 shadow-xl bg-slate-950">
+                <InteractiveAsiaMap
+                  destinations={destinations}
+                  onSelectDestination={(dest) => {
+                    if (onSelectDestination) {
+                      onSelectDestination(dest);
+                    } else {
+                      setDestinationInput(dest.name);
+                    }
+                  }}
+                  onOpenQuotation={(name) => {
+                    if (onOpenVisaQuote) onOpenVisaQuote(name);
+                  }}
+                  onQuickGenerateItinerary={(name) => {
+                    handleMapQuickGenerate(name);
+                  }}
+                />
+              </div>
             </div>
           ) : activeTab === 'budget' ? (
+            /* TAB 3: BUDGET TRACKER VIEW */
             <BudgetTracker
               itinerary={currentItinerary}
               onUpdateItinerary={onUpdateItinerary}
             />
           ) : (
+            /* TAB 1: ITINERARY TIMELINE VIEW */
             <>
               {/* AI Overview Summary */}
               {currentItinerary.aiSummary && (
-                <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 mb-8 flex gap-3 items-start">
-                  <span className="material-symbols-outlined text-primary text-xl shrink-0 mt-0.5">
-                    auto_awesome
-                  </span>
-                  <p className="text-xs md:text-sm text-on-surface-variant leading-relaxed">
+                <div className="bg-blue-950/40 border border-blue-800/40 rounded-xl p-4 mb-8 flex gap-3 items-start">
+                  <Sparkles className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+                  <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
                     {currentItinerary.aiSummary}
                   </p>
                 </div>
               )}
 
               {/* Daily Timeline */}
-              <div className="relative pl-6 border-l-2 border-white/20 ml-2 space-y-10">
+              <div className="relative pl-6 border-l-2 border-slate-800 ml-2 space-y-10">
                 {currentItinerary.days?.map((day) => {
                   const isExpanded = expandedDays[day.dayNumber] !== false;
 
                   return (
                     <div key={day.dayNumber} className="relative group">
                       {/* Timeline Dot */}
-                      <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-secondary border-[3px] border-[#111316] group-hover:scale-125 transition-transform"></div>
+                      <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-[#0D6EFD] border-[3px] border-[#071A33] group-hover:scale-125 transition-transform"></div>
 
                       {/* Day Title & Toggle */}
                       <div
                         onClick={() => toggleDayExpand(day.dayNumber)}
                         className="flex items-center justify-between cursor-pointer select-none mb-3"
                       >
-                        <h4 className="font-serif-display text-lg md:text-xl text-secondary font-semibold hover:text-primary transition-colors">
+                        <h4 className="text-lg md:text-xl text-white font-bold hover:text-sky-300 transition-colors font-sans">
                           {day.title}
                         </h4>
 
-                        <span className="text-xs text-outline font-medium hover:text-white flex items-center gap-1">
+                        <span className="text-xs text-slate-400 font-medium hover:text-white flex items-center gap-1">
                           {isExpanded ? 'Collapse' : 'Expand'}
-                          <span className="material-symbols-outlined text-sm">
-                            {isExpanded ? 'expand_less' : 'expand_more'}
-                          </span>
+                          {isExpanded ? (
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )}
                         </span>
                       </div>
 
                       {isExpanded ? (
                         <div className="flex flex-col gap-4">
                           {day.summary && (
-                            <p className="text-xs text-on-surface-variant font-normal">
+                            <p className="text-xs text-slate-300 font-normal">
                               {day.summary}
                             </p>
                           )}
@@ -625,42 +776,46 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                             {day.spots?.map((spot, sIdx) => (
                               <div
                                 key={sIdx}
-                                onClick={() => onViewOnMap(spot)}
-                                className="bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all group/card cursor-pointer shadow-lg"
+                                onClick={() => handleSpotViewOnMap(spot)}
+                                className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden hover:bg-slate-800 hover:border-sky-500/50 transition-all group/card cursor-pointer shadow-lg"
                               >
                                 {spot.imageUrl && (
-                                  <div className="h-32 w-full relative overflow-hidden bg-surface-container-low">
+                                  <div className="h-32 w-full relative overflow-hidden bg-slate-900">
                                     <img
                                       src={spot.imageUrl}
                                       alt={spot.name}
                                       className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
                                     />
-                                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-tertiary font-semibold flex items-center gap-1">
-                                      <span className="material-symbols-outlined text-xs">schedule</span>
-                                      {spot.timeSlot}
+                                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-sky-300 font-semibold flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      <span>{spot.timeSlot}</span>
+                                    </div>
+                                    <div className="absolute top-2 right-2 bg-blue-600/80 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white font-semibold flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                                      <Compass className="w-3 h-3" />
+                                      <span>View on Map</span>
                                     </div>
                                   </div>
                                 )}
 
                                 <div className="p-3.5 flex flex-col gap-1.5">
                                   {!spot.imageUrl && (
-                                    <div className="text-[10px] text-tertiary font-semibold flex items-center gap-1">
-                                      <span className="material-symbols-outlined text-xs">schedule</span>
-                                      {spot.timeSlot}
+                                    <div className="text-[10px] text-sky-300 font-semibold flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      <span>{spot.timeSlot}</span>
                                     </div>
                                   )}
 
-                                  <h5 className="font-serif-display text-sm md:text-base text-white font-semibold group-hover/card:text-primary transition-colors">
+                                  <h5 className="text-sm md:text-base text-white font-bold group-hover/card:text-sky-300 transition-colors font-sans">
                                     {spot.name}
                                   </h5>
 
-                                  <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+                                  <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                                     {spot.description}
                                   </p>
 
                                   {spot.aiTip && (
-                                    <div className="mt-1 pt-2 border-t border-white/10 text-[11px] text-primary flex items-start gap-1">
-                                      <span className="material-symbols-outlined text-xs shrink-0 mt-0.5">lightbulb</span>
+                                    <div className="mt-1 pt-2 border-t border-slate-700 text-[11px] text-sky-300 flex items-start gap-1">
+                                      <Lightbulb className="w-3.5 h-3.5 text-amber-300 shrink-0 mt-0.5" />
                                       <span>{spot.aiTip}</span>
                                     </div>
                                   )}
@@ -670,12 +825,12 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
 
                             {/* AI Insight Box */}
                             {day.aiInsight && (
-                              <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex flex-col justify-center gap-2 relative overflow-hidden">
-                                <div className="flex items-center gap-1.5 text-primary font-semibold text-xs">
-                                  <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                              <div className="bg-blue-950/30 border border-blue-800/40 rounded-xl p-4 flex flex-col justify-center gap-2 relative overflow-hidden">
+                                <div className="flex items-center gap-1.5 text-sky-300 font-semibold text-xs">
+                                  <Sparkles className="w-3.5 h-3.5" />
                                   <span>AI Insight</span>
                                 </div>
-                                <p className="text-xs text-on-surface-variant leading-relaxed">
+                                <p className="text-xs text-slate-300 leading-relaxed">
                                   {day.aiInsight}
                                 </p>
                               </div>
@@ -685,7 +840,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                       ) : (
                         <div
                           onClick={() => toggleDayExpand(day.dayNumber)}
-                          className="glass-panel p-3 text-center text-xs text-on-surface-variant rounded-xl border border-dashed border-white/20 hover:border-primary/50 cursor-pointer"
+                          className="bg-slate-800/50 p-3 text-center text-xs text-slate-400 rounded-xl border border-dashed border-slate-700 hover:border-sky-400/50 cursor-pointer"
                         >
                           Click to expand Day {day.dayNumber} itinerary ({day.spots?.length || 0} spots)
                         </div>
@@ -695,12 +850,12 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                 })}
               </div>
 
-              {/* Floating Map Button Overlay */}
+              {/* Floating Map Button to switch to Map tab */}
               <button
-                onClick={() => onViewOnMap()}
-                className="fixed md:absolute bottom-6 right-6 md:bottom-8 md:right-8 bg-primary text-on-primary hover:bg-primary-fixed font-semibold text-xs md:text-sm px-5 py-3 rounded-full flex items-center gap-2 shadow-2xl border border-white/30 hover:scale-105 active:scale-95 z-30 cursor-pointer"
+                onClick={() => setActiveTab('map')}
+                className="fixed md:absolute bottom-6 right-6 md:bottom-8 md:right-8 bg-[#0D6EFD] text-white hover:bg-blue-600 font-bold text-xs md:text-sm px-5 py-3 rounded-full flex items-center gap-2 shadow-2xl border border-white/20 hover:scale-105 active:scale-95 z-30 cursor-pointer transition-all"
               >
-                <span className="material-symbols-outlined text-lg">map</span>
+                <Compass className="w-4 h-4 text-sky-200" />
                 <span>View on Map</span>
               </button>
             </>
@@ -710,3 +865,4 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     </div>
   );
 };
+

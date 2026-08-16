@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { VisaQuoteModal } from './VisaQuoteModal';
 import { FlightQuoteModal } from './FlightQuoteModal';
 import { getVisaFeeForDestination } from '../data/visaRequirementsData';
+import { getOptimizedUnsplashUrl } from '../utils/imageOptimization';
 
 interface DestinationModalProps {
   destination: Destination | null;
@@ -38,7 +39,7 @@ export const DestinationModal: React.FC<DestinationModalProps> = ({
           {/* Top Image Hero Banner */}
           <div className="relative h-64 md:h-80 w-full shrink-0 overflow-hidden">
             <img
-              src={destination.imageUrl}
+              src={getOptimizedUnsplashUrl(destination.imageUrl, 1000, 80)}
               alt={destination.name}
               className="w-full h-full object-cover"
             />

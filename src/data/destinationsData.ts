@@ -19,7 +19,7 @@ rawList.forEach((item) => {
   if (!map.has(item.id)) {
     map.set(item.id, {
       ...item,
-      imageUrl: item.imageUrl || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
+      imageUrl: item.imageUrl || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=500&q=75",
       thumbnailUrl: item.thumbnailUrl || item.imageUrl,
       fallbackImage: item.fallbackImage || "/images/fallback.jpg",
       priceRange: item.priceRange || item.estimatedBudget || "$250 - $750",

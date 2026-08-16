@@ -138,7 +138,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART7: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Speedboat to Maafushi Island (2 Nights)", "Hulhumale Beach Stay", "Kandy Temple of the Tooth", "Nuwara Eliya Tea Gardens & Waterfalls", "Colombo City Tour"]
   },
 
@@ -257,7 +257,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART7: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=75"],
     highlights: ["ATV Jungle Trek & Ayung River Rafting", "Kintamani Volcano & Tegallalang Rice Terraces", "Uluwatu Cliff Sunset & Kecak Fire Dance", "Jimbaran Beach Candlelight Seafood BBQ"]
   },
 
@@ -351,7 +351,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART7: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Ubud Palace & Tirta Empul Holy Springs", "Kintamani Volcano & Lake Batur Views", "Uluwatu Sea Cliff Sunset & Kecak Dance", "English Speaking Guide & AC Transport"]
   },
 
@@ -463,7 +463,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART7: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["2 Nights KL + 2 Nights Singapore + 2 Nights Bangkok", "Daily Breakfast Included", "All 3 International Airport Transfers"]
   }
 ];

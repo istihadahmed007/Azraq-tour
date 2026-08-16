@@ -2,6 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Destination } from '../types';
 
+// Safely patch Leaflet DomUtil to avoid undefined _leaflet_pos crashes on rapid unmount / layer updates
+if (typeof window !== 'undefined' && L && L.DomUtil) {
+  const originalGetPosition = L.DomUtil.getPosition;
+  L.DomUtil.getPosition = function (el: HTMLElement) {
+    if (!el) return new L.Point(0, 0);
+    try {
+      return originalGetPosition.call(this, el) || new L.Point(0, 0);
+    } catch {
+      return new L.Point(0, 0);
+    }
+  };
+}
+
 interface InteractiveAsiaMapProps {
   destinations: Destination[];
   onSelectDestination: (dest: Destination) => void;
@@ -93,7 +106,10 @@ export const InteractiveAsiaMap: React.FC<InteractiveAsiaMapProps> = ({
 
   // Initialize Map
   useEffect(() => {
-    if (!mapContainerRef.current || mapInstanceRef.current) return;
+    if (!mapContainerRef.current) return;
+    if (mapInstanceRef.current) return;
+
+    let resizeTimer: any = null;
 
     try {
       // Default view centered on South/Southeast Asia
@@ -129,17 +145,33 @@ export const InteractiveAsiaMap: React.FC<InteractiveAsiaMapProps> = ({
       setIsMapReady(true);
 
       // Fix size after render
-      setTimeout(() => {
-        map.invalidateSize();
+      resizeTimer = setTimeout(() => {
+        if (mapInstanceRef.current) {
+          try {
+            mapInstanceRef.current.invalidateSize();
+          } catch {
+            // ignore
+          }
+        }
       }, 250);
     } catch (err) {
       console.error('Error initializing Leaflet map:', err);
     }
 
     return () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.stop();
+          mapInstanceRef.current.closePopup();
+          mapInstanceRef.current.off();
+          mapInstanceRef.current.remove();
+        } catch (e) {
+          console.warn('Error during map cleanup:', e);
+        }
         mapInstanceRef.current = null;
+        markersLayerRef.current = null;
+        flightPathsLayerRef.current = null;
       }
     };
   }, [compact]);
@@ -152,8 +184,13 @@ export const InteractiveAsiaMap: React.FC<InteractiveAsiaMapProps> = ({
     const markersGroup = markersLayerRef.current;
     const flightGroup = flightPathsLayerRef.current;
 
-    markersGroup.clearLayers();
-    flightGroup.clearLayers();
+    try {
+      map.stop();
+      markersGroup.clearLayers();
+      flightGroup.clearLayers();
+    } catch {
+      return;
+    }
 
     // 1. Add Dhaka Headquarters Special Gold Marker
     const dhakaIcon = L.divIcon({

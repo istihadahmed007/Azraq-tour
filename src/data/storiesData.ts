@@ -5,13 +5,13 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
     id: 'highlight-maldives',
     title: 'Maldives',
     emoji: '🏝️',
-    coverImage: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=500&q=75',
     category: 'Maldives',
     unread: true,
     slides: [
       {
         id: 'mald-1',
-        mediaUrl: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Overwater Luxury Awaits 🌊✨',
         caption: 'Waking up to turquoise lagoons. Direct seaplane transfer + all-inclusive overwater villas tailored for Bangladeshi couples.',
@@ -24,7 +24,7 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
       },
       {
         id: 'mald-2',
-        mediaUrl: 'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'House-Reef Snorkeling 🐢🐠',
         caption: 'Swim alongside gentle sea turtles & manta rays in crystal clear 28°C ocean waters. Private catamaran cruise included.',
@@ -37,7 +37,7 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
       },
       {
         id: 'mald-3',
-        mediaUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Private Candlelight Beach Dining 🕯️🍷',
         caption: 'Chef-prepared seafood feast under the equatorial starlit sky. Azraq VIP Concierge coordinates every sunset detail.',
@@ -53,13 +53,13 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
     id: 'highlight-dubai',
     title: 'Dubai',
     emoji: '🏙️',
-    coverImage: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=500&q=75',
     category: 'Dubai',
     unread: true,
     slides: [
       {
         id: 'dub-1',
-        mediaUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'POV: Landing in Dubai with Azraq 🛬✨',
         caption: 'Flights + Express 30/60 Days Visa done in 3 days. Downtown 5-star hotel transfers ready upon arrival.',
@@ -72,7 +72,7 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
       },
       {
         id: 'dub-2',
-        mediaUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Desert Safari Sunset & Dune Bashing 🚙🔥',
         caption: 'Red dunes thrill, quad biking, BBQ buffet, and live fire show in Arabian camp. Family & group packages available.',
@@ -84,7 +84,7 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
       },
       {
         id: 'dub-3',
-        mediaUrl: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Dubai Marina Luxury Yacht Cruise 🛥️🥂',
         caption: 'Glide past Ain Dubai and Atlantis The Palm on a private 52ft yacht. Custom birthday and anniversary setups.',
@@ -100,13 +100,13 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
     id: 'highlight-visa-tips',
     title: 'Visa Tips',
     emoji: '🛂',
-    coverImage: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=500&q=75',
     category: 'Visa Tips',
     unread: true,
     slides: [
       {
         id: 'visa-1',
-        mediaUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Thailand 60-Day Visa Exemption 🇹🇭🎉',
         caption: 'Bangladeshi tourists enjoy 60-day visa-free entry! Ensure 6+ months passport validity & confirmed return ticket with Azraq.',
@@ -118,7 +118,7 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
       },
       {
         id: 'visa-2',
-        mediaUrl: 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Singapore Visa: Fee Just 6,000 BDT 🇸🇬📄',
         caption: 'Direct consular submission with official ICA token. We verify your bank statement, cover letter & hotel booking.',
@@ -131,7 +131,7 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
       },
       {
         id: 'visa-3',
-        mediaUrl: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Schengen Europe: Bank Statement Rules 🇪🇺💶',
         caption: 'Avoid sudden single-day bulk deposits. Maintain 6 months steady closing balance of BDT 800k+ per applicant.',
@@ -147,13 +147,13 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
     id: 'highlight-client-reviews',
     title: 'Client Reviews',
     emoji: '⭐️',
-    coverImage: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=500&q=75',
     category: 'Client Reviews',
     unread: true,
     slides: [
       {
         id: 'rev-1',
-        mediaUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'The Rahmans in London 🇬🇧✨',
         caption: '"The Rahmans trusted us with their UK trip. Smooth visas, zero hassle. London hotel & flights all managed by Azraq!"',
@@ -165,7 +165,7 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
       },
       {
         id: 'rev-2',
-        mediaUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Shahriar\'s 5-Star Bangkok Escapade 🇹🇭🌟',
         caption: '"Suvarnabhumi VIP airport pickup to luxury river dining. Azraq\'s WhatsApp team replied in under 3 minutes every time."',
@@ -178,7 +178,7 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
       },
       {
         id: 'rev-3',
-        mediaUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Tariq & Sadia in Istanbul 🇹🇷🕌',
         caption: '"Bosporus sunset cruise + Cappadocia cave hotel was pure magic. Azraq sorted out our Turkish stickers in 4 days."',
@@ -194,13 +194,13 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
     id: 'highlight-bangkok',
     title: 'Bangkok',
     emoji: '🇹🇭',
-    coverImage: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=500&q=75',
     category: 'Bangkok',
     unread: false,
     slides: [
       {
         id: 'bkk-1',
-        mediaUrl: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Grand Palace & Wat Arun Golden Sunset 🌅👑',
         caption: 'Iconic riverside temples, traditional longtail boat cruises, and world-renowned street food stalls in Chinatown.',
@@ -213,7 +213,7 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
       },
       {
         id: 'bkk-2',
-        mediaUrl: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'IconSiam & Chao Phraya River Cruise 🚢🌃',
         caption: 'Luxury shopping meets authentic floating markets. Top off the night with an international buffet river cruise.',
@@ -229,13 +229,13 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
     id: 'highlight-singapore',
     title: 'Singapore',
     emoji: '🇸🇬',
-    coverImage: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=500&q=75',
     category: 'Singapore',
     unread: false,
     slides: [
       {
         id: 'sg-1',
-        mediaUrl: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Gardens by the Bay: Supertree Light Show 🌸✨',
         caption: 'Futuristic avatar vibes in the heart of Singapore. Cloud Forest dome, Marina Bay Sands SkyPark & Sentosa Island.',
@@ -248,7 +248,7 @@ export const INITIAL_STORY_HIGHLIGHTS: StoryHighlight[] = [
       },
       {
         id: 'sg-2',
-        mediaUrl: 'https://images.unsplash.com/photo-1565967511849-76a60a516170?auto=format&fit=crop&w=1200&q=85',
+        mediaUrl: 'https://images.unsplash.com/photo-1565967511849-76a60a516170?auto=format&fit=crop&w=800&q=75',
         mediaType: 'image',
         headline: 'Jewel Changi Rain Vortex 🛬💦',
         caption: 'The world\'s tallest indoor waterfall right inside Changi Airport. Free 2-hour transit tours coordinated by Azraq.',

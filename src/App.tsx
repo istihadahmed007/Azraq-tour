@@ -5,13 +5,16 @@ import { INITIAL_DESTINATIONS, INITIAL_KYOTO_ITINERARY } from './data/mockData';
 import { AuthProvider } from './context/AuthContext';
 import { PackageProvider } from './context/PackageContext';
 import { FeedProvider } from './context/FeedContext';
-import { EnRouteProvider } from './context/EnRouteContext';
-import { EnRouteCommandCenter } from './components/enroute/EnRouteCommandCenter';
 import { AuthModal } from './components/AuthModal';
 import { Toast } from './components/Toast';
 import { Navigation } from './components/Navigation';
 import { ClientLayout } from './components/ClientLayout';
 import { DiscoverView } from './components/DiscoverView';
+import { DestinationsView } from './components/DestinationsView';
+import { VisaView } from './components/VisaView';
+import { FlightsView } from './components/FlightsView';
+import { AboutView } from './components/AboutView';
+import { ContactView } from './components/ContactView';
 import { PackagesView } from './components/PackagesView';
 import { PlannerView } from './components/PlannerView';
 import { FeedView } from './components/FeedView';
@@ -56,10 +59,15 @@ function AppContent() {
     setBrandTheme((prev) => (prev === 'globetrotter' ? 'azraq' : 'globetrotter'));
   };
 
+  const handleNavigate = (view: NavView | string) => {
+    setCurrentView(view as NavView);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Quick prompt handler from Discover Search Bar
   const handlePlanTripPrompt = async (promptText: string) => {
     setCurrentView('planner');
-    // Try generating itinerary for that prompt
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     try {
       const response = await fetch('/api/ai/itinerary', {
         method: 'POST',
@@ -115,7 +123,7 @@ function AppContent() {
   // View spot on Map
   const handleViewOnMap = (spot?: Spot) => {
     setMapSpot(spot);
-    setCurrentView('map');
+    setCurrentView('planner');
   };
 
   // Select destination by name (from hashtags or feed)
@@ -146,91 +154,120 @@ function AppContent() {
 
   return (
     <ClientLayout
-      className={`min-h-screen text-[#f0f9ff] sky-natural-bg font-sans selection:bg-[#0284c7] selection:text-white ${brandTheme === 'azraq' ? 'azraq-mode' : ''}`}
-      mainClassName="md:ml-72 transition-all duration-300 min-h-screen"
+      className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-[#0D6EFD] selection:text-white"
+      mainClassName="w-full min-h-screen flex flex-col transition-all duration-300"
       navbar={(navRef) => (
         <Navigation
           ref={navRef as React.Ref<HTMLElement>}
           currentView={currentView}
-          onViewChange={setCurrentView}
+          onViewChange={handleNavigate}
           brandTheme={brandTheme}
           onToggleBrand={handleToggleBrand}
-          onNewTripClick={() => setCurrentView('planner')}
+          onNewTripClick={() => handleNavigate('planner')}
           savedTripsCount={savedItineraries.length}
+          onOpenQuote={() => handleOpenFlightQuote()}
         />
       )}
     >
-      {/* Main Views */}
-      {currentView === 'enroute' && (
-        <div className="w-full h-[calc(100vh-var(--navbar-height,80px))]">
-          <EnRouteCommandCenter />
-        </div>
-      )}
+      <div className="flex-1 w-full">
+        {/* Main Views */}
+        {currentView === 'discover' && (
+          <DiscoverView
+            destinations={destinations}
+            onSelectDestination={setModalDestination}
+            onPlanTripPrompt={handlePlanTripPrompt}
+            onQuickGenerateItinerary={handleQuickGenerateItinerary}
+            onNavigateToView={handleNavigate}
+            onOpenVisaModal={handleOpenVisaQuote}
+            onOpenFlightModal={handleOpenFlightQuote}
+            onOpenQuote={() => handleOpenFlightQuote()}
+          />
+        )}
 
-      {currentView === 'discover' && (
-        <DiscoverView
-          destinations={destinations}
-          onSelectDestination={setModalDestination}
-          onPlanTripPrompt={handlePlanTripPrompt}
-          onQuickGenerateItinerary={handleQuickGenerateItinerary}
-        />
-      )}
+        {currentView === 'destinations' && (
+          <DestinationsView
+            destinations={destinations}
+            onSelectDestination={setModalDestination}
+            onPlanTripPrompt={handlePlanTripPrompt}
+          />
+        )}
 
-      {currentView === 'packages' && <PackagesView />}
+        {currentView === 'packages' && <PackagesView />}
 
-      {currentView === 'planner' && (
-        <PlannerView
-          currentItinerary={currentItinerary}
-          onUpdateItinerary={setCurrentItinerary}
-          onSaveItinerary={handleSaveItinerary}
-          onViewOnMap={handleViewOnMap}
-          isSaved={isCurrentItinerarySaved}
-        />
-      )}
+        {currentView === 'visa' && (
+          <VisaView onOpenVisaQuote={handleOpenVisaQuote} />
+        )}
 
-      {currentView === 'feed' && (
-        <FeedView
-          onSelectDestinationByName={handleSelectDestinationByName}
-          onNavigateToProfile={() => setCurrentView('profile')}
-        />
-      )}
+        {currentView === 'flights' && (
+          <FlightsView onOpenFlightModal={handleOpenFlightQuote} />
+        )}
 
-      {currentView === 'map' && (
-        <MapView
-          destinations={destinations}
-          onSelectDestination={setModalDestination}
-          selectedSpot={mapSpot}
-        />
-      )}
+        {currentView === 'about' && (
+          <AboutView
+            onNavigateToContact={() => handleNavigate('contact')}
+            onOpenTripPlanner={() => handleNavigate('planner')}
+          />
+        )}
 
-      {currentView === 'profile' && (
-        <ProfileView
-          savedItineraries={savedItineraries}
-          onSelectItinerary={(itinerary) => {
-            setCurrentItinerary(itinerary);
-            setCurrentView('planner');
-          }}
-          onRemoveItinerary={handleRemoveSavedItinerary}
-          onNavigateToFeed={() => setCurrentView('feed')}
-          onSelectDestination={setModalDestination}
-          onOpenFlightQuote={() => handleOpenFlightQuote()}
-          onOpenVisaQuote={() => handleOpenVisaQuote()}
-          onNavigate={(view) => setCurrentView(view as NavView)}
-        />
-      )}
+        {currentView === 'contact' && <ContactView />}
 
-      {currentView === 'admin' && (
-        <AdminDashboard onClose={() => setCurrentView('discover')} />
-      )}
+        {currentView === 'planner' && (
+          <PlannerView
+            currentItinerary={currentItinerary}
+            onUpdateItinerary={setCurrentItinerary}
+            onSaveItinerary={handleSaveItinerary}
+            onViewOnMap={handleViewOnMap}
+            isSaved={isCurrentItinerarySaved}
+            destinations={destinations}
+            onSelectDestination={setModalDestination}
+            onQuickGenerateItinerary={handleQuickGenerateItinerary}
+            onOpenVisaQuote={handleOpenVisaQuote}
+            onOpenFlightQuote={handleOpenFlightQuote}
+          />
+        )}
+
+        {currentView === 'feed' && (
+          <FeedView
+            onSelectDestinationByName={handleSelectDestinationByName}
+            onNavigateToProfile={() => handleNavigate('profile')}
+          />
+        )}
+
+        {currentView === 'map' && (
+          <MapView
+            destinations={destinations}
+            onSelectDestination={setModalDestination}
+            selectedSpot={mapSpot}
+          />
+        )}
+
+        {currentView === 'profile' && (
+          <ProfileView
+            savedItineraries={savedItineraries}
+            onSelectItinerary={(itinerary) => {
+              setCurrentItinerary(itinerary);
+              handleNavigate('planner');
+            }}
+            onRemoveItinerary={handleRemoveSavedItinerary}
+            onNavigateToFeed={() => handleNavigate('feed')}
+            onSelectDestination={setModalDestination}
+            onOpenFlightQuote={() => handleOpenFlightQuote()}
+            onOpenVisaQuote={() => handleOpenVisaQuote()}
+            onNavigate={(view) => handleNavigate(view)}
+          />
+        )}
+
+        {currentView === 'admin' && (
+          <AdminDashboard onClose={() => handleNavigate('discover')} />
+        )}
+      </div>
 
       {/* Global Travel Agency Footer */}
-      {currentView !== 'enroute' && (
-        <Footer
-          onNavigate={(view) => setCurrentView(view as NavView)}
-          onOpenVisaQuote={() => handleOpenVisaQuote()}
-          onOpenFlightQuote={() => handleOpenFlightQuote()}
-        />
-      )}
+      <Footer
+        onNavigate={handleNavigate}
+        onOpenVisaQuote={() => handleOpenVisaQuote()}
+        onOpenFlightQuote={() => handleOpenFlightQuote()}
+      />
 
       {/* Destination Inspector Modal */}
       <DestinationModal
@@ -276,9 +313,7 @@ export function App() {
     <AuthProvider>
       <PackageProvider>
         <FeedProvider>
-          <EnRouteProvider>
-            <AppContent />
-          </EnRouteProvider>
+          <AppContent />
         </FeedProvider>
       </PackageProvider>
     </AuthProvider>

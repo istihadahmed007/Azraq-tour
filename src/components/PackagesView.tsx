@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePackages } from '../context/PackageContext';
 import { PackageCard } from './PackageCard';
 import { PackageDetailModal } from './PackageDetailModal';
 import { PackageQuotationModal } from './PackageQuotationModal';
+import { PackageComparisonModal } from './PackageComparisonModal';
+import { TourPackage } from '../types';
 import {
   Search,
   Filter,
@@ -13,7 +15,9 @@ import {
   DollarSign,
   Compass,
   RefreshCw,
+  Scale,
 } from 'lucide-react';
+import { getOptimizedUnsplashUrl, getUnsplashSrcSet } from '../utils/imageOptimization';
 
 export const PackagesView: React.FC = () => {
   const {
@@ -37,6 +41,17 @@ export const PackagesView: React.FC = () => {
     setActiveQuotationModal,
     clearAllPackages,
   } = usePackages();
+
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
+
+  const toggleCompare = (pkgId: string) => {
+    setSelectedForCompare((prev) =>
+      prev.includes(pkgId) ? prev.filter((id) => id !== pkgId) : prev.length < 3 ? [...prev, pkgId] : prev
+    );
+  };
+
+  const packagesToCompare = packages.filter((p) => selectedForCompare.includes(p.id));
 
   return (
     <div className="w-full min-h-screen pb-20 pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 animate-fadeIn">
@@ -260,8 +275,11 @@ export const PackagesView: React.FC = () => {
                   }`}
                 >
                   <img
-                    src={dest.image}
+                    src={getOptimizedUnsplashUrl(dest.image, 300, 70)}
+                    srcSet={getUnsplashSrcSet(dest.image, [200, 350], 70)}
+                    sizes="(max-width: 640px) 120px, 160px"
                     alt={dest.name}
+                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
@@ -276,25 +294,73 @@ export const PackagesView: React.FC = () => {
         </div>
       )}
 
-      {/* Tour Packages Grid */}
+      {/* Tour Packages Grid Header & Compare Trigger */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-sky-400" />
             Tour Packages List ({filteredPackages.length})
           </h2>
+
+          <div className="flex items-center gap-2">
+            {selectedForCompare.length > 0 && (
+              <button
+                onClick={() => setIsCompareModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 text-slate-950 font-black text-xs transition-all shadow-lg flex items-center gap-1.5 cursor-pointer animate-pulse"
+              >
+                <Scale className="w-4 h-4" />
+                <span>Compare Selected ({selectedForCompare.length}/3)</span>
+              </button>
+            )}
+
+            {filteredPackages.length >= 2 && selectedForCompare.length === 0 && (
+              <button
+                onClick={() => {
+                  setSelectedForCompare(filteredPackages.slice(0, 3).map((p) => p.id));
+                  setIsCompareModalOpen(true);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 border border-sky-400/30 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Scale className="w-4 h-4 text-amber-400" />
+                <span>Quick Compare Top 3</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {filteredPackages.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPackages.map((pkg) => (
-              <PackageCard
-                key={pkg.id}
-                pkg={pkg}
-                onViewDetails={setActivePackageModal}
-                onRequestQuote={setActiveQuotationModal}
-              />
-            ))}
+            {filteredPackages.map((pkg) => {
+              const isCompared = selectedForCompare.includes(pkg.id);
+              return (
+                <div key={pkg.id} className="relative flex flex-col">
+                  {/* Floating Compare Checkbox */}
+                  <div className="absolute top-3 right-3 z-20">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCompare(pkg.id);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold backdrop-blur-md border transition-all flex items-center gap-1 cursor-pointer ${
+                        isCompared
+                          ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md scale-105'
+                          : 'bg-slate-950/80 text-slate-300 border-slate-700/60 hover:text-white'
+                      }`}
+                      title="Add to side-by-side comparison"
+                    >
+                      <Scale className="w-3 h-3" />
+                      <span>{isCompared ? 'Comparing' : '+ Compare'}</span>
+                    </button>
+                  </div>
+
+                  <PackageCard
+                    pkg={pkg}
+                    onViewDetails={setActivePackageModal}
+                    onRequestQuote={setActiveQuotationModal}
+                  />
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="bg-slate-900/60 rounded-3xl border border-slate-800 p-12 text-center space-y-4 max-w-xl mx-auto">
@@ -331,6 +397,16 @@ export const PackagesView: React.FC = () => {
       <PackageQuotationModal
         pkg={activeQuotationModal}
         onClose={() => setActiveQuotationModal(null)}
+      />
+
+      <PackageComparisonModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        packages={packagesToCompare.length > 0 ? packagesToCompare : filteredPackages.slice(0, 3)}
+        onRequestQuote={(pkg) => {
+          setIsCompareModalOpen(false);
+          setActiveQuotationModal(pkg);
+        }}
       />
     </div>
   );

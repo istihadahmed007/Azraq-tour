@@ -92,7 +92,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART4: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights Hotel at Thamel with Breakfast", "Swayambhunath Monkey Temple & Durbar Square Tour", "Airport Return Transfers Included"]
   },
 
@@ -182,7 +182,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART4: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights Hotel at Thamel", "Daily Breakfast Included", "Airport Return Pick & Drop"]
   },
 
@@ -279,7 +279,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART4: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=75"],
     highlights: ["3 Nights 3* Hotel Stay", "Private Airport Return Transfers", "Daily Breakfast Included", "Free days for Bukit Bintang & KLCC exploration"]
   },
 
@@ -376,7 +376,7 @@ export const AZRAQ_SOURCE_PACKAGES_PART4: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&w=800&q=75"],
     highlights: ["SDF Fee Included", "Buddha Dordenma 169ft Statue", "Chele La Pass (3,988m Altitude)", "Licensed English Guide & Private Car"]
   }
 ];

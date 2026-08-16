@@ -87,7 +87,7 @@ export const AZRAQ_SOURCE_PACKAGES: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Coral Island with lunch", "Pattaya & Bangkok 3-star hotels with breakfast", "Airport & Intercity transfers"]
   },
 
@@ -196,7 +196,7 @@ export const AZRAQ_SOURCE_PACKAGES: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=800&q=75"],
     highlights: ["2 Nights Pattaya + 2 Nights Bangkok", "Coral Island with lunch", "Full day Bangkok shopping leisure"]
   },
 
@@ -317,7 +317,7 @@ export const AZRAQ_SOURCE_PACKAGES: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Traditional Nepali Mala welcome", "Nagarkot Himalayan Sunrise", "Sarangkot Annapurna Panorama", "Devis Falls & Fewa Lake Pokhara"]
   },
 
@@ -416,7 +416,7 @@ export const AZRAQ_SOURCE_PACKAGES: TourPackage[] = [
     status: "published",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80"],
+    images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=75"],
     highlights: ["Nagarkot Sunrise over Mt. Everest", "Bhaktapur Durbar Square UNESCO site", "Kathmandu Heritage Sightseeing", "Chauffeur Guide & Private Vehicle"]
   }
 ];
