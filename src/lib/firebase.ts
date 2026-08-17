@@ -27,31 +27,8 @@ googleProvider.addScope('openid');
 
 export const oAuthClientId = firebaseConfig.oAuthClientId || '';
 
-// Initialize Firestore safely with reliable transport configuration
-const targetDbId = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
-  ? firebaseConfig.firestoreDatabaseId
-  : undefined;
-
-function createFirestoreInstance() {
-  try {
-    if (targetDbId) {
-      return initializeFirestore(app, {
-        experimentalForceLongPolling: true,
-      }, targetDbId);
-    }
-    return initializeFirestore(app, {
-      experimentalForceLongPolling: true,
-    });
-  } catch {
-    try {
-      return targetDbId ? getFirestore(app, targetDbId) : getFirestore(app);
-    } catch {
-      return getFirestore(app);
-    }
-  }
-}
-
-export const db = createFirestoreInstance();
+// Initialize Firestore with standard database instance
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
 
 export enum OperationType {
   CREATE = 'create',
@@ -98,8 +75,13 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path,
   };
 
-  // Log in development if not an expected offline transition
-  if (!errMsg.includes('offline') && !errMsg.includes('unavailable') && !errMsg.includes('could not be completed')) {
+  // Only log if not an expected offline/unavailable state
+  if (
+    !errMsg.includes('offline') &&
+    !errMsg.includes('unavailable') &&
+    !errMsg.includes('could not be completed') &&
+    !errMsg.includes('backend')
+  ) {
     console.warn('Firestore Operation Info:', JSON.stringify(errInfo));
   }
   return errInfo;
@@ -111,8 +93,11 @@ async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.info('Firestore initialized in offline mode.');
+    // Gracefully handle offline or network unavailable status in sandboxed previews
+    if (error instanceof Error) {
+      if (error.message.includes('the client is offline') || error.message.includes('unavailable')) {
+        console.info('Firestore operating in offline cache mode.');
+      }
     }
   }
 }
@@ -121,7 +106,7 @@ if (typeof window !== 'undefined') {
   // Test connection after bootstrap
   setTimeout(() => {
     testConnection().catch(() => {});
-  }, 1500);
+  }, 2000);
 }
 
 // Initialize Firebase Analytics safely (supported in browser environments)

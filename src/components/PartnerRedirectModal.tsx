@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, ShieldCheck, AlertCircle, X, Check, Plane, MessageCircle } from 'lucide-react';
+import { ExternalLink, ShieldCheck, AlertCircle, X, Check, Plane, MessageCircle, Clock, Luggage } from 'lucide-react';
 import { FlightOffer } from '../data/flightsData';
 import { AZRAQ_AGENCY_CONFIG } from '../data/agencyConfig';
 
@@ -18,12 +18,13 @@ export const PartnerRedirectModal: React.FC<PartnerRedirectModalProps> = ({
 
   const partnerUrl =
     flight.partnerDeepLink ||
-    `https://flights.travelpayouts.com/search?origin=${flight.origin.code}&destination=${flight.destination.code}&marker=563001`;
+    AZRAQ_AGENCY_CONFIG.aviasalesAffiliateUrl ||
+    'https://aviasales.tp.st/72ntufDx';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
       <div
-        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden"
+        className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -38,40 +39,94 @@ export const PartnerRedirectModal: React.FC<PartnerRedirectModalProps> = ({
 
           <div className="flex items-center gap-2 text-sky-400 text-xs font-bold uppercase tracking-wider mb-1">
             <ExternalLink className="w-3.5 h-3.5" />
-            <span>Partner Booking Redirect</span>
+            <span>Official Partner Booking & Itinerary</span>
           </div>
 
           <h3 className="text-xl font-bold text-white tracking-tight">
-            Continue to {flight.airlineName} / Partner
+            {flight.airlineName} · {flight.flightNumber}
           </h3>
           <p className="text-xs text-slate-300 mt-1">
-            {flight.origin.city} ({flight.origin.code}) ➔ {flight.destination.city} ({flight.destination.code}) · {flight.flightNumber}
+            {flight.origin.city} ({flight.origin.code}) ➔ {flight.destination.city} ({flight.destination.code}) • {flight.cabinClass} Class
           </p>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-6 space-y-5 text-slate-700 text-sm">
-          {/* Flight Summary Card */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 text-base">{flight.airlineName}</span>
-                <span className="text-xs text-slate-500 font-mono">({flight.flightNumber})</span>
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {flight.departureDate} • {flight.departureTime} departure
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="text-xs text-slate-400 block">Verified Fare</span>
-              <span className="text-base font-extrabold text-[#0D6EFD] font-mono">
-                BDT {flight.priceBDT.toLocaleString()}
+        <div className="p-5 sm:p-6 space-y-5 text-slate-700 text-sm max-h-[80vh] overflow-y-auto">
+          {/* Horizontal Itinerary Timeline Flow */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3">
+            <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-200/60">
+              <span className="font-semibold text-slate-800 flex items-center gap-1.5">
+                <Plane className="w-3.5 h-3.5 text-blue-600" />
+                <span>Flight Itinerary Flow</span>
               </span>
+              <span className="font-mono font-bold text-slate-700">
+                Duration: {flight.duration}
+              </span>
+            </div>
+
+            {/* Horizontal Track */}
+            <div className="flex items-center justify-between gap-2 pt-1">
+              {/* Origin */}
+              <div className="text-left space-y-0.5">
+                <span className="text-xs font-mono font-bold text-slate-500">Departure</span>
+                <p className="text-lg font-extrabold text-slate-900 font-mono leading-none">
+                  {flight.departureTime}
+                </p>
+                <p className="text-xs font-bold text-blue-700">{flight.origin.code}</p>
+                <p className="text-[11px] text-slate-400 truncate max-w-[100px]">{flight.origin.city}</p>
+              </div>
+
+              {/* Center Flow Bar with Stop info */}
+              <div className="flex-1 px-3 flex flex-col items-center">
+                <div className="text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  <span>{flight.duration}</span>
+                  <span>•</span>
+                  <span>{flight.stops === 0 ? 'Non-Stop' : `${flight.stops} Stop (${flight.stopAirports?.join(', ') || 'Transit'})`}</span>
+                </div>
+
+                <div className="relative w-full h-1 bg-blue-200 rounded-full flex items-center justify-between">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-600"></div>
+                  {flight.stops > 0 && (
+                    <div className="w-3 h-3 rounded-full bg-amber-500 border-2 border-white shadow-2xs" title={`Layover: ${flight.layoverDuration || 'Transit'}`}></div>
+                  )}
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-900"></div>
+                </div>
+
+                {flight.layoverDuration && (
+                  <span className="mt-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-semibold">
+                    {flight.layoverDuration} Layover in {flight.stopAirports?.[0] || 'Hub'}
+                  </span>
+                )}
+              </div>
+
+              {/* Destination */}
+              <div className="text-right space-y-0.5">
+                <span className="text-xs font-mono font-bold text-slate-500">Arrival</span>
+                <p className="text-lg font-extrabold text-slate-900 font-mono leading-none">
+                  {flight.arrivalTime}
+                </p>
+                <p className="text-xs font-bold text-slate-900">{flight.destination.code}</p>
+                <p className="text-[11px] text-slate-400 truncate max-w-[100px]">{flight.destination.city}</p>
+              </div>
+            </div>
+
+            {/* Baggage & Fare Badge */}
+            <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-slate-600">
+                <Luggage className="w-3.5 h-3.5 text-slate-400" />
+                <span>Baggage: <strong>{flight.baggageAllowance?.checked || 'Checked Baggage Included'}</strong></span>
+              </div>
+              <div className="text-right">
+                <span className="text-base font-extrabold text-[#0D6EFD] font-mono">
+                  BDT {flight.priceBDT.toLocaleString()}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Transparency Notices */}
-          <div className="space-y-2.5 text-xs text-slate-600">
+          <div className="space-y-2 text-xs text-slate-600">
             <div className="flex items-start gap-2">
               <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <span>You will be redirected securely to the partner ticket checkout page.</span>

@@ -7,7 +7,7 @@ interface TravelpayoutsWidgetProps {
   destinationCode?: string;
   onOpenQuote?: () => void;
   className?: string;
-  defaultTab?: 'deals' | 'hotels' | 'schedule' | 'map' | 'search';
+  defaultTab?: 'deals' | 'hotels' | 'whitelabel' | 'schedule' | 'map' | 'search';
 }
 
 export const TravelpayoutsWidget: React.FC<TravelpayoutsWidgetProps> = ({
@@ -17,7 +17,7 @@ export const TravelpayoutsWidget: React.FC<TravelpayoutsWidgetProps> = ({
   className = '',
   defaultTab = 'deals',
 }) => {
-  const [activeTab, setActiveTab] = useState<'deals' | 'hotels' | 'schedule' | 'map' | 'search'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<'deals' | 'hotels' | 'whitelabel' | 'schedule' | 'map' | 'search'>(defaultTab);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [hasError, setHasError] = useState(false);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
@@ -25,14 +25,31 @@ export const TravelpayoutsWidget: React.FC<TravelpayoutsWidgetProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    let isMounted = true;
+
     // Clear previous children if any to prevent duplicate widgets on re-renders
     const currentContainer = containerRef.current;
     currentContainer.innerHTML = '';
+    
+    // Create and insert the containers for White Label Search & Tickets
+    const wlSearchDiv = document.createElement('div');
+    wlSearchDiv.id = 'tpwl-search';
+    wlSearchDiv.className = 'w-full min-h-[60px]';
+    currentContainer.appendChild(wlSearchDiv);
+
+    const wlTicketsDiv = document.createElement('div');
+    wlTicketsDiv.id = 'tpwl-tickets';
+    wlTicketsDiv.className = 'w-full min-h-[80px] mt-4';
+    currentContainer.appendChild(wlTicketsDiv);
+
     setHasError(false);
     setIsScriptLoaded(false);
 
     const script = document.createElement('script');
-    if (activeTab === 'deals') {
+    if (activeTab === 'whitelabel') {
+      script.type = 'module';
+      script.src = 'https://tpwidg.com/wl_web/main.js?wl_id=20966';
+    } else if (activeTab === 'deals') {
       script.src =
         'https://tpwidg.com/content?currency=usd&trs=563001&shmarker=760251&target_host=www.aviasales.com%2Fsearch&locale=en&limit=10&powered_by=true&primary=%230085FF&promo_id=4044&campaign_id=100';
     } else if (activeTab === 'hotels') {
@@ -52,24 +69,33 @@ export const TravelpayoutsWidget: React.FC<TravelpayoutsWidgetProps> = ({
     script.charset = 'utf-8';
 
     script.onload = () => {
-      setIsScriptLoaded(true);
-      setHasError(false);
+      if (isMounted) {
+        setIsScriptLoaded(true);
+        setHasError(false);
+      }
     };
 
     script.onerror = () => {
-      setHasError(true);
+      if (isMounted) {
+        setHasError(true);
+      }
     };
 
     currentContainer.appendChild(script);
 
-    // Timeout check if script failed or was blocked by browser adblockers
+    // Timeout fallback if script is blocked by browser adblockers or network restrictions
     const timeout = setTimeout(() => {
-      if (currentContainer && currentContainer.childElementCount <= 1 && !isScriptLoaded) {
-        setHasError(true);
+      if (isMounted) {
+        // Check if widget rendered any inner elements or if loading stalled
+        const rendered = currentContainer.querySelector('iframe, form, div[class*="tp"], .tp-widget, #tpwl-search > *');
+        if (!rendered && !script.onload) {
+          setHasError(true);
+        }
       }
-    }, 4500);
+    }, 5000);
 
     return () => {
+      isMounted = false;
       clearTimeout(timeout);
       if (currentContainer) {
         currentContainer.innerHTML = '';
@@ -95,6 +121,8 @@ export const TravelpayoutsWidget: React.FC<TravelpayoutsWidgetProps> = ({
                   ? 'Top 10 Live Flight Deals'
                   : activeTab === 'hotels'
                   ? 'Top Hotel Deals (Hotellook)'
+                  : activeTab === 'whitelabel'
+                  ? 'White Label Flight & Hotel Search'
                   : activeTab === 'schedule'
                   ? 'Direct Routes & Live Schedules'
                   : activeTab === 'map'
@@ -140,6 +168,17 @@ export const TravelpayoutsWidget: React.FC<TravelpayoutsWidgetProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => setActiveTab('whitelabel')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'whitelabel'
+                  ? 'bg-teal-500 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              WL Search
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('schedule')}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'schedule'
@@ -173,17 +212,27 @@ export const TravelpayoutsWidget: React.FC<TravelpayoutsWidgetProps> = ({
             </button>
           </div>
 
-          <a
-            href={`https://wa.me/${AZRAQ_AGENCY_CONFIG.whatsappNumber}?text=${encodeURIComponent(
-              `Hello Azraq Travel Concierge! I am searching for flight deals from ${originCode} to ${destinationCode}. Can you assist with offline group booking or hold?`
-            )}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-            <span>Dhaka Desk WhatsApp</span>
-          </a>
+            <a
+              href="https://aviasales.tp.st/72ntufDx"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 text-sky-200 border border-sky-400/40 text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
+            >
+              <span>Aviasales</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+
+            <a
+              href={`https://wa.me/${AZRAQ_AGENCY_CONFIG.whatsappNumber}?text=${encodeURIComponent(
+                `Hello Azraq Travel Concierge! I am searching for flight deals from ${originCode} to ${destinationCode}. Can you assist with offline group booking or hold?`
+              )}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>Dhaka Desk WhatsApp</span>
+            </a>
         </div>
       </div>
 
@@ -209,9 +258,9 @@ export const TravelpayoutsWidget: React.FC<TravelpayoutsWidgetProps> = ({
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
               <a
-                href={`https://flights.travelpayouts.com/search?origin=${originCode}&destination=${destinationCode}&marker=563001`}
+                href={AZRAQ_AGENCY_CONFIG.aviasalesAffiliateUrl || "https://aviasales.tp.st/72ntufDx"}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="px-3.5 py-1.5 rounded-lg bg-[#0D6EFD] text-white font-bold text-xs hover:bg-blue-600 transition-colors flex items-center gap-1.5 shadow-sm"
               >
                 <span>Open Aviasales Search</span>

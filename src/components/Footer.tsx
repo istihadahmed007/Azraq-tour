@@ -128,6 +128,17 @@ export const Footer: React.FC<FooterProps> = ({
                 </button>
               </li>
               <li>
+                <a
+                  href="https://aviasales.tp.st/72ntufDx"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white text-slate-300 transition-colors flex items-center gap-1.5"
+                >
+                  <span>Aviasales Global Search</span>
+                  <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono">Partner</span>
+                </a>
+              </li>
+              <li>
                 <button
                   onClick={() => handleNav('destinations')}
                   className="hover:text-white transition-colors cursor-pointer"

@@ -67,7 +67,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         reviews: '1,420 reviews',
         imageUrl:
           'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=80',
-        routePrice: 'BDT 26,500',
+        routeTag: 'Direct Flight',
         visaType: 'Sticker / eVisa',
       },
       {
@@ -79,7 +79,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         reviews: '2,180 reviews',
         imageUrl:
           'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80',
-        routePrice: 'BDT 48,000',
+        routeTag: 'Direct Hub',
         visaType: '30/60-Day Tourist',
       },
       {
@@ -91,7 +91,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         reviews: '1,890 reviews',
         imageUrl:
           'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=80',
-        routePrice: 'BDT 32,000',
+        routeTag: 'Direct Route',
         visaType: 'eVisa Support',
       },
       {
@@ -103,7 +103,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         reviews: '960 reviews',
         imageUrl:
           'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80',
-        routePrice: 'BDT 43,000',
+        routeTag: 'Direct / 1-Stop',
         visaType: 'Free 30-Day On Arrival',
       },
     ],
@@ -383,9 +383,9 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                   <span>{dest.name}</span>
                 </div>
 
-                {/* Top-Right Fare estimate */}
+                {/* Top-Right Route Tag */}
                 <div className="absolute top-3 right-3 bg-[#071A33]/85 backdrop-blur-md px-2.5 py-1 rounded-full text-sky-300 font-mono text-[11px] font-bold shadow-sm">
-                  From {dest.routePrice}
+                  {dest.routeTag}
                 </div>
               </div>
 

@@ -156,12 +156,12 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
   const totalTravelers = adults + children + infants;
 
   const quickRouteChips = [
-    { from: 'DAC', to: 'BKK', label: 'Dhaka ⇄ Bangkok', price: 'BDT 26,500' },
-    { from: 'DAC', to: 'DXB', label: 'Dhaka ⇄ Dubai', price: 'BDT 48,000' },
-    { from: 'DAC', to: 'KUL', label: 'Dhaka ⇄ Kuala Lumpur', price: 'BDT 32,000' },
-    { from: 'DAC', to: 'SIN', label: 'Dhaka ⇄ Singapore', price: 'BDT 39,500' },
-    { from: 'DAC', to: 'KTM', label: 'Dhaka ⇄ Kathmandu', price: 'BDT 21,500' },
-    { from: 'DAC', to: 'MLE', label: 'Dhaka ⇄ Maldives', price: 'BDT 43,000' },
+    { from: 'DAC', to: 'BKK', label: 'Dhaka ⇄ Bangkok', tag: 'Direct Flight' },
+    { from: 'DAC', to: 'DXB', label: 'Dhaka ⇄ Dubai', tag: 'Direct Hub' },
+    { from: 'DAC', to: 'KUL', label: 'Dhaka ⇄ Kuala Lumpur', tag: 'Popular Route' },
+    { from: 'DAC', to: 'SIN', label: 'Dhaka ⇄ Singapore', tag: 'Direct Flight' },
+    { from: 'DAC', to: 'KTM', label: 'Dhaka ⇄ Kathmandu', tag: 'Short Haul' },
+    { from: 'DAC', to: 'MLE', label: 'Dhaka ⇄ Maldives', tag: 'Honeymoon' },
   ];
 
   const handleQuickRouteSelect = (fromCode: string, toCode: string) => {
@@ -647,7 +647,7 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                   className="shrink-0 px-2.5 py-1 rounded-lg bg-slate-900/80 hover:bg-blue-600/30 text-slate-300 hover:text-sky-300 border border-slate-700/80 text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>{chip.from}➔{chip.to}</span>
-                  <span className="text-emerald-400 font-mono text-[10px]">{chip.price}</span>
+                  <span className="text-sky-400 font-mono text-[10px]">{chip.tag}</span>
                 </button>
               ))}
             </div>

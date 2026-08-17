@@ -15,17 +15,20 @@ export interface AgencyConfig {
   workingHours: string;
   operatingDays: string;
   travelpayoutsPartnerId?: string;
+  aviasalesAffiliateUrl: string;
+  aviasalesBaseUrl: string;
+  officialAffiliateDisclosure: string;
   currencies: { code: string; symbol: string; rateAgainstBDT: number }[];
   partnerDisclaimer: string;
   affiliateDisclosureText: string;
 }
 
 export const AZRAQ_AGENCY_CONFIG: AgencyConfig = {
-  agencyName: 'Azraq',
+  agencyName: 'Azraq Tours & Travels',
   tagline: 'Luxury Travel Concierge',
   subTagline: 'Your Gateway to Curated Asian Escapes',
-  heroHeadline: 'Your Gateway to Curated Asian Escapes',
-  heroSubheadline: 'Compare routes, discover better fares, and let Azraq arrange the rest of your journey.',
+  heroHeadline: 'Where Will You Fly Next?',
+  heroSubheadline: 'Compare flight options and discover great fares for your next journey.',
   phone: '+8801851172032',
   phoneDisplay: '+880 1851-172032',
   whatsappNumber: '8801851172032',
@@ -37,6 +40,10 @@ export const AZRAQ_AGENCY_CONFIG: AgencyConfig = {
   workingHours: '10:00 AM – 8:00 PM',
   operatingDays: 'Saturday – Thursday (24/7 WhatsApp concierge)',
   travelpayoutsPartnerId: '563001',
+  aviasalesAffiliateUrl: 'https://aviasales.tp.st/72ntufDx',
+  aviasalesBaseUrl: 'https://www.aviasales.com/?params=DAC1',
+  officialAffiliateDisclosure:
+    'Flight search and booking services are provided through our travel partners. We may earn a commission when you complete a booking through our affiliate links.',
   currencies: [
     { code: 'BDT', symbol: '৳', rateAgainstBDT: 1 },
     { code: 'USD', symbol: '$', rateAgainstBDT: 0.0083 },
