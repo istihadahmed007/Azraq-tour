@@ -31,6 +31,41 @@ export type QuoteStatus =
 
 export type AdminRole = 'super_admin' | 'support_agent';
 
+export interface CanonicalFlightOffer {
+  offerId: string;
+  provider: 'aviasales' | 'travelpayouts' | string;
+  origin: string;
+  destination: string;
+  departureDate: string;
+  returnDate?: string;
+  airline: string;
+  airlineCode?: string;
+  airlineLogo?: string;
+  flightNumber?: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  duration?: string;
+  stops?: number;
+  stopAirports?: string[];
+  layoverDuration?: string;
+  cabin: string;
+  passengers: number;
+  baggage?: string;
+  currency: string;
+  totalPrice: number;
+  originalPrice?: number;
+  originalCurrency?: string;
+  priceInBDT?: number;
+  taxesIncluded?: boolean;
+  bookingUrl: string;
+  market?: string;
+  fetchedAt: string;
+  expiresAt?: string;
+  source: string;
+  isIndicative?: boolean;
+  isStale?: boolean;
+}
+
 export interface InternalNote {
   id: string;
   authorName: string;

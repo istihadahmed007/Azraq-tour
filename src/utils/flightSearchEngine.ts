@@ -1,8 +1,10 @@
 import { Airport, POPULAR_AIRPORTS, BANGLADESH_AIRPORTS, buildAviasalesSearchUrl, getAviasalesSearchKey, FlightOffer } from '../data/flightsData';
 import { FullFlightItinerary, ItinerarySegment, LayoverInfo } from '../data/flightItinerariesData';
 import { AZRAQ_AGENCY_CONFIG } from '../data/agencyConfig';
+import { CanonicalFlightOffer } from '../types';
 
 export { getAviasalesSearchKey };
+export type { CanonicalFlightOffer };
 
 export interface NormalizedFlightSearch {
   origin: Airport;
@@ -20,6 +22,237 @@ export interface NormalizedFlightSearch {
 export interface FlightValidationResult {
   isValid: boolean;
   error?: string;
+}
+
+export interface FlightSearchApiResponse {
+  success: boolean;
+  searchKey: string;
+  origin: string;
+  destination: string;
+  departDate: string;
+  returnDate?: string;
+  tripType: 'round' | 'oneway';
+  adults: number;
+  children: number;
+  infants: number;
+  passengers: number;
+  cabin: string;
+  currency: string;
+  offers: CanonicalFlightOffer[];
+  hasLiveApi: boolean;
+  directAviasalesUrl: string;
+  source: string;
+  fetchedAt: string;
+  expiresAt: string;
+  exchangeRate?: {
+    usdToBdt: number;
+    eurToBdt: number;
+    timestamp: string;
+    roundingRule: string;
+    disclaimer: string;
+  };
+  message?: string;
+}
+
+/**
+ * Diagnostic logger that outputs search & pricing trace only in development.
+ */
+export function logFlightSearchDiagnostics(stage: string, payload: Record<string, any>): void {
+  if (typeof window !== 'undefined' && (import.meta as any).env?.DEV) {
+    console.groupCollapsed(`%c[Azraq Flight Diagnostics] ${stage}`, 'color: #0284c7; font-weight: bold;');
+    console.log('Timestamp:', new Date().toISOString());
+    console.table(payload);
+    console.groupEnd();
+  }
+}
+
+/**
+ * Checks if a flight offer has expired or exceeds the 15-minute freshness window.
+ */
+export function isOfferStale(offer: { fetchedAt?: string; expiresAt?: string }, maxAgeMinutes = 15): boolean {
+  if (offer.expiresAt) {
+    const expires = new Date(offer.expiresAt).getTime();
+    if (!isNaN(expires) && Date.now() > expires) return true;
+  }
+  if (offer.fetchedAt) {
+    const fetched = new Date(offer.fetchedAt).getTime();
+    if (!isNaN(fetched) && Date.now() - fetched > maxAgeMinutes * 60 * 1000) return true;
+  }
+  return false;
+}
+
+/**
+ * Fetches canonical flight offers from the verified server API proxy.
+ */
+export async function fetchCanonicalFlightOffers(
+  search: NormalizedFlightSearch,
+  currency = 'BDT'
+): Promise<FlightSearchApiResponse> {
+  const origin = search.origin.code.toUpperCase();
+  const destination = search.destination.code.toUpperCase();
+  const departDate = search.departureDate;
+  const returnDate = search.tripType === 'round' ? search.returnDate || '' : '';
+  const adults = search.adults || 1;
+  const children = search.children || 0;
+  const infants = search.infants || 0;
+  const cabin = search.cabinClass || 'Economy';
+  const tripType = search.tripType || 'round';
+
+  const queryParams = new URLSearchParams({
+    origin,
+    destination,
+    departDate,
+    returnDate,
+    adults: String(adults),
+    children: String(children),
+    infants: String(infants),
+    cabin,
+    currency,
+    tripType,
+  });
+
+  const apiUrl = `/api/flights/aviasales-prices?${queryParams.toString()}`;
+
+  logFlightSearchDiagnostics('API_REQUEST_START', {
+    origin,
+    destination,
+    departDate,
+    returnDate,
+    passengers: adults + children + infants,
+    cabin,
+    currency,
+    apiUrl,
+  });
+
+  try {
+    const res = await fetch(apiUrl);
+    if (!res.ok) {
+      throw new Error(`Server returned HTTP ${res.status}`);
+    }
+    const data: FlightSearchApiResponse = await res.json();
+
+    logFlightSearchDiagnostics('API_RESPONSE_RECEIVED', {
+      success: data.success,
+      offersCount: data.offers?.length || 0,
+      hasLiveApi: data.hasLiveApi,
+      source: data.source,
+      fetchedAt: data.fetchedAt,
+      directAviasalesUrl: data.directAviasalesUrl,
+    });
+
+    return data;
+  } catch (err: any) {
+    console.error('Failed to fetch flight offers from server proxy:', err);
+    const searchKey = getAviasalesSearchKey({
+      origin,
+      destination,
+      departDate,
+      returnDate: search.tripType === 'round' ? returnDate : undefined,
+      adults,
+      children,
+      infants,
+      cabin,
+      tripType,
+    });
+
+    const fallbackUrl = buildAviasalesSearchUrl({
+      origin,
+      destination,
+      departDate,
+      returnDate: search.tripType === 'round' ? returnDate : undefined,
+      adults,
+      children,
+      infants,
+      cabin,
+      tripType,
+      source: 'api_fallback',
+    });
+
+    return {
+      success: false,
+      searchKey,
+      origin,
+      destination,
+      departDate,
+      returnDate,
+      tripType: tripType as 'round' | 'oneway',
+      adults,
+      children,
+      infants,
+      passengers: adults + children + infants,
+      cabin,
+      currency,
+      offers: [],
+      hasLiveApi: false,
+      directAviasalesUrl: fallbackUrl,
+      source: 'client_fallback',
+      fetchedAt: new Date().toISOString(),
+      expiresAt: new Date().toISOString(),
+      message: 'Live fares are temporarily unavailable. Please search again or contact our Dhaka flight desk.',
+    };
+  }
+}
+
+/**
+ * Transforms CanonicalFlightOffer items into FlightOffer items for component consumption.
+ * Does NOT generate mock or synthetic fallback items if offers array is empty.
+ */
+export function generateMatchingFlightOffers(
+  search: NormalizedFlightSearch,
+  canonicalOffers?: CanonicalFlightOffer[]
+): FlightOffer[] {
+  if (!canonicalOffers || canonicalOffers.length === 0) {
+    return [];
+  }
+
+  return canonicalOffers.map((cOffer, idx) => {
+    return {
+      id: cOffer.offerId || `offer-${idx}`,
+      offerId: cOffer.offerId,
+      provider: cOffer.provider || 'travelpayouts',
+      airlineCode: cOffer.airlineCode || 'Partner',
+      airlineName: cOffer.airline || 'Partner Airline',
+      airlineLogo:
+        cOffer.airlineLogo ||
+        'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
+      flightNumber: cOffer.flightNumber || `${cOffer.airlineCode || 'FL'} ${100 + idx}`,
+      aircraft: 'Commercial Jetliner',
+      tripType: (search.tripType === 'round' ? 'round' : 'oneway') as 'round' | 'oneway',
+      origin: search.origin,
+      destination: search.destination,
+      departureDate: cOffer.departureDate || search.departureDate,
+      returnDate: cOffer.returnDate || (search.tripType === 'round' ? search.returnDate : undefined),
+      departureTime: cOffer.departureTime || '09:00',
+      arrivalTime: cOffer.arrivalTime || '13:00',
+      duration: cOffer.duration || '4h 00m',
+      stops: typeof cOffer.stops === 'number' ? cOffer.stops : 0,
+      stopAirports: cOffer.stopAirports,
+      layoverDuration: cOffer.layoverDuration,
+      cabinClass: search.cabinClass,
+      priceBDT: cOffer.priceInBDT || cOffer.totalPrice,
+      totalPrice: cOffer.totalPrice,
+      originalPrice: cOffer.originalPrice,
+      originalCurrency: cOffer.originalCurrency,
+      currency: cOffer.currency || search.currency || 'BDT',
+      refundable: true,
+      baggageAllowance: {
+        cabin: '7 kg',
+        checked: cOffer.baggage || 'Standard Partner Allowance Included',
+      },
+      inFlightAmenities: ['Complimentary Meal & Refreshments', 'Checked Baggage Included', 'Direct Booking Link'],
+      partnerName: 'Aviasales / Travelpayouts Partner',
+      partnerDeepLink: cOffer.bookingUrl,
+      bookingUrl: cOffer.bookingUrl,
+      isRecommended: idx === 0,
+      isBestValue: idx === 0,
+      isIndicative: cOffer.isIndicative || false,
+      isStale: isOfferStale(cOffer),
+      fetchedAt: cOffer.fetchedAt,
+      expiresAt: cOffer.expiresAt,
+      source: cOffer.source || 'travelpayouts',
+      taxesIncluded: cOffer.taxesIncluded ?? true,
+    };
+  });
 }
 
 /**
@@ -812,1076 +1045,3 @@ export function generateFlexibleDateFares(search: NormalizedFlightSearch, baseFa
 
   return results;
 }
-
-/**
- * Generates a list of 4-6 authentic, realistic FlightOffer items matching the searched route.
- */
-export function generateMatchingFlightOffers(search: NormalizedFlightSearch): FlightOffer[] {
-  const originCode = search.origin.code.toUpperCase();
-  const destCode = search.destination.code.toUpperCase();
-  const isDomesticBD =
-    (search.origin.isBangladesh || ['DAC', 'CGP', 'ZYL', 'CXB', 'JSR', 'RJH', 'SPD', 'BZL'].includes(originCode)) &&
-    (search.destination.isBangladesh || ['DAC', 'CGP', 'ZYL', 'CXB', 'JSR', 'RJH', 'SPD', 'BZL'].includes(destCode));
-
-  const totalPax = search.adults + search.children * 0.75 + search.infants * 0.1;
-  const cabinMultiplier =
-    search.cabinClass === 'Business' ? 2.5 : search.cabinClass === 'First' ? 4.0 : search.cabinClass === 'Premium Economy' ? 1.4 : 1.0;
-  const tripMultiplier = search.tripType === 'round' ? 1.92 : 1.0;
-
-  const sharedDeepLink = (airline?: string) =>
-    buildAviasalesSearchUrl({
-      origin: originCode,
-      destination: destCode,
-      departDate: search.departureDate,
-      returnDate: search.tripType === 'round' ? search.returnDate : undefined,
-      adults: search.adults,
-      children: search.children,
-      infants: search.infants,
-      cabin: search.cabinClass,
-      tripType: search.tripType,
-      source: airline ? `airline_${airline.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : 'flight_offers',
-    });
-
-  // 1. Domestic Bangladesh Routes (Dhaka, Chittagong, Cox's Bazar, Sylhet, Jashore, Saidpur, Rajshahi, Barishal)
-  if (isDomesticBD) {
-    let baseDomestic = 3850;
-    let flightDuration = '55m';
-    let returnDuration = '55m';
-    if (destCode === 'JSR' || originCode === 'JSR') {
-      baseDomestic = 3600;
-      flightDuration = '40m';
-      returnDuration = '40m';
-    } else if (destCode === 'CXB' || originCode === 'CXB') {
-      baseDomestic = 5200;
-      flightDuration = '1h 05m';
-      returnDuration = '1h 05m';
-    } else if (destCode === 'CGP' || originCode === 'CGP') {
-      baseDomestic = 3850; // Exact live Aviasales starting price for DAC-CGP
-      flightDuration = '55m';
-      returnDuration = '55m';
-    } else if (destCode === 'ZYL' || originCode === 'ZYL') {
-      baseDomestic = 3900;
-      flightDuration = '45m';
-      returnDuration = '45m';
-    } else if (destCode === 'SPD' || originCode === 'SPD') {
-      baseDomestic = 4400;
-      flightDuration = '55m';
-      returnDuration = '55m';
-    }
-
-    const calc = (fare: number) => Math.round(fare * totalPax * cabinMultiplier * tripMultiplier);
-
-    const offers: FlightOffer[] = [
-      // 1. US-Bangla Airlines BS 101 (Early Morning)
-      {
-        id: `offer-bs-101-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BS',
-        airlineName: 'US-Bangla Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'BS 102' : 'BS 101',
-        aircraft: 'ATR 72-600',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '08:25' : '07:00',
-        arrivalTime: originCode === 'CGP' ? '09:20' : '07:55',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Complimentary Snack Box & Juice', 'Checked Baggage 20kg', 'Leather Seating', 'On-Time Guaranteed'],
-        partnerName: 'Aviasales / US-Bangla Partner',
-        partnerDeepLink: sharedDeepLink('USBangla'),
-        isBestValue: true,
-        isRecommended: true,
-        seatsRemaining: 7,
-        returnSegment: search.tripType === 'round' ? {
-          flightNumber: originCode === 'CGP' ? 'BS 101' : 'BS 102',
-          departureTime: originCode === 'CGP' ? '07:00' : '08:25',
-          arrivalTime: originCode === 'CGP' ? '07:55' : '09:20',
-          duration: returnDuration,
-          stops: 0,
-          departureDate: search.returnDate || search.departureDate,
-        } : undefined,
-      },
-      // 2. NOVOAIR VQ 901 (Morning Rush)
-      {
-        id: `offer-vq-901-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'VQ',
-        airlineName: 'NOVOAIR',
-        airlineLogo: 'https://images.unsplash.com/photo-1520437358207-323b43b50729?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'VQ 902' : 'VQ 901',
-        aircraft: 'ATR 72-500',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '08:40' : '07:15',
-        arrivalTime: originCode === 'CGP' ? '09:35' : '08:10',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 100),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Morning Refreshment Box', 'Checked Baggage 20kg', 'SMILES Loyalty Points', 'Leather Seating'],
-        partnerName: 'Aviasales Partner',
-        partnerDeepLink: sharedDeepLink('Novoair'),
-        seatsRemaining: 5,
-        returnSegment: search.tripType === 'round' ? {
-          flightNumber: originCode === 'CGP' ? 'VQ 901' : 'VQ 902',
-          departureTime: originCode === 'CGP' ? '07:15' : '08:40',
-          arrivalTime: originCode === 'CGP' ? '08:10' : '09:35',
-          duration: returnDuration,
-          stops: 0,
-          departureDate: search.returnDate || search.departureDate,
-        } : undefined,
-      },
-      // 3. Air Astra 2A 441 (Morning Saver)
-      {
-        id: `offer-2a-441-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: '2A',
-        airlineName: 'Air Astra',
-        airlineLogo: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? '2A 442' : '2A 441',
-        aircraft: 'ATR 72-600',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '09:10' : '07:45',
-        arrivalTime: originCode === 'CGP' ? '10:05' : '08:40',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Morning Snack & Mango Juice', 'Checked Baggage 20kg', 'Modern ATR Fleet', 'Punctual Departure'],
-        partnerName: 'Aviasales / Air Astra Partner',
-        partnerDeepLink: sharedDeepLink('AirAstra'),
-        isFastest: true,
-        seatsRemaining: 6,
-        returnSegment: search.tripType === 'round' ? {
-          flightNumber: originCode === 'CGP' ? '2A 441' : '2A 442',
-          departureTime: originCode === 'CGP' ? '07:45' : '09:10',
-          arrivalTime: originCode === 'CGP' ? '08:40' : '10:05',
-          duration: returnDuration,
-          stops: 0,
-          departureDate: search.returnDate || search.departureDate,
-        } : undefined,
-      },
-      // 4. Biman Bangladesh BG 611 (National Carrier)
-      {
-        id: `offer-bg-611-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BG',
-        airlineName: 'Biman Bangladesh Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'BG 612' : 'BG 611',
-        aircraft: 'De Havilland Dash 8-400',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '09:15' : '07:45',
-        arrivalTime: originCode === 'CGP' ? '10:15' : '08:45',
-        duration: '1h 00m',
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 250),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: {
-          cabin: '7 kg',
-          checked: search.cabinClass === 'Business' ? '30 kg' : '20 kg',
-        },
-        inFlightAmenities: ['Water & Cookies', 'Checked Baggage 20kg', 'Spacious Cabin', 'National Carrier Trust'],
-        partnerName: 'Aviasales / Biman Official',
-        partnerDeepLink: sharedDeepLink('Biman'),
-        seatsRemaining: 8,
-        returnSegment: search.tripType === 'round' ? {
-          flightNumber: originCode === 'CGP' ? 'BG 611' : 'BG 612',
-          departureTime: originCode === 'CGP' ? '07:45' : '09:15',
-          arrivalTime: originCode === 'CGP' ? '08:45' : '10:15',
-          duration: '1h 00m',
-          stops: 0,
-          departureDate: search.returnDate || search.departureDate,
-        } : undefined,
-      },
-      // 5. US-Bangla Airlines BS 103 (Mid-Morning)
-      {
-        id: `offer-bs-103-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BS',
-        airlineName: 'US-Bangla Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'BS 104' : 'BS 103',
-        aircraft: 'ATR 72-600',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '10:55' : '09:30',
-        arrivalTime: originCode === 'CGP' ? '11:50' : '10:25',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 300),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Snack Box & Tea', 'Checked Baggage 20kg', 'Frequent Flyer Miles'],
-        partnerName: 'Aviasales / US-Bangla Partner',
-        partnerDeepLink: sharedDeepLink('USBangla'),
-        seatsRemaining: 4,
-      },
-      // 6. Air Astra 2A 443 (Late Morning Connector)
-      {
-        id: `offer-2a-443-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: '2A',
-        airlineName: 'Air Astra',
-        airlineLogo: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? '2A 444' : '2A 443',
-        aircraft: 'ATR 72-600',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '11:55' : '10:30',
-        arrivalTime: originCode === 'CGP' ? '12:50' : '11:25',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 100),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Fresh Beverage', 'Checked Baggage 20kg', 'Quiet Turboprop Engine'],
-        partnerName: 'Aviasales / Air Astra Partner',
-        partnerDeepLink: sharedDeepLink('AirAstra'),
-        seatsRemaining: 6,
-      },
-      // 7. NOVOAIR VQ 905 (Noon Express)
-      {
-        id: `offer-vq-905-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'VQ',
-        airlineName: 'NOVOAIR',
-        airlineLogo: 'https://images.unsplash.com/photo-1520437358207-323b43b50729?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'VQ 906' : 'VQ 905',
-        aircraft: 'ATR 72-500',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '13:25' : '12:00',
-        arrivalTime: originCode === 'CGP' ? '14:20' : '12:55',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 150),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Noon Snack', 'Checked Baggage 20kg', 'Smiles Member Discount'],
-        partnerName: 'Aviasales Partner',
-        partnerDeepLink: sharedDeepLink('Novoair'),
-        seatsRemaining: 5,
-      },
-      // 8. US-Bangla Airlines BS 105 (Afternoon Jet)
-      {
-        id: `offer-bs-105-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BS',
-        airlineName: 'US-Bangla Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'BS 106' : 'BS 105',
-        aircraft: 'Boeing 737-800 Jet',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '13:40' : '12:15',
-        arrivalTime: originCode === 'CGP' ? '14:35' : '13:10',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 400),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Complimentary Snack Box', 'Checked Baggage 20kg', 'Jet Speed & Spacious Overhead Bins'],
-        partnerName: 'Aviasales / US-Bangla Partner',
-        partnerDeepLink: sharedDeepLink('USBangla'),
-        seatsRemaining: 4,
-      },
-      // 9. Biman Bangladesh BG 615 (Afternoon Flight)
-      {
-        id: `offer-bg-615-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BG',
-        airlineName: 'Biman Bangladesh Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'BG 616' : 'BG 615',
-        aircraft: 'Boeing 737-800 Jet',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '15:25' : '13:55',
-        arrivalTime: originCode === 'CGP' ? '16:25' : '14:55',
-        duration: '1h 00m',
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 250),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Snack & Beverage', 'Jet Cabin Comfort', 'Checked Baggage 20kg'],
-        partnerName: 'Aviasales / Biman Official',
-        partnerDeepLink: sharedDeepLink('Biman'),
-        seatsRemaining: 9,
-      },
-      // 10. Air Astra 2A 445 (Afternoon Sunset)
-      {
-        id: `offer-2a-445-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: '2A',
-        airlineName: 'Air Astra',
-        airlineLogo: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? '2A 446' : '2A 445',
-        aircraft: 'ATR 72-600',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '17:55' : '16:30',
-        arrivalTime: originCode === 'CGP' ? '18:50' : '17:25',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Evening Snack', 'Checked Baggage 20kg', 'Smooth Cruising'],
-        partnerName: 'Aviasales / Air Astra Partner',
-        partnerDeepLink: sharedDeepLink('AirAstra'),
-        seatsRemaining: 5,
-      },
-      // 11. US-Bangla Airlines BS 109 (Evening Commuter)
-      {
-        id: `offer-bs-109-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BS',
-        airlineName: 'US-Bangla Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'BS 110' : 'BS 109',
-        aircraft: 'ATR 72-600',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '18:55' : '17:30',
-        arrivalTime: originCode === 'CGP' ? '19:50' : '18:25',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 450),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Evening Snack Box', 'Checked Baggage 20kg', 'Leather Seating'],
-        partnerName: 'Aviasales / US-Bangla Partner',
-        partnerDeepLink: sharedDeepLink('USBangla'),
-        seatsRemaining: 3,
-      },
-      // 12. Biman Bangladesh BG 617 (Evening Flight)
-      {
-        id: `offer-bg-617-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BG',
-        airlineName: 'Biman Bangladesh Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'BG 618' : 'BG 617',
-        aircraft: 'De Havilland Dash 8-400',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '20:00' : '18:30',
-        arrivalTime: originCode === 'CGP' ? '21:00' : '19:30',
-        duration: '1h 00m',
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 250),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Dinner Refreshment', 'Checked Baggage 20kg', 'Quiet Cabin'],
-        partnerName: 'Aviasales / Biman Official',
-        partnerDeepLink: sharedDeepLink('Biman'),
-        seatsRemaining: 8,
-      },
-      // 13. NOVOAIR VQ 909 (Night Express)
-      {
-        id: `offer-vq-909-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'VQ',
-        airlineName: 'NOVOAIR',
-        airlineLogo: 'https://images.unsplash.com/photo-1520437358207-323b43b50729?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'VQ 910' : 'VQ 909',
-        aircraft: 'ATR 72-500',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '20:50' : '19:25',
-        arrivalTime: originCode === 'CGP' ? '21:45' : '20:20',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 100),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Night Refreshment', 'Checked Baggage 20kg', 'Smiles Club'],
-        partnerName: 'Aviasales Partner',
-        partnerDeepLink: sharedDeepLink('Novoair'),
-        seatsRemaining: 4,
-      },
-      // 14. US-Bangla Airlines BS 111 (Night Connector)
-      {
-        id: `offer-bs-111-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BS',
-        airlineName: 'US-Bangla Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? 'BS 112' : 'BS 111',
-        aircraft: 'ATR 72-600',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '21:10' : '19:45',
-        arrivalTime: originCode === 'CGP' ? '22:05' : '20:40',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 500),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Late Snack Box', 'Checked Baggage 20kg', 'Smooth Landing'],
-        partnerName: 'Aviasales / US-Bangla Partner',
-        partnerDeepLink: sharedDeepLink('USBangla'),
-        seatsRemaining: 3,
-      },
-      // 15. Air Astra 2A 447 (Late Night Last Flight)
-      {
-        id: `offer-2a-447-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: '2A',
-        airlineName: 'Air Astra',
-        airlineLogo: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=120&q=80',
-        flightNumber: originCode === 'CGP' ? '2A 448' : '2A 447',
-        aircraft: 'ATR 72-600',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: originCode === 'CGP' ? '21:30' : '20:05',
-        arrivalTime: originCode === 'CGP' ? '22:25' : '21:00',
-        duration: flightDuration,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Late Refreshment', 'Checked Baggage 20kg', 'Punctual Arrival'],
-        partnerName: 'Aviasales / Air Astra Partner',
-        partnerDeepLink: sharedDeepLink('AirAstra'),
-        seatsRemaining: 5,
-      },
-      // 16. Biman Bangladesh BG 147 (Late Night Widebody / Jet)
-      {
-        id: `offer-bg-147-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BG',
-        airlineName: 'Biman Bangladesh Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
-        flightNumber: 'BG 147',
-        aircraft: 'Boeing 777-300ER / 737-800',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '20:45',
-        arrivalTime: '21:45',
-        duration: '1h 00m',
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(baseDomestic + 350),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg' },
-        inFlightAmenities: ['Complimentary Meal Box', 'Jet Cabin Space', 'Checked Baggage 20kg'],
-        partnerName: 'Aviasales / Biman Official',
-        partnerDeepLink: sharedDeepLink('Biman'),
-        seatsRemaining: 12,
-      },
-    ];
-
-    return offers;
-  }
-
-  // 2. Southeast Asia & South Asia Routes (Bangkok, Singapore, Kuala Lumpur, Delhi, Kolkata, etc.)
-  const isSouthEastAsia = ['BKK', 'DMK', 'KUL', 'SIN', 'DPS', 'DEL', 'CCU', 'BOM', 'MAA', 'MLE', 'KTM'].includes(destCode);
-  if (isSouthEastAsia) {
-    let basePrice = 32000;
-    let flightHours = '2h 30m';
-    if (destCode === 'SIN' || destCode === 'KUL') {
-      basePrice = 38000;
-      flightHours = '3h 50m';
-    } else if (destCode === 'CCU') {
-      basePrice = 14000;
-      flightHours = '45m';
-    } else if (destCode === 'DEL') {
-      basePrice = 28000;
-      flightHours = '2h 45m';
-    } else if (destCode === 'MLE') {
-      basePrice = 52000;
-      flightHours = '4h 15m';
-    }
-
-    const calc = (base: number) => Math.round(base * totalPax * cabinMultiplier * tripMultiplier);
-
-    const isBKK = destCode === 'BKK' || destCode === 'DMK';
-    const isSIN = destCode === 'SIN';
-    const isKUL = destCode === 'KUL';
-
-    return [
-      {
-        id: `offer-tg-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: isSIN ? 'SQ' : isKUL ? 'MH' : 'TG',
-        airlineName: isSIN ? 'Singapore Airlines' : isKUL ? 'Malaysia Airlines' : 'Thai Airways',
-        airlineLogo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
-        flightNumber: isSIN ? 'SQ 447' : isKUL ? 'MH 197' : 'TG 322',
-        aircraft: isSIN ? 'Airbus A350-900' : 'Boeing 777-300ER / A330neo',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '13:40',
-        arrivalTime: '17:15',
-        duration: flightHours,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(basePrice * 1.15),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '30 kg' },
-        inFlightAmenities: ['Hot Gourmet Halal Meal', 'In-seat Screen & Movies', 'USB Power Outlet', 'Checked Baggage 30kg'],
-        partnerName: 'Aviasales Official Partner',
-        partnerDeepLink: sharedDeepLink('FlagCarrier'),
-        isRecommended: true,
-        seatsRemaining: 4,
-        returnSegment:
-          search.tripType === 'round'
-            ? {
-                flightNumber: isSIN ? 'SQ 446' : isKUL ? 'MH 196' : 'TG 321',
-                departureTime: '10:15',
-                arrivalTime: '12:35',
-                duration: flightHours,
-                stops: 0,
-                departureDate: search.returnDate || search.departureDate,
-              }
-            : undefined,
-      },
-      {
-        id: `offer-bg-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BG',
-        airlineName: 'Biman Bangladesh Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
-        flightNumber: 'BG 388',
-        aircraft: 'Boeing 787-8 Dreamliner',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '03:15',
-        arrivalTime: '06:45',
-        duration: flightHours,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(basePrice),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '30 kg' },
-        inFlightAmenities: ['Complimentary Meal & Drinks', 'Dreamliner Cabin Lighting', '30 kg Baggage Allowance'],
-        partnerName: 'Aviasales / Biman Official',
-        partnerDeepLink: sharedDeepLink('Biman'),
-        isBestValue: true,
-        seatsRemaining: 8,
-        returnSegment:
-          search.tripType === 'round'
-            ? {
-                flightNumber: 'BG 389',
-                departureTime: '08:15',
-                arrivalTime: '09:45',
-                duration: flightHours,
-                stops: 0,
-                departureDate: search.returnDate || search.departureDate,
-              }
-            : undefined,
-      },
-      {
-        id: `offer-bs-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BS',
-        airlineName: 'US-Bangla Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=120&q=80',
-        flightNumber: 'BS 217',
-        aircraft: 'Airbus A330-300 / Boeing 737-800',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '09:30',
-        arrivalTime: '13:00',
-        duration: flightHours,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(basePrice * 0.96),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '30 kg' },
-        inFlightAmenities: ['Hot Breakfast Meal', '25-30 kg Baggage Allowance', 'Widebody Seating'],
-        partnerName: 'Aviasales Partner',
-        partnerDeepLink: sharedDeepLink('USBangla'),
-        isFastest: true,
-        seatsRemaining: 6,
-      },
-      {
-        id: `offer-airasia-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'AK',
-        airlineName: isBKK ? 'Thai AirAsia' : 'AirAsia',
-        airlineLogo: 'https://images.unsplash.com/photo-1520437358207-323b43b50729?auto=format&fit=crop&w=120&q=80',
-        flightNumber: 'AK 72',
-        aircraft: 'Airbus A320neo',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '00:30',
-        arrivalTime: '04:15',
-        duration: flightHours,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(basePrice * 0.88),
-        currency: 'BDT',
-        refundable: false,
-        baggageAllowance: { cabin: '7 kg', checked: '20 kg (Option)' },
-        inFlightAmenities: ['Budget Friendly Fare', 'Buy on Board Snacks', 'USB Power Port'],
-        partnerName: 'Aviasales Partner',
-        partnerDeepLink: sharedDeepLink('AirAsia'),
-        seatsRemaining: 3,
-      },
-      {
-        id: `offer-sq-conn-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'SQ',
-        airlineName: 'Singapore Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=120&q=80',
-        flightNumber: 'SQ 449',
-        aircraft: 'Airbus A350-900',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '23:55',
-        arrivalTime: '08:45',
-        duration: '6h 50m',
-        stops: 1,
-        stopAirports: ['SIN'],
-        layoverDuration: '1h 45m in Singapore (SIN)',
-        cabinClass: search.cabinClass,
-        priceBDT: calc(basePrice * 1.35),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '35 kg' },
-        inFlightAmenities: ['KrisWorld 1,800+ Entertainment Channels', 'Fine Halal Dining', 'High-Speed Wi-Fi', 'Free Transit Lounge Access'],
-        partnerName: 'Aviasales Verified Partner',
-        partnerDeepLink: sharedDeepLink('SingaporeAirlines'),
-        seatsRemaining: 4,
-      },
-    ];
-  }
-
-  // 3. Middle East Routes (Dubai, Abu Dhabi, Doha, Jeddah, Medina, Riyadh, Muscat, etc.)
-  const isMiddleEast = ['DXB', 'AUH', 'DOH', 'JED', 'MED', 'RUH', 'MCT', 'KWI', 'BAH', 'SHJ', 'IST'].includes(destCode);
-  if (isMiddleEast) {
-    let basePrice = 52000;
-    let flightHours = '4h 50m';
-    if (destCode === 'JED' || destCode === 'MED') {
-      basePrice = 68000;
-      flightHours = '6h 30m';
-    } else if (destCode === 'IST') {
-      basePrice = 78000;
-      flightHours = '7h 50m';
-    } else if (destCode === 'DOH') {
-      basePrice = 54000;
-      flightHours = '5h 15m';
-    }
-
-    const calc = (base: number) => Math.round(base * totalPax * cabinMultiplier * tripMultiplier);
-
-    return [
-      {
-        id: `offer-ek-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'EK',
-        airlineName: 'Emirates',
-        airlineLogo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
-        flightNumber: 'EK 587',
-        aircraft: 'Boeing 777-300ER',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '19:30',
-        arrivalTime: '22:45',
-        duration: flightHours,
-        stops: destCode === 'DXB' ? 0 : 1,
-        stopAirports: destCode === 'DXB' ? [] : ['DXB'],
-        layoverDuration: destCode === 'DXB' ? undefined : '2h 10m in Dubai (DXB)',
-        cabinClass: search.cabinClass,
-        priceBDT: calc(basePrice * 1.18),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '30 kg (2 pcs)' },
-        inFlightAmenities: ['ice Award-Winning In-flight System', 'Multi-course Halal Meals', 'In-seat Power & Wi-Fi', 'Checked Baggage 30kg'],
-        partnerName: 'Aviasales Official Partner',
-        partnerDeepLink: sharedDeepLink('Emirates'),
-        isRecommended: true,
-        seatsRemaining: 4,
-        returnSegment:
-          search.tripType === 'round'
-            ? {
-                flightNumber: 'EK 586',
-                departureTime: '10:30',
-                arrivalTime: '17:20',
-                duration: flightHours,
-                stops: destCode === 'DXB' ? 0 : 1,
-                stopAirports: destCode === 'DXB' ? [] : ['DXB'],
-                departureDate: search.returnDate || search.departureDate,
-              }
-            : undefined,
-      },
-      {
-        id: `offer-qr-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'QR',
-        airlineName: 'Qatar Airways',
-        airlineLogo: 'https://images.unsplash.com/photo-1520437358207-323b43b50729?auto=format&fit=crop&w=120&q=80',
-        flightNumber: 'QR 643',
-        aircraft: 'Airbus A350-900 / Boeing 787',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '20:10',
-        arrivalTime: '23:15',
-        duration: destCode === 'DOH' ? '5h 15m' : '7h 45m',
-        stops: destCode === 'DOH' ? 0 : 1,
-        stopAirports: destCode === 'DOH' ? [] : ['DOH'],
-        layoverDuration: destCode === 'DOH' ? undefined : '1h 50m in Hamad Doha (DOH)',
-        cabinClass: search.cabinClass,
-        priceBDT: calc(basePrice * 1.12),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '35 kg' },
-        inFlightAmenities: ['Oryx One 4,000+ Channels', 'Skytrax 5-Star Service', 'World-class Dining', 'Baggage 35kg'],
-        partnerName: 'Aviasales Partner',
-        partnerDeepLink: sharedDeepLink('QatarAirways'),
-        isFastest: destCode === 'DOH',
-        seatsRemaining: 5,
-      },
-      {
-        id: `offer-bg-me-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'BG',
-        airlineName: 'Biman Bangladesh Airlines',
-        airlineLogo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
-        flightNumber: destCode === 'JED' ? 'BG 335' : 'BG 347',
-        aircraft: 'Boeing 777-300ER / 787-9',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '17:00',
-        arrivalTime: '21:30',
-        duration: flightHours,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(basePrice * 0.92),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '40 kg (2 pcs)' },
-        inFlightAmenities: ['Generous 40kg Baggage Allowance', 'Non-Stop Direct Flight', 'Authentic Bengali Halal Meal', 'Zamzam Allowed (Saudi)'],
-        partnerName: 'Aviasales / Biman Official',
-        partnerDeepLink: sharedDeepLink('Biman'),
-        isBestValue: true,
-        seatsRemaining: 9,
-      },
-      {
-        id: `offer-sv-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'SV',
-        airlineName: 'Saudia',
-        airlineLogo: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=120&q=80',
-        flightNumber: 'SV 805',
-        aircraft: 'Boeing 777-300ER',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '01:30',
-        arrivalTime: '05:45',
-        duration: flightHours,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(basePrice * 1.05),
-        currency: 'BDT',
-        refundable: true,
-        baggageAllowance: { cabin: '7 kg', checked: '2x 23kg (46 kg)' },
-        inFlightAmenities: ['2 Pieces Checked Baggage (46kg)', 'Islamic Prayer Area Onboard', 'Halal Dining', 'Direct Saudi Gateway'],
-        partnerName: 'Aviasales Partner',
-        partnerDeepLink: sharedDeepLink('Saudia'),
-        seatsRemaining: 7,
-      },
-      {
-        id: `offer-fz-${originCode}-${destCode}-${search.departureDate}`,
-        airlineCode: 'FZ',
-        airlineName: 'Flydubai / Air Arabia',
-        airlineLogo: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=120&q=80',
-        flightNumber: 'FZ 584',
-        aircraft: 'Boeing 737 MAX 8',
-        tripType: search.tripType === 'round' ? 'round' : 'oneway',
-        origin: search.origin,
-        destination: search.destination,
-        departureDate: search.departureDate,
-        returnDate: search.returnDate,
-        departureTime: '01:50',
-        arrivalTime: '05:30',
-        duration: flightHours,
-        stops: 0,
-        cabinClass: search.cabinClass,
-        priceBDT: calc(basePrice * 0.85),
-        currency: 'BDT',
-        refundable: false,
-        baggageAllowance: { cabin: '7 kg', checked: '30 kg' },
-        inFlightAmenities: ['Budget Value Fare', 'Modern Boeing MAX Fleet', 'USB Device Charging', '30 kg Baggage'],
-        partnerName: 'Aviasales Partner',
-        partnerDeepLink: sharedDeepLink('Flydubai'),
-        seatsRemaining: 3,
-      },
-    ];
-  }
-
-  // 4. Long-Haul Europe, North America, Australia, Africa
-  let basePriceLongHaul = 115000;
-  let estimatedDuration = '13h 45m';
-
-  if (['LHR', 'LGW', 'CDG', 'FRA', 'FCO', 'BCN', 'MAD'].includes(destCode)) {
-    basePriceLongHaul = 95000;
-    estimatedDuration = '12h 30m';
-  } else if (['JFK', 'YYZ', 'ORD', 'LAX', 'SFO'].includes(destCode)) {
-    basePriceLongHaul = 145000;
-    estimatedDuration = '18h 15m';
-  } else if (['SYD', 'MEL', 'BNE', 'PER'].includes(destCode)) {
-    basePriceLongHaul = 110000;
-    estimatedDuration = '14h 20m';
-  }
-
-  const calc = (base: number) => Math.round(base * totalPax * cabinMultiplier * tripMultiplier);
-
-  const hasBimanDirect = destCode === 'LHR' || destCode === 'FCO' || destCode === 'YYZ';
-
-  const longHaulList: FlightOffer[] = [
-    {
-      id: `offer-qr-long-${originCode}-${destCode}-${search.departureDate}`,
-      airlineCode: 'QR',
-      airlineName: 'Qatar Airways',
-      airlineLogo: 'https://images.unsplash.com/photo-1520437358207-323b43b50729?auto=format&fit=crop&w=120&q=80',
-      flightNumber: 'QR 641',
-      aircraft: 'Airbus A350-1000',
-      tripType: search.tripType === 'round' ? 'round' : 'oneway',
-      origin: search.origin,
-      destination: search.destination,
-      departureDate: search.departureDate,
-      returnDate: search.returnDate,
-      departureTime: '10:45',
-      arrivalTime: '20:15',
-      duration: estimatedDuration,
-      stops: 1,
-      stopAirports: ['DOH'],
-      layoverDuration: '1h 55m in Hamad Doha (DOH)',
-      cabinClass: search.cabinClass,
-      priceBDT: calc(basePriceLongHaul * 1.08),
-      currency: 'BDT',
-      refundable: true,
-      baggageAllowance: { cabin: '7 kg', checked: '2x 23kg (46 kg)' },
-      inFlightAmenities: ['Skytrax World Best Airline', 'Generous 46kg Baggage Allowance', '4,000+ Media Channels', 'Complimentary Transit Amenity Kit'],
-      partnerName: 'Aviasales Official Partner',
-      partnerDeepLink: sharedDeepLink('QatarAirways'),
-      isRecommended: true,
-      seatsRemaining: 4,
-      returnSegment:
-        search.tripType === 'round'
-          ? {
-              flightNumber: 'QR 640',
-              departureTime: '08:30',
-              arrivalTime: '02:15',
-              duration: estimatedDuration,
-              stops: 1,
-              stopAirports: ['DOH'],
-              departureDate: search.returnDate || search.departureDate,
-            }
-          : undefined,
-    },
-    {
-      id: `offer-ek-long-${originCode}-${destCode}-${search.departureDate}`,
-      airlineCode: 'EK',
-      airlineName: 'Emirates',
-      airlineLogo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
-      flightNumber: 'EK 583',
-      aircraft: 'Airbus A380-800 / Boeing 777',
-      tripType: search.tripType === 'round' ? 'round' : 'oneway',
-      origin: search.origin,
-      destination: search.destination,
-      departureDate: search.departureDate,
-      returnDate: search.returnDate,
-      departureTime: '09:55',
-      arrivalTime: '19:40',
-      duration: estimatedDuration,
-      stops: 1,
-      stopAirports: ['DXB'],
-      layoverDuration: '2h 15m in Dubai (DXB)',
-      cabinClass: search.cabinClass,
-      priceBDT: calc(basePriceLongHaul * 1.12),
-      currency: 'BDT',
-      refundable: true,
-      baggageAllowance: { cabin: '7 kg', checked: '2x 23kg (46 kg)' },
-      inFlightAmenities: ['Iconic A380 Experience', 'World-Class In-flight Entertainment', 'Multi-course Halal Menus', 'Checked Baggage 46kg'],
-      partnerName: 'Aviasales Partner',
-      partnerDeepLink: sharedDeepLink('Emirates'),
-      seatsRemaining: 3,
-    },
-    {
-      id: `offer-tk-long-${originCode}-${destCode}-${search.departureDate}`,
-      airlineCode: 'TK',
-      airlineName: 'Turkish Airlines',
-      airlineLogo: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=120&q=80',
-      flightNumber: 'TK 713',
-      aircraft: 'Airbus A350-900 / Boeing 787-9',
-      tripType: search.tripType === 'round' ? 'round' : 'oneway',
-      origin: search.origin,
-      destination: search.destination,
-      departureDate: search.departureDate,
-      returnDate: search.returnDate,
-      departureTime: '06:15',
-      arrivalTime: '17:30',
-      duration: estimatedDuration,
-      stops: 1,
-      stopAirports: ['IST'],
-      layoverDuration: '2h 30m in Istanbul (IST)',
-      cabinClass: search.cabinClass,
-      priceBDT: calc(basePriceLongHaul * 0.94),
-      currency: 'BDT',
-      refundable: true,
-      baggageAllowance: { cabin: '8 kg', checked: '30-46 kg' },
-      inFlightAmenities: ['Flying Chef Culinary Dining', 'Free Istanbul Tour (6h+ layovers)', 'In-flight Live TV & Wi-Fi'],
-      partnerName: 'Aviasales Partner',
-      partnerDeepLink: sharedDeepLink('TurkishAirlines'),
-      isBestValue: true,
-      seatsRemaining: 6,
-    },
-    {
-      id: `offer-gf-long-${originCode}-${destCode}-${search.departureDate}`,
-      airlineCode: 'GF',
-      airlineName: 'Gulf Air / Saudia',
-      airlineLogo: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=120&q=80',
-      flightNumber: 'GF 251',
-      aircraft: 'Boeing 787-9 Dreamliner',
-      tripType: search.tripType === 'round' ? 'round' : 'oneway',
-      origin: search.origin,
-      destination: search.destination,
-      departureDate: search.departureDate,
-      returnDate: search.returnDate,
-      departureTime: '05:40',
-      arrivalTime: '16:50',
-      duration: estimatedDuration,
-      stops: 1,
-      stopAirports: ['BAH'],
-      layoverDuration: '1h 45m in Bahrain (BAH)',
-      cabinClass: search.cabinClass,
-      priceBDT: calc(basePriceLongHaul * 0.88),
-      currency: 'BDT',
-      refundable: false,
-      baggageAllowance: { cabin: '7 kg', checked: '2x 23kg (46 kg)' },
-      inFlightAmenities: ['Economical Long-Haul Fare', 'Dreamliner Cabin Pressure', '2 Checked Bags Included'],
-      partnerName: 'Aviasales Partner',
-      partnerDeepLink: sharedDeepLink('GulfAir'),
-      seatsRemaining: 2,
-    },
-  ];
-
-  if (hasBimanDirect) {
-    longHaulList.unshift({
-      id: `offer-bg-direct-${originCode}-${destCode}-${search.departureDate}`,
-      airlineCode: 'BG',
-      airlineName: 'Biman Bangladesh Airlines',
-      airlineLogo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80',
-      flightNumber: 'BG 201',
-      aircraft: 'Boeing 787-9 Dreamliner',
-      tripType: search.tripType === 'round' ? 'round' : 'oneway',
-      origin: search.origin,
-      destination: search.destination,
-      departureDate: search.departureDate,
-      returnDate: search.returnDate,
-      departureTime: '10:00',
-      arrivalTime: '16:15',
-      duration: '11h 15m (Non-Stop)',
-      stops: 0,
-      cabinClass: search.cabinClass,
-      priceBDT: calc(basePriceLongHaul * 1.02),
-      currency: 'BDT',
-      refundable: true,
-      baggageAllowance: { cabin: '7 kg', checked: '2x 23kg (46 kg)' },
-      inFlightAmenities: ['Non-Stop Direct Flight', 'Boeing 787-9 Dreamliner', 'Bengali In-flight Hospitality', 'Checked Baggage 46kg'],
-      partnerName: 'Aviasales / Biman Official',
-      partnerDeepLink: sharedDeepLink('Biman'),
-      isFastest: true,
-      seatsRemaining: 7,
-    });
-  }
-
-  return longHaulList;
-}
-

@@ -1,12 +1,19 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth';
-import { initializeFirestore, getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, doc, getDoc, setLogLevel } from 'firebase/firestore';
 import { getAnalytics, isSupported, Analytics } from 'firebase/analytics';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
+
+// Suppress transient Firestore internal connection probe logs
+try {
+  setLogLevel('error');
+} catch {
+  // Ignore
+}
 
 // Configure safe local persistence
 try {
@@ -27,8 +34,15 @@ googleProvider.addScope('openid');
 
 export const oAuthClientId = firebaseConfig.oAuthClientId || '';
 
-// Initialize Firestore with standard database instance
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
+// Initialize Firestore with robust long-polling auto-detection for iframe & web compatibility
+export const db = initializeFirestore(
+  app,
+  {
+    experimentalAutoDetectLongPolling: true,
+    ignoreUndefinedProperties: true,
+  },
+  firebaseConfig.firestoreDatabaseId || '(default)'
+);
 
 export enum OperationType {
   CREATE = 'create',
@@ -75,28 +89,27 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path,
   };
 
-  // Only log if not an expected offline/unavailable state
+  // Only log actionable non-offline errors
   if (
     !errMsg.includes('offline') &&
     !errMsg.includes('unavailable') &&
     !errMsg.includes('could not be completed') &&
     !errMsg.includes('backend')
   ) {
-    console.warn('Firestore Operation Info:', JSON.stringify(errInfo));
+    console.warn('Firestore Operation Notice:', JSON.stringify(errInfo));
   }
   return errInfo;
 }
 
-// Validate Connection to Firestore safely without throwing unhandled exceptions
+// Validate Connection to Firestore safely with graceful offline tolerance
 async function testConnection() {
   if (!isFirebaseConfigured) return;
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    await getDoc(doc(db, 'test', 'connection'));
   } catch (error) {
-    // Gracefully handle offline or network unavailable status in sandboxed previews
     if (error instanceof Error) {
       if (error.message.includes('the client is offline') || error.message.includes('unavailable')) {
-        console.info('Firestore operating in offline cache mode.');
+        // Safe offline operation mode
       }
     }
   }

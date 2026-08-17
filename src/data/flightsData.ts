@@ -63,6 +63,8 @@ export interface FlightSegment {
 
 export interface FlightOffer {
   id: string;
+  offerId?: string;
+  provider?: 'aviasales' | 'travelpayouts' | string;
   airlineCode: string;
   airlineName: string;
   airlineLogo: string;
@@ -81,6 +83,9 @@ export interface FlightOffer {
   layoverDuration?: string;
   cabinClass: 'Economy' | 'Premium Economy' | 'Business' | 'First';
   priceBDT: number;
+  totalPrice?: number;
+  originalPrice?: number;
+  originalCurrency?: string;
   currency: string;
   refundable: boolean;
   baggageAllowance: {
@@ -90,6 +95,7 @@ export interface FlightOffer {
   inFlightAmenities: string[];
   partnerName: string;
   partnerDeepLink: string;
+  bookingUrl?: string;
   returnSegment?: {
     flightNumber: string;
     departureTime: string;
@@ -102,6 +108,13 @@ export interface FlightOffer {
   isRecommended?: boolean;
   isBestValue?: boolean;
   isFastest?: boolean;
+  isCheapest?: boolean;
+  isIndicative?: boolean;
+  isStale?: boolean;
+  fetchedAt?: string;
+  expiresAt?: string;
+  source?: string;
+  taxesIncluded?: boolean;
   seatsRemaining?: number;
 }
 
@@ -743,8 +756,9 @@ export function getAviasalesSearchKey(params: AviasalesSearchParams = {}): strin
  */
 export function buildAviasalesSearchUrl(params: AviasalesSearchParams = {}): string {
   const searchKey = getAviasalesSearchKey(params);
-  // Standard Aviasales direct search page with affiliate marker
-  return `https://www.aviasales.com/search/${searchKey}?marker=563001&params=DAC1`;
+  const originCode = (params.origin || 'DAC').toUpperCase();
+  // Standard Aviasales direct search page with affiliate marker and exact route params
+  return `https://www.aviasales.com/search/${searchKey}?marker=563001&params=${originCode}1`;
 }
 
 /**

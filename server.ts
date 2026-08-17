@@ -3329,37 +3329,71 @@ app.get("/api/social-proof/live", (req, res) => {
 // =========================================================================
 app.get("/api/flights/aviasales-prices", async (req, res) => {
   try {
-    const origin = (req.query.origin as string || "DAC").toUpperCase();
-    const destination = (req.query.destination as string || "CGP").toUpperCase();
-    const departDate = (req.query.departDate as string || "2026-08-31").trim();
+    const origin = (req.query.origin as string || "DAC").toUpperCase().trim();
+    const destination = (req.query.destination as string || "BKK").toUpperCase().trim();
+    const departDate = (req.query.departDate as string || "").trim();
     const returnDate = req.query.returnDate ? (req.query.returnDate as string).trim() : undefined;
     const adults = Math.max(1, parseInt(req.query.adults as string || "1", 10));
     const children = Math.max(0, parseInt(req.query.children as string || "0", 10));
     const infants = Math.max(0, parseInt(req.query.infants as string || "0", 10));
     const cabin = (req.query.cabin as string || "Economy").trim();
-    const currency = (req.query.currency as string || "BDT").toUpperCase();
+    const currency = (req.query.currency as string || "BDT").toUpperCase().trim();
+    const tripType = req.query.tripType === "round" || (returnDate && returnDate.length > 0) ? "round" : "oneway";
+    const directOnly = req.query.direct === "true";
 
-    // Format Aviasales key: e.g. DAC3108CGP1
-    let day = "31";
-    let month = "08";
-    if (departDate && departDate.includes("-")) {
-      const parts = departDate.split("-");
+    // Format Aviasales search key: e.g. DAC3108BKK0709100y
+    const formatDateToDDMM = (dStr?: string) => {
+      if (!dStr || !dStr.includes("-")) return "";
+      const parts = dStr.split("-");
       if (parts.length === 3) {
-        day = parts[2].padStart(2, "0");
-        month = parts[1].padStart(2, "0");
+        return `${parts[2].padStart(2, "0")}${parts[1].padStart(2, "0")}`;
       }
-    }
+      return "";
+    };
+
+    const depDDMM = formatDateToDDMM(departDate);
+    const retDDMM = tripType === "round" ? formatDateToDDMM(returnDate) : "";
+    const cabinCode =
+      cabin === "Business" ? "c" : cabin === "First" ? "f" : cabin === "Premium Economy" ? "w" : "y";
+
     const totalPassengers = adults + children + infants;
-    const searchKey = `${origin}${day}${month}${destination}${totalPassengers}`;
-    const aviasalesDirectUrl = `https://www.aviasales.com/search/${searchKey}?params=${origin}1&marker=563001`;
+    let paxSuffix = `${adults}`;
+    if (children > 0 || infants > 0 || cabinCode !== "y") {
+      paxSuffix = `${adults}${children}${infants}${cabinCode}`;
+    }
 
-    // Attempt to query Travelpayouts Data API if token configured or public endpoints
+    const searchKey = `${origin}${depDDMM}${destination}${retDDMM}${paxSuffix}`;
+    const aviasalesDirectUrl = `https://www.aviasales.com/search/${searchKey}?marker=563001&params=${origin}1`;
+
     const token = process.env.TRAVELPAYOUTS_TOKEN || process.env.AVIASALES_TOKEN || "";
+    let liveOffers: any[] = [];
     let liveApiResponse: any = null;
+    const nowIso = new Date().toISOString();
+    const expiresIso = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15-minute TTL
 
-    if (token) {
+    // Exchange rate baseline
+    const USD_TO_BDT_RATE = 121.50;
+    const EUR_TO_BDT_RATE = 131.20;
+
+    if (token && departDate) {
       try {
-        const queryUrl = `https://api.travelpayouts.com/aviasales/v3/prices_for_dates?origin=${origin}&destination=${destination}&departure_at=${departDate}&currency=${currency}&token=${token}&limit=10&one_way=${!returnDate}`;
+        const queryParams = new URLSearchParams({
+          origin,
+          destination,
+          departure_at: departDate,
+          currency: currency === "BDT" ? "usd" : currency.toLowerCase(),
+          token,
+          limit: "15",
+          one_way: tripType === "oneway" ? "true" : "false",
+        });
+        if (returnDate && tripType === "round") {
+          queryParams.set("return_at", returnDate);
+        }
+        if (directOnly) {
+          queryParams.set("direct", "true");
+        }
+
+        const queryUrl = `https://api.travelpayouts.com/aviasales/v3/prices_for_dates?${queryParams.toString()}`;
         const resp = await fetch(queryUrl, {
           headers: {
             "Accept": "application/json",
@@ -3368,97 +3402,57 @@ app.get("/api/flights/aviasales-prices", async (req, res) => {
         });
         if (resp.ok) {
           liveApiResponse = await resp.json();
+          if (Array.isArray(liveApiResponse?.data) && liveApiResponse.data.length > 0) {
+            liveOffers = liveApiResponse.data.map((item: any, idx: number) => {
+              const rawPrice = typeof item.price === "number" ? item.price : 0;
+              const itemCurrency = (item.currency || (currency === "BDT" ? "USD" : currency)).toUpperCase();
+              let bdtPrice = rawPrice;
+              if (itemCurrency === "USD") {
+                bdtPrice = Math.round(rawPrice * USD_TO_BDT_RATE);
+              } else if (itemCurrency === "EUR") {
+                bdtPrice = Math.round(rawPrice * EUR_TO_BDT_RATE);
+              }
+
+              const itemBookingLink = item.link
+                ? (item.link.startsWith("http") ? item.link : `https://www.aviasales.com${item.link}${item.link.includes("?") ? "&" : "?"}marker=563001`)
+                : aviasalesDirectUrl;
+
+              return {
+                offerId: `tp-${item.airline || 'offer'}-${item.flight_number || idx}-${item.departure_at || departDate}`,
+                provider: "travelpayouts",
+                origin,
+                destination,
+                departureDate: item.departure_at?.split("T")[0] || departDate,
+                returnDate: item.return_at?.split("T")[0] || returnDate,
+                airline: item.airline_title || item.airline || "Partner Airline",
+                airlineCode: item.airline || "",
+                flightNumber: item.flight_number ? `${item.airline || ''} ${item.flight_number}`.trim() : undefined,
+                departureTime: item.departure_at?.includes("T") ? item.departure_at.split("T")[1]?.substring(0, 5) : undefined,
+                arrivalTime: item.arrival_at?.includes("T") ? item.arrival_at.split("T")[1]?.substring(0, 5) : undefined,
+                duration: item.duration ? `${Math.floor(item.duration / 60)}h ${item.duration % 60}m` : undefined,
+                stops: typeof item.transfers === "number" ? item.transfers : (item.direct ? 0 : 1),
+                cabin,
+                passengers: totalPassengers,
+                currency: currency,
+                totalPrice: currency === "BDT" ? bdtPrice : rawPrice,
+                originalPrice: rawPrice,
+                originalCurrency: itemCurrency,
+                priceInBDT: bdtPrice,
+                taxesIncluded: true,
+                bookingUrl: itemBookingLink,
+                market: "BD",
+                fetchedAt: nowIso,
+                expiresAt: expiresIso,
+                source: "travelpayouts_v3_api",
+                isIndicative: false,
+              };
+            });
+          }
         }
       } catch (tpErr) {
         console.warn("Travelpayouts API fetch warning:", tpErr);
       }
     }
-
-    // Calibrated exact live fares matching Aviasales inventory
-    const isDomesticBD = (origin === "DAC" || origin === "CGP" || origin === "CXB" || origin === "ZYL" || origin === "JSR" || origin === "SPD") &&
-                         (destination === "DAC" || destination === "CGP" || destination === "CXB" || destination === "ZYL" || destination === "JSR" || destination === "SPD");
-
-    let liveStartingBDT = 3850;
-    let liveStartingUSD = 32;
-
-    if (isDomesticBD) {
-      if (destination === "CGP" || origin === "CGP") {
-        liveStartingBDT = 3850;
-        liveStartingUSD = 32;
-      } else if (destination === "CXB" || origin === "CXB") {
-        liveStartingBDT = 5200;
-        liveStartingUSD = 43;
-      } else if (destination === "JSR" || origin === "JSR") {
-        liveStartingBDT = 3600;
-        liveStartingUSD = 30;
-      } else if (destination === "ZYL" || origin === "ZYL") {
-        liveStartingBDT = 3900;
-        liveStartingUSD = 32.5;
-      } else if (destination === "SPD" || origin === "SPD") {
-        liveStartingBDT = 4400;
-        liveStartingUSD = 37;
-      }
-    } else {
-      if (destination === "BKK" || origin === "BKK") {
-        liveStartingBDT = 26500;
-        liveStartingUSD = 220;
-      } else if (destination === "SIN" || origin === "SIN") {
-        liveStartingBDT = 34500;
-        liveStartingUSD = 285;
-      } else if (destination === "DXB" || origin === "DXB") {
-        liveStartingBDT = 42000;
-        liveStartingUSD = 350;
-      } else if (destination === "KUL" || origin === "KUL") {
-        liveStartingBDT = 29500;
-        liveStartingUSD = 245;
-      } else {
-        liveStartingBDT = 38000;
-        liveStartingUSD = 315;
-      }
-    }
-
-    const airlinePrices = isDomesticBD ? [
-      {
-        airlineCode: "2A",
-        airlineName: "Air Astra",
-        flightNumber: "2A 441",
-        priceBDT: liveStartingBDT,
-        priceUSD: liveStartingUSD,
-        departureTime: "09:15",
-        arrivalTime: "10:00",
-        deepLink: `https://www.aviasales.com/search/${searchKey}?marker=563001&airline=2A`,
-      },
-      {
-        airlineCode: "VQ",
-        airlineName: "NOVOAIR",
-        flightNumber: "VQ 901",
-        priceBDT: liveStartingBDT + 100,
-        priceUSD: liveStartingUSD + 1,
-        departureTime: "08:30",
-        arrivalTime: "09:15",
-        deepLink: `https://www.aviasales.com/search/${searchKey}?marker=563001&airline=VQ`,
-      },
-      {
-        airlineCode: "BG",
-        airlineName: "Biman Bangladesh Airlines",
-        flightNumber: "BG 611",
-        priceBDT: liveStartingBDT + 350,
-        priceUSD: liveStartingUSD + 3,
-        departureTime: "08:00",
-        arrivalTime: "08:45",
-        deepLink: `https://www.aviasales.com/search/${searchKey}?marker=563001&airline=BG`,
-      },
-      {
-        airlineCode: "BS",
-        airlineName: "US-Bangla Airlines",
-        flightNumber: "BS 101",
-        priceBDT: liveStartingBDT + 350,
-        priceUSD: liveStartingUSD + 3,
-        departureTime: "07:30",
-        arrivalTime: "08:15",
-        deepLink: `https://www.aviasales.com/search/${searchKey}?marker=563001&airline=BS`,
-      },
-    ] : [];
 
     res.json({
       success: true,
@@ -3467,18 +3461,29 @@ app.get("/api/flights/aviasales-prices", async (req, res) => {
       destination,
       departDate,
       returnDate,
+      tripType,
+      adults,
+      children,
+      infants,
       passengers: totalPassengers,
+      cabin,
       currency,
-      liveStartingPrice: {
-        bdt: liveStartingBDT,
-        usd: liveStartingUSD,
-        eur: Math.round(liveStartingUSD * 0.92),
-      },
-      airlinePrices,
+      offers: liveOffers,
+      hasLiveApi: liveOffers.length > 0,
       directAviasalesUrl: aviasalesDirectUrl,
-      source: liveApiResponse ? "travelpayouts_live_api" : "aviasales_gds_calibrated",
-      timestamp: new Date().toISOString(),
-      rawApiResponse: liveApiResponse,
+      source: liveOffers.length > 0 ? "travelpayouts_live_api" : "aviasales_affiliate_direct",
+      fetchedAt: nowIso,
+      expiresAt: expiresIso,
+      exchangeRate: {
+        usdToBdt: USD_TO_BDT_RATE,
+        eurToBdt: EUR_TO_BDT_RATE,
+        timestamp: nowIso,
+        roundingRule: "Standard rounding to nearest integer",
+        disclaimer: "Estimated exchange rates for reference. Exact card charges are determined by booking provider.",
+      },
+      message: liveOffers.length > 0
+        ? undefined
+        : "Live fares are temporarily unavailable. Please search again or contact our Dhaka flight desk.",
     });
   } catch (err: any) {
     console.error("Aviasales Prices Endpoint Error:", err);

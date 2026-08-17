@@ -251,136 +251,248 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
     }
   };
 
-  const isDarkHero = variant === 'hero';
+  // Format date for Booking.com display (e.g., "Wed 9/2")
+  const formatBookingDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr + 'T00:00:00');
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      return `${dayName} ${month}/${day}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const adjustDateByDays = (dateStr: string, days: number): string => {
+    try {
+      const d = new Date(dateStr + 'T00:00:00');
+      d.setDate(d.getDate() + days);
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+      if (d < todayDate) return today;
+      return d.toISOString().split('T')[0];
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const handleStepDeparture = (days: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newDate = adjustDateByDays(departureDate, days);
+    handleDepartureDateChange(newDate);
+  };
+
+  const handleStepReturn = (days: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (tripType !== 'round') return;
+    const newDate = adjustDateByDays(returnDate, days);
+    if (newDate >= departureDate) {
+      handleReturnDateChange(newDate);
+    }
+  };
 
   return (
     <div
-      className={`w-full rounded-2xl sm:rounded-3xl transition-all ${
-        isDarkHero
-          ? 'bg-[#071A33]/90 backdrop-blur-xl border border-white/20 p-4 sm:p-6 shadow-2xl text-white'
-          : 'bg-white border border-slate-200/90 p-4 sm:p-6 shadow-lg text-slate-800'
-      } ${className}`}
+      className={`w-full bg-[#ffb700] rounded-2xl p-4 sm:p-6 shadow-md text-slate-900 ${className}`}
     >
-      <form onSubmit={handleSearchSubmit} className="space-y-4">
-        {/* Top Controls: Trip Type & Cabin Class & Quick Bangladesh Airports */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-1 border-b border-slate-200/40">
-          {/* Trip Type Tabs */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => {
-                setTripType('round');
-                trackFlightSearchEvent('flight_search_started', { tripType: 'round', source: sourceTag });
+      <form onSubmit={handleSearchSubmit} className="space-y-3">
+        {/* Top Dropdowns Row (Booking.com style: Round-trip ⌵, 1 adult ⌵, Economy ⌵) */}
+        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-900 pb-1">
+          {/* Trip Type Selector */}
+          <div className="relative">
+            <select
+              value={tripType}
+              onChange={(e) => {
+                const val = e.target.value as 'round' | 'oneway' | 'multi';
+                setTripType(val);
+                trackFlightSearchEvent('flight_search_started', { tripType: val, source: sourceTag });
               }}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                tripType === 'round'
-                  ? 'bg-blue-600 text-white shadow-xs font-bold'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-              }`}
+              className="bg-transparent hover:bg-black/5 font-bold text-slate-900 py-1.5 px-3 rounded-md border border-transparent hover:border-black/10 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer pr-7 appearance-none"
             >
-              Round-trip
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setTripType('oneway');
-                trackFlightSearchEvent('flight_search_started', { tripType: 'oneway', source: sourceTag });
-              }}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                tripType === 'oneway'
-                  ? 'bg-blue-600 text-white shadow-xs font-bold'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-              }`}
-            >
-              One-way
-            </button>
+              <option value="round">Round-trip</option>
+              <option value="oneway">One-way</option>
+              <option value="multi">Multi-city</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-2.5 pointer-events-none text-slate-800" />
           </div>
 
-          {/* Quick Bangladesh Departure Airports Pills */}
-          <div className="hidden lg:flex items-center gap-1 text-xs">
-            <span className={`text-[11px] font-medium mr-1 ${isDarkHero ? 'text-sky-200' : 'text-slate-500'}`}>
-              BD Hubs:
-            </span>
-            {BANGLADESH_AIRPORTS.slice(0, 6).map((ap) => (
-              <button
-                key={ap.code}
-                type="button"
-                onClick={() => {
-                  setOrigin(ap);
-                  trackFlightSearchEvent('origin_selected', { code: ap.code, source: sourceTag });
-                }}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold transition-colors cursor-pointer ${
-                  origin.code === ap.code
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : isDarkHero
-                    ? 'bg-white/10 hover:bg-white/20 text-slate-200'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                {ap.code}
-              </button>
-            ))}
+          {/* Passenger Selector Dropdown Button */}
+          <div className="relative" ref={travelersMenuRef}>
+            <button
+              type="button"
+              onClick={() => setOpenTravelersMenu(!openTravelersMenu)}
+              className="flex items-center gap-1.5 bg-transparent hover:bg-black/5 font-bold text-slate-900 py-1.5 px-3 rounded-md border border-transparent hover:border-black/10 transition-colors cursor-pointer"
+            >
+              <span>
+                {adults} {adults === 1 ? 'adult' : 'adults'}
+                {children > 0 ? `, ${children} child` : ''}
+                {infants > 0 ? `, ${infants} infant` : ''}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-800" />
+            </button>
+
+            {/* Travelers Popover */}
+            {openTravelersMenu && (
+              <div className="absolute top-full left-0 mt-1.5 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-4 text-slate-900 space-y-3 animate-fadeIn">
+                {/* Adults */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold">Adults</div>
+                    <div className="text-[10px] text-slate-500">Age 12+</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={adults <= 1}
+                      onClick={() => setAdults(Math.max(1, adults - 1))}
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-bold disabled:opacity-30 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="w-4 text-center text-xs font-bold">{adults}</span>
+                    <button
+                      type="button"
+                      disabled={adults >= 9}
+                      onClick={() => setAdults(adults + 1)}
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-bold cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Children */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold">Children</div>
+                    <div className="text-[10px] text-slate-500">Age 2-11</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={children <= 0}
+                      onClick={() => setChildren(Math.max(0, children - 1))}
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-bold disabled:opacity-30 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="w-4 text-center text-xs font-bold">{children}</span>
+                    <button
+                      type="button"
+                      disabled={children >= 8}
+                      onClick={() => setChildren(children + 1)}
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-bold cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Infants */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold">Infants</div>
+                    <div className="text-[10px] text-slate-500">Under 2 (on lap)</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={infants <= 0}
+                      onClick={() => setInfants(Math.max(0, infants - 1))}
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-bold disabled:opacity-30 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="w-4 text-center text-xs font-bold">{infants}</span>
+                    <button
+                      type="button"
+                      disabled={infants >= adults}
+                      onClick={() => setInfants(infants + 1)}
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-bold cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setOpenTravelersMenu(false)}
+                  className="w-full py-1.5 rounded-lg bg-[#006ce4] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Cabin Class Selection */}
-          <div className="flex items-center gap-1 text-xs">
-            {(['Economy', 'Premium Economy', 'Business', 'First'] as const).map((cls) => (
-              <button
-                key={cls}
-                type="button"
-                onClick={() => setCabinClass(cls)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                  cabinClass === cls
-                    ? isDarkHero
-                      ? 'bg-sky-500/30 text-sky-200 border border-sky-400/50 font-bold'
-                      : 'bg-blue-50 text-blue-700 border border-blue-200 font-bold'
-                    : isDarkHero
-                    ? 'text-slate-300 hover:text-white'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {cls}
-              </button>
-            ))}
+          {/* Cabin Class Selector */}
+          <div className="relative">
+            <select
+              value={cabinClass}
+              onChange={(e) => setCabinClass(e.target.value as any)}
+              className="bg-transparent hover:bg-black/5 font-bold text-slate-900 py-1.5 px-3 rounded-md border border-transparent hover:border-black/10 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer pr-7 appearance-none"
+            >
+              <option value="Economy">Economy</option>
+              <option value="Premium Economy">Premium Economy</option>
+              <option value="Business">Business</option>
+              <option value="First">First-class</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-2.5 pointer-events-none text-slate-800" />
+          </div>
+
+          {/* Quick direct route indicator */}
+          <div className="ml-auto hidden md:flex items-center gap-1 text-[11px] font-bold text-slate-800">
+            <span>Route: {origin.code} ➔ {destination.code}</span>
           </div>
         </div>
 
-        {/* Search Input Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-          {/* Origin Airport */}
-          <div className="md:col-span-3 relative" ref={originMenuRef}>
-            <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1 ${isDarkHero ? 'text-sky-200' : 'text-slate-500'}`}>
-              From (Origin)
-            </label>
+        {/* Booking.com Search Bar Row (Connected layout on yellow banner) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-1.5 items-center">
+          {/* Origin Field */}
+          <div className="lg:col-span-3 relative" ref={originMenuRef}>
             <div
               onClick={() => setOpenOriginMenu(!openOriginMenu)}
-              className={`w-full p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                isDarkHero
-                  ? 'bg-slate-900/80 border-slate-700 hover:border-blue-400 text-white'
-                  : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 hover:border-blue-500 text-slate-900'
-              }`}
+              className="w-full h-13 px-3 py-2 bg-white rounded-lg border border-slate-300 hover:border-blue-500 shadow-xs flex items-center justify-between cursor-pointer transition-all"
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
-                <div className="truncate">
-                  <div className="font-extrabold text-sm flex items-center gap-1.5 truncate">
-                    <span>{origin.city}</span>
-                    <span className="font-mono text-xs px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold">
-                      {origin.code}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                    {origin.name}
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-bold text-slate-900 truncate">
+                  {origin.city} ({origin.code})
+                </span>
               </div>
-              <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOriginQuery('');
+                    setOpenOriginMenu(true);
+                  }}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer"
+                  title="Clear"
+                >
+                  ✕
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenOriginMenu(true);
+                  }}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer text-xs font-bold"
+                  title="Add departure airport"
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             {/* Origin Dropdown Menu */}
             {openOriginMenu && (
-              <div className="absolute top-full left-0 mt-1.5 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 p-2 text-slate-900 dark:text-slate-100 animate-fadeIn">
-                <div className="p-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="absolute top-full left-0 mt-1.5 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-2 text-slate-900 animate-fadeIn">
+                <div className="p-2 border-b border-slate-100">
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
                     <input
@@ -389,11 +501,11 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
                       value={originQuery}
                       onChange={(e) => setOriginQuery(e.target.value)}
                       autoFocus
-                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-lg border-none focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-100 rounded-lg border-none focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                 </div>
-                <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
                   <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     Bangladesh Departure Hubs
                   </div>
@@ -406,12 +518,12 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
                         setOpenOriginMenu(false);
                         trackFlightSearchEvent('origin_selected', { code: ap.code, source: sourceTag });
                       }}
-                      className="w-full p-2 text-left rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-center justify-between group transition-colors"
+                      className="w-full p-2 text-left rounded-lg hover:bg-blue-50 flex items-center justify-between group transition-colors cursor-pointer"
                     >
                       <div>
-                        <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                           <span>{ap.city}</span>
-                          <span className="font-mono text-[10px] font-bold px-1 bg-slate-200 dark:bg-slate-700 rounded">
+                          <span className="font-mono text-[10px] font-bold px-1 bg-slate-200 rounded">
                             {ap.code}
                           </span>
                         </div>
@@ -435,12 +547,12 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
                             setOpenOriginMenu(false);
                             trackFlightSearchEvent('origin_selected', { code: ap.code, source: sourceTag });
                           }}
-                          className="w-full p-2 text-left rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-center justify-between group transition-colors"
+                          className="w-full p-2 text-left rounded-lg hover:bg-blue-50 flex items-center justify-between group transition-colors cursor-pointer"
                         >
                           <div>
-                            <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                            <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                               <span>{ap.city}</span>
-                              <span className="font-mono text-[10px] font-bold px-1 bg-slate-200 dark:bg-slate-700 rounded">
+                              <span className="font-mono text-[10px] font-bold px-1 bg-slate-200 rounded">
                                 {ap.code}
                               </span>
                             </div>
@@ -457,55 +569,59 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
           </div>
 
           {/* Swap Button */}
-          <div className="hidden md:flex md:col-span-1 justify-center pt-5">
+          <div className="lg:col-span-1 flex justify-center py-1 lg:py-0">
             <button
               type="button"
               onClick={handleSwapAirports}
               aria-label="Swap origin and destination"
-              className={`p-2 rounded-full border transition-transform hover:rotate-180 duration-300 cursor-pointer ${
-                isDarkHero
-                  ? 'bg-slate-800 border-slate-600 text-sky-300 hover:bg-slate-700'
-                  : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100 shadow-xs'
-              }`}
+              className="w-9 h-9 rounded-full bg-white border border-slate-300 hover:border-slate-400 text-slate-700 shadow-xs flex items-center justify-center hover:scale-105 transition-all cursor-pointer"
             >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
+              <ArrowRightLeft className="w-4 h-4 text-slate-800" />
             </button>
           </div>
 
-          {/* Destination Airport */}
-          <div className="md:col-span-3 relative" ref={destMenuRef}>
-            <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1 ${isDarkHero ? 'text-sky-200' : 'text-slate-500'}`}>
-              To (Destination)
-            </label>
+          {/* Destination Field */}
+          <div className="lg:col-span-3 relative" ref={destMenuRef}>
             <div
               onClick={() => setOpenDestMenu(!openDestMenu)}
-              className={`w-full p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                isDarkHero
-                  ? 'bg-slate-900/80 border-slate-700 hover:border-blue-400 text-white'
-                  : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 hover:border-blue-500 text-slate-900'
-              }`}
+              className="w-full h-13 px-3 py-2 bg-white rounded-lg border border-slate-300 hover:border-blue-500 shadow-xs flex items-center justify-between cursor-pointer transition-all"
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Plane className="w-4 h-4 text-emerald-500 shrink-0" />
-                <div className="truncate">
-                  <div className="font-extrabold text-sm flex items-center gap-1.5 truncate">
-                    <span>{destination.city}</span>
-                    <span className="font-mono text-xs px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-bold">
-                      {destination.code}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                    {destination.name}
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-bold text-slate-900 truncate">
+                  {destination.city} ({destination.code})
+                </span>
               </div>
-              <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDestQuery('');
+                    setOpenDestMenu(true);
+                  }}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer"
+                  title="Clear"
+                >
+                  ✕
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenDestMenu(true);
+                  }}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer text-xs font-bold"
+                  title="Add arrival airport"
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             {/* Destination Dropdown Menu */}
             {openDestMenu && (
-              <div className="absolute top-full right-0 md:left-0 mt-1.5 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 p-2 text-slate-900 dark:text-slate-100 animate-fadeIn">
-                <div className="p-2 border-b border-slate-100 dark:border-slate-800 space-y-2">
+              <div className="absolute top-full right-0 md:left-0 mt-1.5 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-2 text-slate-900 animate-fadeIn">
+                <div className="p-2 border-b border-slate-100 space-y-2">
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
                     <input
@@ -514,7 +630,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
                       value={destQuery}
                       onChange={(e) => setDestQuery(e.target.value)}
                       autoFocus
-                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-lg border-none focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-100 rounded-lg border-none focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
 
@@ -535,8 +651,8 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
                         onClick={() => setDestCategoryTab(tab.id)}
                         className={`px-2 py-0.5 rounded-md whitespace-nowrap transition-colors cursor-pointer ${
                           destCategoryTab === tab.id
-                            ? 'bg-emerald-600 text-white font-bold'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                            ? 'bg-[#006ce4] text-white font-bold'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
                         {tab.label}
@@ -545,7 +661,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
                   </div>
                 </div>
 
-                <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                <div className="max-h-64 overflow-y-auto divide-y divide-slate-100">
                   <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
                     <span>Matching Destinations ({filteredDestinations.length})</span>
                     <span className="text-[9px] text-slate-400">Click to select</span>
@@ -559,19 +675,19 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
                         setOpenDestMenu(false);
                         trackFlightSearchEvent('destination_selected', { code: ap.code, source: sourceTag });
                       }}
-                      className="w-full p-2 text-left rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 flex items-center justify-between group transition-colors cursor-pointer"
+                      className="w-full p-2 text-left rounded-lg hover:bg-blue-50 flex items-center justify-between group transition-colors cursor-pointer"
                     >
                       <div>
-                        <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                           <span>{ap.city}</span>
-                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 rounded">
+                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded">
                             {ap.code}
                           </span>
                           <span className="text-[10px] text-slate-500 font-medium">({ap.country})</span>
                         </div>
                         <div className="text-[10px] text-slate-500 truncate max-w-[220px]">{ap.name}</div>
                       </div>
-                      {destination.code === ap.code && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                      {destination.code === ap.code && <Check className="w-3.5 h-3.5 text-blue-600" />}
                     </button>
                   ))}
                 </div>
@@ -579,199 +695,110 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
             )}
           </div>
 
-          {/* Dates Selection (Departure & Return) */}
-          <div className="md:col-span-3 grid grid-cols-2 gap-2">
-            <div>
-              <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1 ${isDarkHero ? 'text-sky-200' : 'text-slate-500'}`}>
-                Departure
-              </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  min={today}
-                  value={departureDate}
-                  onChange={(e) => handleDepartureDateChange(e.target.value)}
-                  className={`w-full p-3 text-xs font-semibold rounded-xl border transition-all ${
-                    isDarkHero
-                      ? 'bg-slate-900/80 border-slate-700 text-white focus:border-blue-400'
-                      : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-500'
-                  }`}
-                />
+          {/* Departure Date Container (Booking.com style with step buttons: < Wed 9/2 >) */}
+          <div className="lg:col-span-2 relative">
+            <div className="w-full h-13 px-2 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-blue-500 shadow-xs flex items-center justify-between cursor-pointer">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Calendar className="w-4 h-4 text-slate-700 shrink-0" />
+                <label className="cursor-pointer">
+                  <span className="text-xs font-bold text-slate-900 block truncate">
+                    {formatBookingDate(departureDate)}
+                  </span>
+                  <input
+                    type="date"
+                    min={today}
+                    value={departureDate}
+                    onChange={(e) => handleDepartureDateChange(e.target.value)}
+                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                  />
+                </label>
               </div>
-            </div>
-
-            <div>
-              <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1 ${isDarkHero ? 'text-sky-200' : 'text-slate-500'}`}>
-                {tripType === 'round' ? 'Return' : 'One-Way'}
-              </label>
-              <input
-                type="date"
-                min={departureDate || today}
-                disabled={tripType === 'oneway'}
-                value={tripType === 'round' ? returnDate : ''}
-                onChange={(e) => handleReturnDateChange(e.target.value)}
-                placeholder={tripType === 'oneway' ? 'One-way trip' : ''}
-                className={`w-full p-3 text-xs font-semibold rounded-xl border transition-all ${
-                  tripType === 'oneway'
-                    ? 'opacity-40 cursor-not-allowed bg-slate-200 dark:bg-slate-800'
-                    : isDarkHero
-                    ? 'bg-slate-900/80 border-slate-700 text-white focus:border-blue-400'
-                    : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-500'
-                }`}
-              />
+              <div className="flex items-center z-10">
+                <button
+                  type="button"
+                  onClick={(e) => handleStepDeparture(-1, e)}
+                  className="p-1 hover:bg-slate-100 rounded text-slate-600 font-bold text-xs"
+                  title="Previous Day"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => handleStepDeparture(1, e)}
+                  className="p-1 hover:bg-slate-100 rounded text-slate-600 font-bold text-xs"
+                  title="Next Day"
+                >
+                  ›
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Passengers Popover */}
-          <div className="md:col-span-2 relative" ref={travelersMenuRef}>
-            <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1 ${isDarkHero ? 'text-sky-200' : 'text-slate-500'}`}>
-              Passengers
-            </label>
+          {/* Return Date Container (Booking.com style with step buttons: < Wed 9/2 >) */}
+          <div className="lg:col-span-2 relative">
             <div
-              onClick={() => setOpenTravelersMenu(!openTravelersMenu)}
-              className={`w-full p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                isDarkHero
-                  ? 'bg-slate-900/80 border-slate-700 hover:border-blue-400 text-white'
-                  : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 hover:border-blue-500 text-slate-900'
+              className={`w-full h-13 px-2 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-blue-500 shadow-xs flex items-center justify-between cursor-pointer ${
+                tripType === 'oneway' ? 'opacity-50 pointer-events-none bg-slate-100' : ''
               }`}
             >
-              <div className="flex items-center gap-2 truncate">
-                <Users className="w-4 h-4 text-purple-500 shrink-0" />
-                <span className="text-xs font-extrabold truncate">
-                  {totalPassengers} {totalPassengers === 1 ? 'Traveler' : 'Travelers'}
-                </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Calendar className="w-4 h-4 text-slate-700 shrink-0" />
+                <label className="cursor-pointer">
+                  <span className="text-xs font-bold text-slate-900 block truncate">
+                    {tripType === 'oneway' ? 'One-way' : formatBookingDate(returnDate)}
+                  </span>
+                  {tripType === 'round' && (
+                    <input
+                      type="date"
+                      min={departureDate || today}
+                      value={returnDate}
+                      onChange={(e) => handleReturnDateChange(e.target.value)}
+                      className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                    />
+                  )}
+                </label>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              {tripType === 'round' && (
+                <div className="flex items-center z-10">
+                  <button
+                    type="button"
+                    onClick={(e) => handleStepReturn(-1, e)}
+                    className="p-1 hover:bg-slate-100 rounded text-slate-600 font-bold text-xs"
+                    title="Previous Day"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleStepReturn(1, e)}
+                    className="p-1 hover:bg-slate-100 rounded text-slate-600 font-bold text-xs"
+                    title="Next Day"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
             </div>
+          </div>
 
-            {/* Travelers Popover */}
-            {openTravelersMenu && (
-              <div className="absolute top-full right-0 mt-1.5 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 p-4 text-slate-900 dark:text-slate-100 space-y-3 animate-fadeIn">
-                {/* Adults */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs font-bold">Adults</div>
-                    <div className="text-[10px] text-slate-500">Age 12+</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={adults <= 1}
-                      onClick={() => setAdults(Math.max(1, adults - 1))}
-                      className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-sm font-bold disabled:opacity-30 cursor-pointer"
-                    >
-                      -
-                    </button>
-                    <span className="w-4 text-center text-xs font-bold">{adults}</span>
-                    <button
-                      type="button"
-                      disabled={adults >= 9}
-                      onClick={() => setAdults(adults + 1)}
-                      className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-sm font-bold cursor-pointer"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                {/* Children */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs font-bold">Children</div>
-                    <div className="text-[10px] text-slate-500">Age 2-11</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={children <= 0}
-                      onClick={() => setChildren(Math.max(0, children - 1))}
-                      className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-sm font-bold disabled:opacity-30 cursor-pointer"
-                    >
-                      -
-                    </button>
-                    <span className="w-4 text-center text-xs font-bold">{children}</span>
-                    <button
-                      type="button"
-                      disabled={children >= 8}
-                      onClick={() => setChildren(children + 1)}
-                      className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-sm font-bold cursor-pointer"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                {/* Infants */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs font-bold">Infants</div>
-                    <div className="text-[10px] text-slate-500">Under 2 (on lap)</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={infants <= 0}
-                      onClick={() => setInfants(Math.max(0, infants - 1))}
-                      className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-sm font-bold disabled:opacity-30 cursor-pointer"
-                    >
-                      -
-                    </button>
-                    <span className="w-4 text-center text-xs font-bold">{infants}</span>
-                    <button
-                      type="button"
-                      disabled={infants >= adults}
-                      onClick={() => setInfants(infants + 1)}
-                      className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-sm font-bold cursor-pointer"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setOpenTravelersMenu(false)}
-                  className="w-full py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer"
-                >
-                  Apply
-                </button>
-              </div>
-            )}
+          {/* Search Button (Booking.com style vibrant blue button) */}
+          <div className="lg:col-span-1">
+            <button
+              type="submit"
+              className="w-full h-13 px-4 rounded-lg bg-[#006ce4] hover:bg-[#0057b8] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <span>Search</span>
+            </button>
           </div>
         </div>
 
         {/* Validation error notice */}
         {validationError && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+          <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{validationError}</span>
           </div>
         )}
-
-        {/* Bottom Actions Row */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-          {/* Quick Route info */}
-          <div className="text-xs flex items-center gap-2">
-            <span className={isDarkHero ? 'text-sky-200' : 'text-slate-600'}>
-              Route: <strong className="text-blue-500">{origin.city} ({origin.code})</strong> →{' '}
-              <strong className="text-emerald-500">{destination.city} ({destination.code})</strong>
-            </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-mono text-slate-500">
-              {cabinClass}
-            </span>
-          </div>
-
-          {/* Primary Search Button */}
-          <div className="w-full sm:w-auto flex items-center gap-2">
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#0D6EFD] hover:bg-blue-600 text-white font-extrabold text-xs sm:text-sm transition-all duration-200 shadow-lg shadow-blue-600/30 hover:scale-[1.01] active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-            >
-              <Search className="w-4 h-4" />
-              <span>Search Flights</span>
-            </button>
-          </div>
-        </div>
       </form>
     </div>
   );
