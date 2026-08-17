@@ -23,23 +23,17 @@ import {
   trackFlightSearchEvent,
 } from '../data/flightsData';
 import { AZRAQ_AGENCY_CONFIG } from '../data/agencyConfig';
+import {
+  NormalizedFlightSearch,
+  validateFlightSearchParams,
+  normalizeFlightSearch,
+} from '../utils/flightSearchEngine';
 
-export interface FlightSearchParams {
-  tripType: 'round' | 'oneway' | 'multi';
-  origin: Airport;
-  destination: Airport;
-  departureDate: string;
-  returnDate: string;
-  adults: number;
-  children: number;
-  infants: number;
-  cabinClass: 'Economy' | 'Premium Economy' | 'Business' | 'First';
-  currency: string;
-}
+export type FlightSearchParams = NormalizedFlightSearch;
 
 interface FlightSearchFormProps {
-  initialParams?: Partial<FlightSearchParams>;
-  onSearch?: (params: FlightSearchParams) => void;
+  initialParams?: Partial<NormalizedFlightSearch>;
+  onSearch?: (params: NormalizedFlightSearch) => void;
   onDirectAviasalesSearch?: (url: string) => void;
   variant?: 'hero' | 'compact' | 'page';
   className?: string;
@@ -75,12 +69,37 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
     initialParams?.cabinClass || 'Economy'
   );
 
+  // Synchronize internal state whenever initialParams changes from parent / URL
+  useEffect(() => {
+    if (!initialParams) return;
+    if (initialParams.origin) setOrigin(initialParams.origin);
+    if (initialParams.destination) setDestination(initialParams.destination);
+    if (initialParams.departureDate) setDepartureDate(initialParams.departureDate);
+    if (initialParams.returnDate) setReturnDate(initialParams.returnDate);
+    if (initialParams.tripType) setTripType(initialParams.tripType);
+    if (typeof initialParams.adults === 'number') setAdults(initialParams.adults);
+    if (typeof initialParams.children === 'number') setChildren(initialParams.children);
+    if (typeof initialParams.infants === 'number') setInfants(initialParams.infants);
+    if (initialParams.cabinClass) setCabinClass(initialParams.cabinClass);
+  }, [
+    initialParams?.origin?.code,
+    initialParams?.destination?.code,
+    initialParams?.departureDate,
+    initialParams?.returnDate,
+    initialParams?.tripType,
+    initialParams?.adults,
+    initialParams?.children,
+    initialParams?.infants,
+    initialParams?.cabinClass,
+  ]);
+
   // UI popover states
   const [openOriginMenu, setOpenOriginMenu] = useState(false);
   const [openDestMenu, setOpenDestMenu] = useState(false);
   const [openTravelersMenu, setOpenTravelersMenu] = useState(false);
   const [originQuery, setOriginQuery] = useState('');
   const [destQuery, setDestQuery] = useState('');
+  const [destCategoryTab, setDestCategoryTab] = useState<'all' | 'domestic' | 'asia' | 'middle_east' | 'europe'>('all');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const originMenuRef = useRef<HTMLDivElement>(null);
@@ -115,15 +134,30 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
     );
   });
 
-  // Filtered destinations list
+  // Filtered destinations list with categories
   const filteredDestinations = POPULAR_AIRPORTS.filter((a) => {
     const q = destQuery.toLowerCase();
-    return (
+    const matchesQuery =
       a.city.toLowerCase().includes(q) ||
       a.code.toLowerCase().includes(q) ||
       a.country.toLowerCase().includes(q) ||
-      a.name.toLowerCase().includes(q)
-    );
+      a.name.toLowerCase().includes(q);
+
+    if (!matchesQuery) return false;
+
+    if (destCategoryTab === 'domestic') {
+      return a.isBangladesh || ['DAC', 'CGP', 'ZYL', 'CXB', 'JSR', 'RJH', 'SPD', 'BZL'].includes(a.code);
+    }
+    if (destCategoryTab === 'asia') {
+      return ['BKK', 'DMK', 'KUL', 'SIN', 'DPS', 'DEL', 'CCU', 'BOM', 'MAA', 'MLE', 'KTM', 'HND', 'NRT', 'ICN', 'PEK', 'PVG', 'CAN'].includes(a.code);
+    }
+    if (destCategoryTab === 'middle_east') {
+      return ['DXB', 'AUH', 'DOH', 'JED', 'MED', 'RUH', 'MCT', 'KWI', 'BAH', 'SHJ', 'IST'].includes(a.code);
+    }
+    if (destCategoryTab === 'europe') {
+      return ['LHR', 'LGW', 'CDG', 'FCO', 'FRA', 'BCN', 'MAD', 'JFK', 'YYZ', 'SYD', 'MEL', 'CAI'].includes(a.code);
+    }
+    return true;
   });
 
   // Airport swap
@@ -159,30 +193,28 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (origin.code === destination.code) {
-      setValidationError('Origin and destination airport cannot be the same.');
-      return;
-    }
-
-    if (tripType === 'round' && returnDate < departureDate) {
-      setValidationError('Return date cannot be earlier than departure date.');
-      return;
-    }
-
-    setValidationError(null);
-
-    const searchParams: FlightSearchParams = {
+    const candidateParams: NormalizedFlightSearch = {
       tripType,
       origin,
       destination,
       departureDate,
-      returnDate,
+      returnDate: tripType === 'round' ? returnDate : undefined,
       adults,
       children,
       infants,
       cabinClass,
       currency: 'BDT',
     };
+
+    const validation = validateFlightSearchParams(candidateParams);
+    if (!validation.isValid) {
+      setValidationError(validation.error || 'Please provide valid flight search details.');
+      return;
+    }
+
+    setValidationError(null);
+
+    const searchParams = normalizeFlightSearch(candidateParams);
 
     trackFlightSearchEvent('search_completed', {
       origin: origin.code,
@@ -472,23 +504,51 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
 
             {/* Destination Dropdown Menu */}
             {openDestMenu && (
-              <div className="absolute top-full right-0 md:left-0 mt-1.5 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 p-2 text-slate-900 dark:text-slate-100 animate-fadeIn">
-                <div className="p-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="absolute top-full right-0 md:left-0 mt-1.5 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 p-2 text-slate-900 dark:text-slate-100 animate-fadeIn">
+                <div className="p-2 border-b border-slate-100 dark:border-slate-800 space-y-2">
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="Search destination airport..."
+                      placeholder="Search destination city or airport code..."
                       value={destQuery}
                       onChange={(e) => setDestQuery(e.target.value)}
                       autoFocus
                       className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-lg border-none focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
+
+                  {/* Regional Tabs */}
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[11px]">
+                    {(
+                      [
+                        { id: 'all', label: 'All' },
+                        { id: 'asia', label: 'Asia' },
+                        { id: 'middle_east', label: 'Middle East' },
+                        { id: 'europe', label: 'Europe/US' },
+                        { id: 'domestic', label: 'BD Domestic' },
+                      ] as const
+                    ).map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setDestCategoryTab(tab.id)}
+                        className={`px-2 py-0.5 rounded-md whitespace-nowrap transition-colors cursor-pointer ${
+                          destCategoryTab === tab.id
+                            ? 'bg-emerald-600 text-white font-bold'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                  <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Popular Worldwide Flights
+
+                <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                  <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Matching Destinations ({filteredDestinations.length})</span>
+                    <span className="text-[9px] text-slate-400">Click to select</span>
                   </div>
                   {filteredDestinations.map((ap) => (
                     <button
@@ -499,17 +559,17 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
                         setOpenDestMenu(false);
                         trackFlightSearchEvent('destination_selected', { code: ap.code, source: sourceTag });
                       }}
-                      className="w-full p-2 text-left rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 flex items-center justify-between group transition-colors"
+                      className="w-full p-2 text-left rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 flex items-center justify-between group transition-colors cursor-pointer"
                     >
                       <div>
                         <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                           <span>{ap.city}</span>
-                          <span className="font-mono text-[10px] font-bold px-1 bg-slate-200 dark:bg-slate-700 rounded">
+                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 rounded">
                             {ap.code}
                           </span>
-                          <span className="text-[10px] text-slate-500">({ap.country})</span>
+                          <span className="text-[10px] text-slate-500 font-medium">({ap.country})</span>
                         </div>
-                        <div className="text-[10px] text-slate-500 truncate max-w-[200px]">{ap.name}</div>
+                        <div className="text-[10px] text-slate-500 truncate max-w-[220px]">{ap.name}</div>
                       </div>
                       {destination.code === ap.code && <Check className="w-3.5 h-3.5 text-emerald-600" />}
                     </button>

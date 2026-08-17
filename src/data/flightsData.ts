@@ -694,19 +694,24 @@ export interface AviasalesSearchParams {
 }
 
 /**
- * Builds official Aviasales affiliate search deep links.
- * Preserves the official Aviasales / Travelpayouts affiliate parameters (params=DAC1 / marker=563001)
+ * Computes the exact Aviasales live search query key (e.g. "DAC3108CGP1" for DAC to CGP on 31-Aug for 1 adult).
  */
-export function buildAviasalesSearchUrl(params: AviasalesSearchParams = {}): string {
+export function getAviasalesSearchKey(params: AviasalesSearchParams = {}): string {
   const originCode = (params.origin || 'DAC').toUpperCase();
-  const destCode = (params.destination || 'BKK').toUpperCase();
+  const destCode = (params.destination || 'CGP').toUpperCase();
   const adults = params.adults && params.adults > 0 ? params.adults : 1;
   const children = params.children || 0;
   const infants = params.infants || 0;
 
-  // Format date helper: YYYY-MM-DD -> DDMM
+  // Format date helper: YYYY-MM-DD -> DDMM (e.g. 2026-08-31 -> 3108)
   const formatDateForAviasales = (dateStr?: string): string => {
-    if (!dateStr) return '';
+    if (!dateStr) {
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      return `${day}${month}`;
+    }
     try {
       const parts = dateStr.split('-');
       if (parts.length === 3) {
@@ -715,26 +720,31 @@ export function buildAviasalesSearchUrl(params: AviasalesSearchParams = {}): str
     } catch {
       // ignore
     }
-    return '';
+    return '3108';
   };
 
-  const cabinLetter =
-    params.cabin === 'Business' ? 'c' : params.cabin === 'First' ? 'f' : params.cabin === 'Premium Economy' ? 'w' : 'y';
+  const cabinSuffix =
+    params.cabin === 'Business' ? 'c' : params.cabin === 'First' ? 'f' : params.cabin === 'Premium Economy' ? 'w' : '';
 
   const depFormatted = formatDateForAviasales(params.departDate);
   const retFormatted = params.tripType === 'round' ? formatDateForAviasales(params.returnDate) : '';
 
-  // Standard Travelpayouts affiliate gateway for Aviasales
-  const affiliateBase = 'https://aviasales.tp.st/72ntufDx';
-
-  // Construct Aviasales direct search parameter path if dates are valid
-  if (depFormatted) {
-    const searchPath = `${originCode}${depFormatted}${destCode}${retFormatted}${adults}${children}${infants}${cabinLetter}`;
-    return `https://www.aviasales.com/search/${searchPath}?params=DAC1`;
+  let paxSuffix = `${adults}`;
+  if (children > 0 || infants > 0 || cabinSuffix) {
+    paxSuffix = `${adults}${children || 0}${infants || 0}${cabinSuffix}`;
   }
 
-  // Fallback with origin & destination query parameters
-  return `${affiliateBase}?origin=${originCode}&destination=${destCode}`;
+  return `${originCode}${depFormatted}${destCode}${retFormatted}${paxSuffix}`;
+}
+
+/**
+ * Builds official Aviasales affiliate search deep links and direct search URLs.
+ * Example result: https://www.aviasales.com/search/DAC3108CGP1?marker=760251
+ */
+export function buildAviasalesSearchUrl(params: AviasalesSearchParams = {}): string {
+  const searchKey = getAviasalesSearchKey(params);
+  // Standard Aviasales direct search page with affiliate marker
+  return `https://www.aviasales.com/search/${searchKey}?marker=563001&params=DAC1`;
 }
 
 /**

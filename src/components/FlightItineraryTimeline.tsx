@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plane,
   Clock,
@@ -35,9 +35,17 @@ import {
 } from '../data/flightItinerariesData';
 import { AZRAQ_AGENCY_CONFIG } from '../data/agencyConfig';
 import { buildAviasalesSearchUrl, trackFlightSearchEvent } from '../data/flightsData';
+import {
+  NormalizedFlightSearch,
+  generateMatchingFlightItinerary,
+  buildDynamicFlightWhatsAppUrl,
+  buildDynamicFlightShareText,
+} from '../utils/flightSearchEngine';
 
 interface FlightItineraryTimelineProps {
+  search?: NormalizedFlightSearch;
   itinerary?: FullFlightItinerary;
+  isSampleDemo?: boolean;
   onBookDirect?: (url: string) => void;
   onSelectItinerary?: (itinerary: FullFlightItinerary) => void;
   showControls?: boolean;
@@ -46,14 +54,27 @@ interface FlightItineraryTimelineProps {
 }
 
 export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = ({
-  itinerary: initialItinerary = SAMPLE_FLIGHT_ITINERARIES[0],
+  search,
+  itinerary: initialItinerary,
+  isSampleDemo = false,
   onBookDirect,
   onSelectItinerary,
   showControls = true,
   defaultViewMode = 'timeline',
   className = '',
 }) => {
-  const [currentItinerary, setCurrentItinerary] = useState<FullFlightItinerary>(initialItinerary);
+  // Resolve initial itinerary: if search is given, generate strictly matching itinerary; otherwise use initialItinerary
+  const resolveItinerary = (): FullFlightItinerary => {
+    if (search) {
+      return generateMatchingFlightItinerary(search);
+    }
+    if (initialItinerary) {
+      return initialItinerary;
+    }
+    return SAMPLE_FLIGHT_ITINERARIES[0];
+  };
+
+  const [currentItinerary, setCurrentItinerary] = useState<FullFlightItinerary>(resolveItinerary);
   const [activeDirection, setActiveDirection] = useState<'outbound' | 'return'>('outbound');
   const [viewMode, setViewMode] = useState<'timeline' | 'compact' | 'details'>(defaultViewMode);
   const [timeDisplayMode, setTimeDisplayMode] = useState<'local' | 'origin'>('local');
@@ -61,16 +82,34 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
     type: 'segment' | 'layover';
     index: number;
   } | null>({ type: 'segment', index: 0 });
-  const [progressPercent, setProgressPercent] = useState<number>(0);
-  const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [isSampleMode, setIsSampleMode] = useState<boolean>(isSampleDemo);
 
-  // Sync if prop changes
-  React.useEffect(() => {
-    if (initialItinerary) {
+  // Sync if search or initialItinerary changes from parent
+  useEffect(() => {
+    if (search) {
+      const generated = generateMatchingFlightItinerary(search);
+      setCurrentItinerary(generated);
+      setIsSampleMode(false);
+      setActiveDirection('outbound');
+      setSelectedNodeIndex({ type: 'segment', index: 0 });
+    } else if (initialItinerary) {
       setCurrentItinerary(initialItinerary);
+      setIsSampleMode(isSampleDemo);
     }
-  }, [initialItinerary]);
+  }, [
+    search?.origin?.code,
+    search?.destination?.code,
+    search?.departureDate,
+    search?.returnDate,
+    search?.tripType,
+    search?.adults,
+    search?.children,
+    search?.infants,
+    search?.cabinClass,
+    initialItinerary,
+    isSampleDemo,
+  ]);
 
   const activeSegments =
     activeDirection === 'outbound' || !currentItinerary.returnSegments
@@ -92,7 +131,6 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
     if (timeDisplayMode === 'local') {
       return { time: timeStr, label: `UTC${utcOffset >= 0 ? '+' + utcOffset : utcOffset}` };
     }
-    // Calculate difference relative to origin (Dhaka UTC+6)
     const [hours, minutes] = timeStr.split(':').map(Number);
     const diff = originOffset - utcOffset;
     let convertedHours = (hours + diff + 24) % 24;
@@ -101,13 +139,20 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
   };
 
   const handleCopyItinerary = () => {
-    const summary = `✈️ ${currentItinerary.routeTitle}\nDuration: ${totalJourneyTime} (${currentItinerary.stopsCount === 0 ? 'Non-Stop' : `${currentItinerary.stopsCount} Stop`})\nAirline: ${currentItinerary.primaryAirlineName}\nFare: BDT ${currentItinerary.samplePriceBDT.toLocaleString()}\nBooked via Azraq Tours & Travels / Aviasales Affiliate`;
+    let summary = '';
+    if (search) {
+      summary = buildDynamicFlightShareText(search, currentItinerary.samplePriceBDT);
+    } else {
+      summary = `✈️ ${currentItinerary.routeTitle}\nDuration: ${totalJourneyTime} (${currentItinerary.stopsCount === 0 ? 'Non-Stop' : `${currentItinerary.stopsCount} Stop`})\nAirline: ${currentItinerary.primaryAirlineName}\nFare: BDT ${currentItinerary.samplePriceBDT.toLocaleString()}\nBooked via Azraq Tours & Travels`;
+    }
     navigator.clipboard.writeText(summary);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
 
   const handleBookingRedirect = () => {
+    if (isSampleMode) return;
+
     trackFlightSearchEvent('affiliate_deal_clicked', {
       route: currentItinerary.routeTitle,
       airline: currentItinerary.primaryAirlineName,
@@ -120,6 +165,8 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
       buildAviasalesSearchUrl({
         origin: currentItinerary.originCode,
         destination: currentItinerary.destinationCode,
+        departDate: activeSegments[0]?.departureDate,
+        returnDate: currentItinerary.returnSegments?.[0]?.departureDate,
         source: 'itinerary_timeline_widget',
       });
 
@@ -145,6 +192,13 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
         return <Sparkles className="w-3.5 h-3.5 text-sky-500" />;
     }
   };
+
+  // Build dynamic WhatsApp URL strictly for current route and parameters
+  const dynamicWhatsAppUrl = search
+    ? buildDynamicFlightWhatsAppUrl(search, currentItinerary.samplePriceBDT)
+    : `https://wa.me/${AZRAQ_AGENCY_CONFIG.whatsappNumber}?text=${encodeURIComponent(
+        `Hello Azraq Desk! Please review and assist me with booking this flight itinerary: ${currentItinerary.routeTitle} (${currentItinerary.primaryAirlineName}) for BDT ${currentItinerary.samplePriceBDT.toLocaleString()}.`
+      )}`;
 
   return (
     <div
@@ -289,27 +343,69 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
 
         {/* Preset Sample Route Switcher (Optional showcase selector for testing top Bangladesh routes) */}
         {showControls && (
-          <div className="mt-4 pt-3 border-t border-slate-700/60 flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-            <span className="text-slate-400 font-semibold shrink-0">Sample Routes:</span>
-            {SAMPLE_FLIGHT_ITINERARIES.map((item) => (
+          <div className="mt-4 pt-3 border-t border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <span className="text-slate-400 font-semibold shrink-0">Sample Route Demos:</span>
+              {SAMPLE_FLIGHT_ITINERARIES.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setCurrentItinerary(item);
+                    setIsSampleMode(true);
+                    setActiveDirection('outbound');
+                    setSelectedNodeIndex({ type: 'segment', index: 0 });
+                    if (onSelectItinerary) onSelectItinerary(item);
+                  }}
+                  className={`px-3 py-1 rounded-lg shrink-0 font-medium transition-colors cursor-pointer ${
+                    currentItinerary.id === item.id && isSampleMode
+                      ? 'bg-sky-500 text-white font-bold shadow-xs'
+                      : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  {item.originCode} ➔ {item.destinationCode} ({item.primaryAirlineName})
+                </button>
+              ))}
+            </div>
+
+            {search && isSampleMode && (
               <button
-                key={item.id}
                 type="button"
                 onClick={() => {
-                  setCurrentItinerary(item);
-                  setActiveDirection('outbound');
-                  setSelectedNodeIndex({ type: 'segment', index: 0 });
-                  if (onSelectItinerary) onSelectItinerary(item);
+                  const generated = generateMatchingFlightItinerary(search);
+                  setCurrentItinerary(generated);
+                  setIsSampleMode(false);
                 }}
-                className={`px-3 py-1 rounded-lg shrink-0 font-medium transition-colors cursor-pointer ${
-                  currentItinerary.id === item.id
-                    ? 'bg-sky-500 text-white font-bold shadow-xs'
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white'
-                }`}
+                className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold shrink-0 transition-colors cursor-pointer"
               >
-                {item.originCode} ➔ {item.destinationCode} ({item.primaryAirlineName})
+                Back to My Search ({search.origin.code}➔{search.destination.code})
               </button>
-            ))}
+            )}
+          </div>
+        )}
+
+        {/* Non-Bookable Sample Itinerary Notice */}
+        {isSampleMode && (
+          <div className="mt-3 p-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                <strong>Non-Bookable Sample Itinerary:</strong> This route is displayed for layout and timeline demonstration purposes only.
+              </span>
+            </div>
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  const generated = generateMatchingFlightItinerary(search);
+                  setCurrentItinerary(generated);
+                  setIsSampleMode(false);
+                }}
+                className="text-xs text-sky-300 hover:text-white underline font-semibold shrink-0 cursor-pointer"
+              >
+                Show My Searched Route
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -939,26 +1035,36 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
 
           {/* WhatsApp Concierge Assistance */}
           <a
-            href={`https://wa.me/${AZRAQ_AGENCY_CONFIG.whatsappNumber}?text=${encodeURIComponent(
-              `Hello Azraq Desk! Please review and assist me with booking this flight itinerary: ${currentItinerary.routeTitle} (${currentItinerary.primaryAirlineName}) for BDT ${currentItinerary.samplePriceBDT.toLocaleString()}.`
-            )}`}
+            href={dynamicWhatsAppUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="px-3.5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Chat directly with Dhaka desk with your exact route details"
           >
             <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
             <span>Dhaka Desk Hold</span>
           </a>
 
-          {/* Book via Aviasales Official Link */}
-          <button
-            type="button"
-            onClick={handleBookingRedirect}
-            className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <span>Search & Book via Aviasales</span>
-            <ExternalLink className="w-4 h-4" />
-          </button>
+          {/* Book via Aviasales Official Link / Sample Mode Notice */}
+          {isSampleMode ? (
+            <button
+              type="button"
+              disabled
+              className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-slate-300 text-slate-600 font-bold text-xs sm:text-sm cursor-not-allowed flex items-center justify-center gap-2"
+              title="Demonstration sample only - non-bookable"
+            >
+              <span>Sample Demonstration Only</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleBookingRedirect}
+              className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Search & Book via Aviasales</span>
+              <ExternalLink className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
