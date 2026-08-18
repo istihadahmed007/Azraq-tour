@@ -1,10 +1,7 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
 export default function AuthCallback() {
-  const navigate = useNavigate();
-
   useEffect(() => {
     const handleCallback = async () => {
       try {
@@ -13,18 +10,18 @@ export default function AuthCallback() {
         } = await supabase.auth.getSession();
 
         if (session) {
-          window.location.href = '/';
+          window.location.replace('/');
         } else {
-          window.location.href = '/';
+          window.location.replace('/');
         }
       } catch (err) {
         console.error("Auth callback error:", err);
-        navigate("/", { replace: true });
+        window.location.replace('/');
       }
     };
 
     handleCallback();
-  }, [navigate]);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 text-sky-100">

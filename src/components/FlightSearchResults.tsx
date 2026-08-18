@@ -56,7 +56,11 @@ import {
   FlightSearchApiResponse,
   CanonicalFlightOffer,
   isOfferStale,
+  revalidateFlightPrice,
 } from '../utils/flightSearchEngine';
+import { PriceRevalidationResult } from '../types';
+import { PriceIncreaseModal } from './PriceIncreaseModal';
+import { AirlineLogo } from './AirlineLogo';
 import { useAuth } from '../context/AuthContext';
 
 interface FlightSearchResultsProps {
@@ -133,6 +137,14 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
   // Share link copied state
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [copiedAviasalesUrl, setCopiedAviasalesUrl] = useState<boolean>(false);
+
+  // Price revalidation state & confirmation modal
+  const [revalidatingOfferId, setRevalidatingOfferId] = useState<string | null>(null);
+  const [priceIncreaseModalData, setPriceIncreaseModalData] = useState<{
+    flight: FlightOffer;
+    result: PriceRevalidationResult;
+  } | null>(null);
+  const [customPriceUpdates, setCustomPriceUpdates] = useState<Record<string, number>>({});
 
   // Compute exact Aviasales live search key (e.g. "DAC3108CGP1")
   const aviasalesSearchKey = useMemo(() => {
@@ -333,15 +345,18 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
 
     return rawOffers.map((offer) => {
       const override = customFlightOverrides[offer.id] || {};
+      const updatedPriceBDT = customPriceUpdates[offer.id] ?? offer.priceBDT;
       return {
         ...offer,
+        priceBDT: updatedPriceBDT,
+        totalPrice: updatedPriceBDT,
         departureTime: override.departureTime || offer.departureTime,
         arrivalTime: override.arrivalTime || offer.arrivalTime,
         flightNumber: override.flightNumber || offer.flightNumber,
         duration: override.duration || offer.duration,
       };
     });
-  }, [search, apiOffers, customFlightOverrides]);
+  }, [search, apiOffers, customFlightOverrides, customPriceUpdates]);
 
   // Generate flexible 7-day date fares
   const flexibleFares = useMemo(() => {
@@ -534,6 +549,55 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
     }, 2000);
   };
 
+  // Revalidate price utility triggered before partner booking redirect
+  const handleSelectOffer = async (offer: FlightOffer) => {
+    setRevalidatingOfferId(offer.id);
+    try {
+      const result = await revalidateFlightPrice(offer, search, { currency });
+      if (result.hasIncreased) {
+        setPriceIncreaseModalData({ flight: offer, result });
+      } else if (result.hasDecreased) {
+        setCustomPriceUpdates((prev) => ({ ...prev, [offer.id]: result.freshPrice }));
+        showToast(
+          `🎉 Live fare dropped to ${formatPrice(result.freshPrice)} (-${formatPrice(Math.abs(result.priceDifference))})! Redirecting...`,
+          'success'
+        );
+        window.open(result.bookingUrl || offer.partnerDeepLink, '_blank', 'noopener,noreferrer');
+      } else {
+        showToast('Live price verified with airline inventory. Opening booking partner...', 'success');
+        window.open(result.bookingUrl || offer.partnerDeepLink, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err) {
+      console.error('Price revalidation failed:', err);
+      window.open(offer.partnerDeepLink, '_blank', 'noopener,noreferrer');
+    } finally {
+      setRevalidatingOfferId(null);
+    }
+  };
+
+  const handleAcceptPriceIncrease = (freshPrice: number, bookingUrl: string) => {
+    if (priceIncreaseModalData) {
+      setCustomPriceUpdates((prev) => ({
+        ...prev,
+        [priceIncreaseModalData.flight.id]: freshPrice,
+      }));
+    }
+    window.open(bookingUrl, '_blank', 'noopener,noreferrer');
+    setPriceIncreaseModalData(null);
+    showToast('Proceeding to partner checkout with verified live fare.', 'success');
+  };
+
+  const handleDeclinePriceIncrease = (freshPrice?: number) => {
+    if (priceIncreaseModalData && freshPrice) {
+      setCustomPriceUpdates((prev) => ({
+        ...prev,
+        [priceIncreaseModalData.flight.id]: freshPrice,
+      }));
+      showToast('Flight search results updated with latest live airline fare.', 'info');
+    }
+    setPriceIncreaseModalData(null);
+  };
+
   const totalPax = search.adults + search.children + search.infants;
 
   // Compute itemized tax breakdown helper
@@ -631,31 +695,6 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
                 </button>
               ))}
             </div>
-
-            {/* Calibrate Live Price */}
-            <button
-              type="button"
-              onClick={() => {
-                setPriceFixInput(priceFixCurrency === 'USD' ? String(Math.round(customLiveBaseFare / 120)) : String(customLiveBaseFare));
-                setShowPriceFixModal(true);
-              }}
-              className="px-3 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
-              title="Calibrate exact base price"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Fix Price</span>
-            </button>
-
-            {/* Timetable Modal */}
-            <button
-              type="button"
-              onClick={() => setShowScheduleModal(true)}
-              className="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
-              title="View & Match official flight timetables"
-            >
-              <Clock className="w-3.5 h-3.5 text-slate-600" />
-              <span>Flight Schedule</span>
-            </button>
           </div>
         </div>
 
@@ -700,61 +739,6 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* LEFT COLUMN: Booking.com Style Filter Sidebar */}
         <aside className="lg:col-span-4 xl:col-span-3 space-y-4">
-          {/* Smart Filters (Booking.com AI Filters from Screenshot) */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-slate-900 font-bold text-sm">
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <span>Smart Filters</span>
-              </div>
-            </div>
-            <p className="text-[11px] text-slate-500">
-              AI-powered; AI can make mistakes.{' '}
-              <button type="button" className="text-blue-600 underline font-medium cursor-pointer">
-                Learn more
-              </button>
-            </p>
-
-            <form onSubmit={handleApplySmartFilter} className="space-y-2">
-              <div className="relative">
-                <textarea
-                  rows={2}
-                  value={smartFilterInput}
-                  onChange={(e) => setSmartFilterInput(e.target.value)}
-                  placeholder="What are you looking for? Try something like: I want to see flights with no layover under $300."
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs placeholder:text-slate-400 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-hidden resize-none"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="submit"
-                  className="flex-1 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-bold rounded-lg transition-colors cursor-pointer text-center shadow-2xs"
-                >
-                  Filter flights
-                </button>
-                {appliedSmartFilter && (
-                  <button
-                    type="button"
-                    onClick={handleClearSmartFilter}
-                    className="py-2 px-2.5 text-xs text-rose-600 font-bold hover:underline cursor-pointer"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            </form>
-
-            {appliedSmartFilter && (
-              <div className="p-2 bg-purple-50 rounded-lg border border-purple-100 text-[11px] text-purple-900 flex items-center justify-between">
-                <span>Active: "{appliedSmartFilter}"</span>
-                <button type="button" onClick={handleClearSmartFilter} className="font-bold text-purple-700 ml-1">
-                  ✕
-                </button>
-              </div>
-            )}
-          </div>
-
           {/* Standard Filters Card */}
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -855,6 +839,7 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
                             onChange={() => toggleAirlineFilter(air.code)}
                             className="rounded-xs text-blue-600 focus:ring-blue-500 h-4 w-4"
                           />
+                          <AirlineLogo airlineCode={air.code} airlineName={air.name} size="xs" />
                           <span className="text-slate-800 truncate font-medium">{air.name}</span>
                         </div>
                         <span className="text-[11px] font-bold text-slate-900 shrink-0 ml-1">
@@ -1016,71 +1001,6 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
                 </p>
               </div>
             </div>
-          ) : apiOffers.length === 0 ? (
-            <div className="bg-white rounded-xl border border-blue-200/90 p-6 sm:p-8 space-y-6 shadow-xs">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
-                <div className="space-y-1">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">
-                    <Plane className="w-3.5 h-3.5" />
-                    <span>Real-Time Meta Search</span>
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900">
-                    Live Search on Aviasales Partner Engine
-                  </h3>
-                  <p className="text-xs text-slate-500 max-w-xl">
-                    Search 100+ partner airlines (Biman Bangladesh, US-Bangla, Novoair, Air Astra, Singapore Airlines, Thai Airways, Saudia, Emirates, and more) for {search.origin.city} ({search.origin.code}) to {search.destination.city} ({search.destination.code}).
-                  </p>
-                </div>
-                <div className="text-left sm:text-right shrink-0">
-                  <span className="text-[11px] text-slate-400 font-medium">Affiliate Partner Marker</span>
-                  <div className="text-xs font-mono font-bold text-slate-700">#563001</div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-50 p-3.5 rounded-lg border border-slate-200/80">
-                <div>
-                  <span className="text-slate-400 font-medium">Route:</span>
-                  <div className="font-bold text-slate-800">{search.origin.code} ➔ {search.destination.code}</div>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-medium">Travel Date:</span>
-                  <div className="font-bold text-slate-800">{search.departureDate} {search.tripType === 'round' ? `• Return: ${search.returnDate}` : '• One-way'}</div>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-medium">Travelers & Cabin:</span>
-                  <div className="font-bold text-slate-800">{totalPax} traveler{totalPax > 1 ? 's' : ''} • {search.cabinClass}</div>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-                <a
-                  href={aviasalesDirectUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-3 px-5 bg-[#006CE4] hover:bg-[#0057B8] text-white font-bold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-xs text-center cursor-pointer"
-                >
-                  <span>Search Live Fares on Aviasales ↗</span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-
-                <a
-                  href={buildDynamicFlightWhatsAppUrl(search)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="py-3 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg flex items-center justify-center gap-2 transition-all text-center cursor-pointer"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Request Instant WhatsApp Quote</span>
-                </a>
-              </div>
-
-              <div className="text-[11px] text-slate-400 flex items-center gap-1.5 pt-2">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>
-                  Official Aviasales / Travelpayouts integration. Fares include all mandatory CAAB & government taxes.
-                </span>
-              </div>
-            </div>
           ) : filteredAndSortedOffers.length === 0 ? (
             <div className="p-8 text-center bg-white rounded-xl border border-slate-200 space-y-3">
               <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
@@ -1159,15 +1079,6 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
                         >
                           <Share2 className="w-3.5 h-3.5" />
                         </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setEditingFlightOffer(offer)}
-                          title="Calibrate schedule / timetable"
-                          className="hover:text-[#006CE4] p-1 cursor-pointer"
-                        >
-                          <Clock className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     </div>
 
@@ -1178,13 +1089,12 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
                         {/* Outbound Leg */}
                         <div className="flex items-center gap-3 sm:gap-4">
                           {/* Airline Logo */}
-                          <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 p-1">
-                            <img
-                              src={offer.airlineLogo}
-                              alt={offer.airlineName}
-                              className="w-8 h-8 object-contain rounded"
-                            />
-                          </div>
+                          <AirlineLogo
+                            airlineCode={offer.airlineCode}
+                            airlineName={offer.airlineName}
+                            customLogoUrl={offer.airlineLogo}
+                            size="md"
+                          />
 
                           {/* Flight Details */}
                           <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -1214,13 +1124,12 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
                         {search.tripType === 'round' && (
                           <div className="flex items-center gap-3 sm:gap-4 pt-2 border-t border-slate-100">
                             {/* Airline Logo */}
-                            <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 p-1">
-                              <img
-                                src={offer.airlineLogo}
-                                alt={offer.airlineName}
-                                className="w-8 h-8 object-contain rounded"
-                              />
-                            </div>
+                            <AirlineLogo
+                              airlineCode={offer.airlineCode}
+                              airlineName={offer.airlineName}
+                              customLogoUrl={offer.airlineLogo}
+                              size="md"
+                            />
 
                             {/* Return Flight Details */}
                             <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -1263,17 +1172,26 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
                           </div>
                         </div>
 
-                        {/* Booking.com Select CTA Button */}
+                        {/* Booking.com Select CTA Button with Price Revalidation */}
                         <div className="w-full flex flex-col gap-1.5 pt-1">
-                          <a
-                            href={offer.partnerDeepLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full py-2.5 px-4 bg-[#006CE4] hover:bg-[#0057B8] text-white font-bold text-sm rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-center shadow-xs"
+                          <button
+                            type="button"
+                            onClick={() => handleSelectOffer(offer)}
+                            disabled={revalidatingOfferId === offer.id}
+                            className="w-full py-2.5 px-4 bg-[#006CE4] hover:bg-[#0057B8] disabled:bg-blue-400 text-white font-bold text-sm rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-center shadow-xs"
                           >
-                            <span>Select</span>
-                            <ChevronRight className="w-4 h-4" />
-                          </a>
+                            {revalidatingOfferId === offer.id ? (
+                              <>
+                                <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                                <span>Verifying price...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>Select</span>
+                                <ChevronRight className="w-4 h-4" />
+                              </>
+                            )}
+                          </button>
 
                           <div className="flex items-center gap-1 w-full text-[11px]">
                             <button
@@ -1409,7 +1327,7 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
 
       {/* 3. Itemized Price Breakdown Modal */}
       {selectedBreakdownOffer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1489,7 +1407,7 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
 
       {/* 4. Price Alert Subscription Modal */}
       {showPriceAlertModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1554,7 +1472,7 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
                 <button
                   type="submit"
                   disabled={alertSubscribed}
-                  className="px-5 py-2.5 bg-[#006CE4] hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-[#006CE4] hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer flex items-center gap-1.5"
                 >
                   {alertSubscribed ? (
                     <>
@@ -1573,7 +1491,7 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
 
       {/* 5. Fix / Calibrate Live Base Price Modal */}
       {showPriceFixModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-lg w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -1685,7 +1603,7 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer flex items-center gap-1.5"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>Apply Price</span>
@@ -1698,7 +1616,7 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
 
       {/* 6. Flight Schedule & Timetable Calibration Modal */}
       {showScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
@@ -1737,10 +1655,11 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-slate-400 w-5">#{idx + 1}</span>
-                    <img
-                      src={offer.airlineLogo}
-                      alt={offer.airlineName}
-                      className="w-7 h-7 rounded object-cover border border-slate-200"
+                    <AirlineLogo
+                      airlineCode={offer.airlineCode}
+                      airlineName={offer.airlineName}
+                      customLogoUrl={offer.airlineLogo}
+                      size="sm"
                     />
                     <div>
                       <div className="font-bold text-slate-900 flex items-center gap-2">
@@ -1790,7 +1709,7 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
               <button
                 type="button"
                 onClick={() => setShowScheduleModal(false)}
-                className="px-5 py-2 bg-[#006CE4] hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer"
+                className="px-5 py-2 bg-[#006CE4] hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer"
               >
                 Close Timetable
               </button>
@@ -1801,7 +1720,7 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
 
       {/* 7. Single Flight Time & Number Customization Modal */}
       {editingFlightOffer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -1922,6 +1841,17 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
           </div>
         </div>
       )}
+
+      {/* Price Increase Confirmation Modal */}
+      <PriceIncreaseModal
+        isOpen={Boolean(priceIncreaseModalData)}
+        flight={priceIncreaseModalData?.flight || null}
+        search={search}
+        revalidationResult={priceIncreaseModalData?.result || null}
+        currency={currency}
+        onAccept={handleAcceptPriceIncrease}
+        onDecline={handleDeclinePriceIncrease}
+      />
     </div>
   );
 };

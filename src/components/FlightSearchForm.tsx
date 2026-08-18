@@ -3,31 +3,26 @@ import {
   Plane,
   Calendar,
   Users,
-  MapPin,
   ArrowRightLeft,
   Search,
   ChevronDown,
-  Check,
-  Sparkles,
   AlertCircle,
+  Sparkles,
   ExternalLink,
-  ShieldCheck,
-  RotateCcw,
 } from 'lucide-react';
 import {
   Airport,
   BANGLADESH_AIRPORTS,
-  INTERNATIONAL_AIRPORTS,
   POPULAR_AIRPORTS,
   buildAviasalesSearchUrl,
   trackFlightSearchEvent,
 } from '../data/flightsData';
-import { AZRAQ_AGENCY_CONFIG } from '../data/agencyConfig';
 import {
   NormalizedFlightSearch,
   validateFlightSearchParams,
   normalizeFlightSearch,
 } from '../utils/flightSearchEngine';
+import { AirportAutocompleteField } from './AirportAutocompleteField';
 
 export type FlightSearchParams = NormalizedFlightSearch;
 
@@ -56,7 +51,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
   const [tripType, setTripType] = useState<'round' | 'oneway' | 'multi'>(initialParams?.tripType || 'round');
   const [origin, setOrigin] = useState<Airport>(initialParams?.origin || BANGLADESH_AIRPORTS[0]); // DAC by default
   const [destination, setDestination] = useState<Airport>(
-    initialParams?.destination || INTERNATIONAL_AIRPORTS.find((a) => a.code === 'BKK') || INTERNATIONAL_AIRPORTS[0]
+    initialParams?.destination || POPULAR_AIRPORTS.find((a) => a.code === 'BKK') || POPULAR_AIRPORTS[1]
   );
   const [departureDate, setDepartureDate] = useState<string>(initialParams?.departureDate || defaultDepDate);
   const [returnDate, setReturnDate] = useState<string>(initialParams?.returnDate || defaultRetDate);
@@ -68,6 +63,8 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
   const [cabinClass, setCabinClass] = useState<'Economy' | 'Premium Economy' | 'Business' | 'First'>(
     initialParams?.cabinClass || 'Economy'
   );
+  const [directOnly, setDirectOnly] = useState<boolean>(false);
+  const [currency, setCurrency] = useState<string>(initialParams?.currency || 'BDT');
 
   // Synchronize internal state whenever initialParams changes from parent / URL
   useEffect(() => {
@@ -81,6 +78,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
     if (typeof initialParams.children === 'number') setChildren(initialParams.children);
     if (typeof initialParams.infants === 'number') setInfants(initialParams.infants);
     if (initialParams.cabinClass) setCabinClass(initialParams.cabinClass);
+    if (initialParams.currency) setCurrency(initialParams.currency);
   }, [
     initialParams?.origin?.code,
     initialParams?.destination?.code,
@@ -91,30 +89,18 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
     initialParams?.children,
     initialParams?.infants,
     initialParams?.cabinClass,
+    initialParams?.currency,
   ]);
 
   // UI popover states
-  const [openOriginMenu, setOpenOriginMenu] = useState(false);
-  const [openDestMenu, setOpenDestMenu] = useState(false);
   const [openTravelersMenu, setOpenTravelersMenu] = useState(false);
-  const [originQuery, setOriginQuery] = useState('');
-  const [destQuery, setDestQuery] = useState('');
-  const [destCategoryTab, setDestCategoryTab] = useState<'all' | 'domestic' | 'asia' | 'middle_east' | 'europe'>('all');
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const originMenuRef = useRef<HTMLDivElement>(null);
-  const destMenuRef = useRef<HTMLDivElement>(null);
   const travelersMenuRef = useRef<HTMLDivElement>(null);
 
   // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (originMenuRef.current && !originMenuRef.current.contains(e.target as Node)) {
-        setOpenOriginMenu(false);
-      }
-      if (destMenuRef.current && !destMenuRef.current.contains(e.target as Node)) {
-        setOpenDestMenu(false);
-      }
       if (travelersMenuRef.current && !travelersMenuRef.current.contains(e.target as Node)) {
         setOpenTravelersMenu(false);
       }
@@ -123,48 +109,31 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filtered origins list
-  const filteredOrigins = POPULAR_AIRPORTS.filter((a) => {
-    const q = originQuery.toLowerCase();
-    return (
-      a.city.toLowerCase().includes(q) ||
-      a.code.toLowerCase().includes(q) ||
-      a.country.toLowerCase().includes(q) ||
-      a.name.toLowerCase().includes(q)
-    );
-  });
+  // Airport selection with auto-swap prevention for same airport
+  const handleSelectOrigin = (selected: Airport) => {
+    if (selected.code.toUpperCase() === destination.code.toUpperCase()) {
+      // User picked same airport as destination -> swap them
+      setDestination(origin);
+    }
+    setOrigin(selected);
+    setValidationError(null);
+  };
 
-  // Filtered destinations list with categories
-  const filteredDestinations = POPULAR_AIRPORTS.filter((a) => {
-    const q = destQuery.toLowerCase();
-    const matchesQuery =
-      a.city.toLowerCase().includes(q) ||
-      a.code.toLowerCase().includes(q) ||
-      a.country.toLowerCase().includes(q) ||
-      a.name.toLowerCase().includes(q);
-
-    if (!matchesQuery) return false;
-
-    if (destCategoryTab === 'domestic') {
-      return a.isBangladesh || ['DAC', 'CGP', 'ZYL', 'CXB', 'JSR', 'RJH', 'SPD', 'BZL'].includes(a.code);
+  const handleSelectDestination = (selected: Airport) => {
+    if (selected.code.toUpperCase() === origin.code.toUpperCase()) {
+      // User picked same airport as origin -> swap them
+      setOrigin(destination);
     }
-    if (destCategoryTab === 'asia') {
-      return ['BKK', 'DMK', 'KUL', 'SIN', 'DPS', 'DEL', 'CCU', 'BOM', 'MAA', 'MLE', 'KTM', 'HND', 'NRT', 'ICN', 'PEK', 'PVG', 'CAN'].includes(a.code);
-    }
-    if (destCategoryTab === 'middle_east') {
-      return ['DXB', 'AUH', 'DOH', 'JED', 'MED', 'RUH', 'MCT', 'KWI', 'BAH', 'SHJ', 'IST'].includes(a.code);
-    }
-    if (destCategoryTab === 'europe') {
-      return ['LHR', 'LGW', 'CDG', 'FCO', 'FRA', 'BCN', 'MAD', 'JFK', 'YYZ', 'SYD', 'MEL', 'CAI'].includes(a.code);
-    }
-    return true;
-  });
+    setDestination(selected);
+    setValidationError(null);
+  };
 
   // Airport swap
   const handleSwapAirports = () => {
     const temp = origin;
     setOrigin(destination);
     setDestination(temp);
+    setValidationError(null);
   };
 
   // Date validation
@@ -188,8 +157,6 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
     setReturnDate(val);
   };
 
-  const totalPassengers = adults + children + infants;
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -203,7 +170,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
       children,
       infants,
       cabinClass,
-      currency: 'BDT',
+      currency,
     };
 
     const validation = validateFlightSearchParams(candidateParams);
@@ -216,7 +183,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
 
     const searchParams = normalizeFlightSearch(candidateParams);
 
-    trackFlightSearchEvent('search_completed', {
+    trackFlightSearchEvent('search_submitted', {
       origin: origin.code,
       destination: destination.code,
       tripType,
@@ -224,6 +191,8 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
       children,
       infants,
       cabinClass,
+      directOnly,
+      currency,
       source: sourceTag,
     });
 
@@ -293,12 +262,37 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
     }
   };
 
+  // Quick route shortcuts from Dhaka
+  const QUICK_DHAKA_ROUTES = [
+    { code: 'BKK', city: 'Bangkok', country: 'Thailand', name: 'Suvarnabhumi Airport' },
+    { code: 'DXB', city: 'Dubai', country: 'UAE', name: 'Dubai International Airport' },
+    { code: 'KUL', city: 'Kuala Lumpur', country: 'Malaysia', name: 'Kuala Lumpur International Airport' },
+    { code: 'SIN', city: 'Singapore', country: 'Singapore', name: 'Singapore Changi Airport' },
+    { code: 'KTM', city: 'Kathmandu', country: 'Nepal', name: 'Tribhuvan International Airport' },
+    { code: 'MLE', city: 'Male', country: 'Maldives', name: 'Velana International Airport' },
+  ];
+
+  const handleApplyQuickRoute = (targetDest: typeof QUICK_DHAKA_ROUTES[0]) => {
+    const dac = BANGLADESH_AIRPORTS[0];
+    setOrigin(dac);
+    setDestination({
+      code: targetDest.code,
+      city: targetDest.city,
+      country: targetDest.country,
+      name: targetDest.name,
+    });
+    setValidationError(null);
+    trackFlightSearchEvent('quick_route_used', {
+      origin: 'DAC',
+      destination: targetDest.code,
+      source: sourceTag,
+    });
+  };
+
   return (
-    <div
-      className={`w-full bg-[#ffb700] rounded-2xl p-4 sm:p-6 shadow-md text-slate-900 ${className}`}
-    >
+    <div className={`w-full bg-[#ffb700] rounded-2xl p-4 sm:p-6 shadow-md text-slate-900 ${className}`}>
       <form onSubmit={handleSearchSubmit} className="space-y-3">
-        {/* Top Dropdowns Row (Booking.com style: Round-trip ⌵, 1 adult ⌵, Economy ⌵) */}
+        {/* Top Dropdowns Row (Booking.com style: Round-trip ⌵, 1 adult ⌵, Economy ⌵, Currency ⌵) */}
         <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-900 pb-1">
           {/* Trip Type Selector */}
           <div className="relative">
@@ -325,6 +319,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
               onClick={() => setOpenTravelersMenu(!openTravelersMenu)}
               className="flex items-center gap-1.5 bg-transparent hover:bg-black/5 font-bold text-slate-900 py-1.5 px-3 rounded-md border border-transparent hover:border-black/10 transition-colors cursor-pointer"
             >
+              <Users className="w-3.5 h-3.5 text-slate-800" />
               <span>
                 {adults} {adults === 1 ? 'adult' : 'adults'}
                 {children > 0 ? `, ${children} child` : ''}
@@ -443,129 +438,48 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
             <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-2.5 pointer-events-none text-slate-800" />
           </div>
 
-          {/* Quick direct route indicator */}
-          <div className="ml-auto hidden md:flex items-center gap-1 text-[11px] font-bold text-slate-800">
-            <span>Route: {origin.code} ➔ {destination.code}</span>
+          {/* Currency Selector */}
+          <div className="relative">
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="bg-transparent hover:bg-black/5 font-bold text-slate-900 py-1.5 px-3 rounded-md border border-transparent hover:border-black/10 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer pr-7 appearance-none"
+            >
+              <option value="BDT">BDT (৳)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-2.5 pointer-events-none text-slate-800" />
+          </div>
+
+          {/* Direct flights checkbox */}
+          <label className="flex items-center gap-1.5 text-xs font-bold text-slate-900 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={directOnly}
+              onChange={(e) => setDirectOnly(e.target.checked)}
+              className="rounded text-blue-600 focus:ring-blue-500 h-3.5 w-3.5 border-slate-400"
+            />
+            <span>Direct flights only</span>
+          </label>
+
+          {/* Active Route display */}
+          <div className="ml-auto hidden md:flex items-center gap-1.5 text-[11px] font-bold text-slate-800 bg-white/40 px-2.5 py-1 rounded-md">
+            <span>Global Route: {origin.code} ➔ {destination.code}</span>
           </div>
         </div>
 
-        {/* Booking.com Search Bar Row (Connected layout on yellow banner) */}
+        {/* Connected Search Bar Row */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-1.5 items-center">
-          {/* Origin Field */}
-          <div className="lg:col-span-3 relative" ref={originMenuRef}>
-            <div
-              onClick={() => setOpenOriginMenu(!openOriginMenu)}
-              className="w-full h-13 px-3 py-2 bg-white rounded-lg border border-slate-300 hover:border-blue-500 shadow-xs flex items-center justify-between cursor-pointer transition-all"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-bold text-slate-900 truncate">
-                  {origin.city} ({origin.code})
-                </span>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOriginQuery('');
-                    setOpenOriginMenu(true);
-                  }}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer"
-                  title="Clear"
-                >
-                  ✕
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenOriginMenu(true);
-                  }}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer text-xs font-bold"
-                  title="Add departure airport"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            {/* Origin Dropdown Menu */}
-            {openOriginMenu && (
-              <div className="absolute top-full left-0 mt-1.5 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-2 text-slate-900 animate-fadeIn">
-                <div className="p-2 border-b border-slate-100">
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search city or airport code..."
-                      value={originQuery}
-                      onChange={(e) => setOriginQuery(e.target.value)}
-                      autoFocus
-                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-100 rounded-lg border-none focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-                <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
-                  <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Bangladesh Departure Hubs
-                  </div>
-                  {BANGLADESH_AIRPORTS.map((ap) => (
-                    <button
-                      key={ap.code}
-                      type="button"
-                      onClick={() => {
-                        setOrigin(ap);
-                        setOpenOriginMenu(false);
-                        trackFlightSearchEvent('origin_selected', { code: ap.code, source: sourceTag });
-                      }}
-                      className="w-full p-2 text-left rounded-lg hover:bg-blue-50 flex items-center justify-between group transition-colors cursor-pointer"
-                    >
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                          <span>{ap.city}</span>
-                          <span className="font-mono text-[10px] font-bold px-1 bg-slate-200 rounded">
-                            {ap.code}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate max-w-[200px]">{ap.name}</div>
-                      </div>
-                      {origin.code === ap.code && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                    </button>
-                  ))}
-
-                  {originQuery && (
-                    <>
-                      <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        All Matching Airports
-                      </div>
-                      {filteredOrigins.map((ap) => (
-                        <button
-                          key={ap.code}
-                          type="button"
-                          onClick={() => {
-                            setOrigin(ap);
-                            setOpenOriginMenu(false);
-                            trackFlightSearchEvent('origin_selected', { code: ap.code, source: sourceTag });
-                          }}
-                          className="w-full p-2 text-left rounded-lg hover:bg-blue-50 flex items-center justify-between group transition-colors cursor-pointer"
-                        >
-                          <div>
-                            <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                              <span>{ap.city}</span>
-                              <span className="font-mono text-[10px] font-bold px-1 bg-slate-200 rounded">
-                                {ap.code}
-                              </span>
-                            </div>
-                            <div className="text-[10px] text-slate-500 truncate max-w-[200px]">{ap.name}</div>
-                          </div>
-                          {origin.code === ap.code && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                        </button>
-                      ))}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
+          {/* Origin Autocomplete Field */}
+          <div className="lg:col-span-3">
+            <AirportAutocompleteField
+              label="Leaving from"
+              selectedAirport={origin}
+              onSelect={handleSelectOrigin}
+              otherAirportCode={destination.code}
+              placeholder="Search origin city/code (DAC, LHR, etc.)..."
+            />
           </div>
 
           {/* Swap Button */}
@@ -574,133 +488,32 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
               type="button"
               onClick={handleSwapAirports}
               aria-label="Swap origin and destination"
-              className="w-9 h-9 rounded-full bg-white border border-slate-300 hover:border-slate-400 text-slate-700 shadow-xs flex items-center justify-center hover:scale-105 transition-all cursor-pointer"
+              className="w-9 h-9 rounded-full bg-white border border-slate-300 hover:border-[#006ce4] text-slate-700 shadow-xs flex items-center justify-center hover:scale-105 transition-all cursor-pointer"
             >
               <ArrowRightLeft className="w-4 h-4 text-slate-800" />
             </button>
           </div>
 
-          {/* Destination Field */}
-          <div className="lg:col-span-3 relative" ref={destMenuRef}>
-            <div
-              onClick={() => setOpenDestMenu(!openDestMenu)}
-              className="w-full h-13 px-3 py-2 bg-white rounded-lg border border-slate-300 hover:border-blue-500 shadow-xs flex items-center justify-between cursor-pointer transition-all"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-bold text-slate-900 truncate">
-                  {destination.city} ({destination.code})
-                </span>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDestQuery('');
-                    setOpenDestMenu(true);
-                  }}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer"
-                  title="Clear"
-                >
-                  ✕
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenDestMenu(true);
-                  }}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer text-xs font-bold"
-                  title="Add arrival airport"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            {/* Destination Dropdown Menu */}
-            {openDestMenu && (
-              <div className="absolute top-full right-0 md:left-0 mt-1.5 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-2 text-slate-900 animate-fadeIn">
-                <div className="p-2 border-b border-slate-100 space-y-2">
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search destination city or airport code..."
-                      value={destQuery}
-                      onChange={(e) => setDestQuery(e.target.value)}
-                      autoFocus
-                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-100 rounded-lg border-none focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  {/* Regional Tabs */}
-                  <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[11px]">
-                    {(
-                      [
-                        { id: 'all', label: 'All' },
-                        { id: 'asia', label: 'Asia' },
-                        { id: 'middle_east', label: 'Middle East' },
-                        { id: 'europe', label: 'Europe/US' },
-                        { id: 'domestic', label: 'BD Domestic' },
-                      ] as const
-                    ).map((tab) => (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setDestCategoryTab(tab.id)}
-                        className={`px-2 py-0.5 rounded-md whitespace-nowrap transition-colors cursor-pointer ${
-                          destCategoryTab === tab.id
-                            ? 'bg-[#006ce4] text-white font-bold'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="max-h-64 overflow-y-auto divide-y divide-slate-100">
-                  <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                    <span>Matching Destinations ({filteredDestinations.length})</span>
-                    <span className="text-[9px] text-slate-400">Click to select</span>
-                  </div>
-                  {filteredDestinations.map((ap) => (
-                    <button
-                      key={ap.code}
-                      type="button"
-                      onClick={() => {
-                        setDestination(ap);
-                        setOpenDestMenu(false);
-                        trackFlightSearchEvent('destination_selected', { code: ap.code, source: sourceTag });
-                      }}
-                      className="w-full p-2 text-left rounded-lg hover:bg-blue-50 flex items-center justify-between group transition-colors cursor-pointer"
-                    >
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                          <span>{ap.city}</span>
-                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded">
-                            {ap.code}
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-medium">({ap.country})</span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate max-w-[220px]">{ap.name}</div>
-                      </div>
-                      {destination.code === ap.code && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+          {/* Destination Autocomplete Field */}
+          <div className="lg:col-span-3">
+            <AirportAutocompleteField
+              label="Going to"
+              selectedAirport={destination}
+              onSelect={handleSelectDestination}
+              otherAirportCode={origin.code}
+              placeholder="Search destination city/code (BKK, DXB, etc.)..."
+            />
           </div>
 
-          {/* Departure Date Container (Booking.com style with step buttons: < Wed 9/2 >) */}
+          {/* Departure Date Container */}
           <div className="lg:col-span-2 relative">
-            <div className="w-full h-13 px-2 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-blue-500 shadow-xs flex items-center justify-between cursor-pointer">
+            <div className="w-full h-[52px] px-2 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center justify-between cursor-pointer">
               <div className="flex items-center gap-1.5 min-w-0">
                 <Calendar className="w-4 h-4 text-slate-700 shrink-0" />
                 <label className="cursor-pointer">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Departure
+                  </span>
                   <span className="text-xs font-bold text-slate-900 block truncate">
                     {formatBookingDate(departureDate)}
                   </span>
@@ -734,16 +547,19 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
             </div>
           </div>
 
-          {/* Return Date Container (Booking.com style with step buttons: < Wed 9/2 >) */}
+          {/* Return Date Container */}
           <div className="lg:col-span-2 relative">
             <div
-              className={`w-full h-13 px-2 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-blue-500 shadow-xs flex items-center justify-between cursor-pointer ${
+              className={`w-full h-[52px] px-2 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center justify-between cursor-pointer ${
                 tripType === 'oneway' ? 'opacity-50 pointer-events-none bg-slate-100' : ''
               }`}
             >
               <div className="flex items-center gap-1.5 min-w-0">
                 <Calendar className="w-4 h-4 text-slate-700 shrink-0" />
                 <label className="cursor-pointer">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Return
+                  </span>
                   <span className="text-xs font-bold text-slate-900 block truncate">
                     {tripType === 'oneway' ? 'One-way' : formatBookingDate(returnDate)}
                   </span>
@@ -781,11 +597,11 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
             </div>
           </div>
 
-          {/* Search Button (Booking.com style vibrant blue button) */}
+          {/* Search Button */}
           <div className="lg:col-span-1">
             <button
               type="submit"
-              className="w-full h-13 px-4 rounded-lg bg-[#006ce4] hover:bg-[#0057b8] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full h-[52px] px-4 rounded-lg bg-[#006ce4] hover:bg-[#0057b8] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
             >
               <span>Search</span>
             </button>
@@ -795,10 +611,35 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({
         {/* Validation error notice */}
         {validationError && (
           <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span>{validationError}</span>
           </div>
         )}
+
+        {/* Popular Shortcuts from Dhaka */}
+        <div className="pt-2 border-t border-black/10 flex flex-wrap items-center gap-2 text-xs">
+          <span className="font-bold text-slate-900 text-[11px] flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-amber-900" />
+            Popular from Dhaka:
+          </span>
+          {QUICK_DHAKA_ROUTES.map((r) => {
+            const isCurrent = origin.code === 'DAC' && destination.code === r.code;
+            return (
+              <button
+                key={r.code}
+                type="button"
+                onClick={() => handleApplyQuickRoute(r)}
+                className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  isCurrent
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-white/70 hover:bg-white text-slate-800 border border-black/5 hover:border-black/20'
+                }`}
+              >
+                DAC ➔ {r.city} ({r.code})
+              </button>
+            );
+          })}
+        </div>
       </form>
     </div>
   );

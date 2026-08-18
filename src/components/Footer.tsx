@@ -124,7 +124,7 @@ export const Footer: React.FC<FooterProps> = ({
                   className="hover:text-white text-sky-300 font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <span>Flight Search & Compare</span>
-                  <span className="text-[9px] px-1 py-0.2 rounded bg-sky-400/20 text-sky-300">New</span>
+                  <span className="text-[9px] px-1 py-0.5 rounded bg-sky-400/20 text-sky-300">New</span>
                 </button>
               </li>
               <li>
@@ -135,7 +135,7 @@ export const Footer: React.FC<FooterProps> = ({
                   className="hover:text-white text-slate-300 transition-colors flex items-center gap-1.5"
                 >
                   <span>Aviasales Global Search</span>
-                  <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono">Partner</span>
+                  <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">Partner</span>
                 </a>
               </li>
               <li>
@@ -248,7 +248,7 @@ export const Footer: React.FC<FooterProps> = ({
 
       {/* Legal, FAQ, & Affiliate Disclosure Modal */}
       {activeLegalModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white text-slate-900 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
             <button
               onClick={() => setActiveLegalModal(null)}

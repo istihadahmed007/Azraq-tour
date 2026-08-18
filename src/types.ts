@@ -66,6 +66,52 @@ export interface CanonicalFlightOffer {
   isStale?: boolean;
 }
 
+export interface PriceRevalidationResult {
+  success: boolean;
+  cachedPrice: number;
+  freshPrice: number;
+  originalPrice?: number;
+  originalCurrency?: string;
+  hasIncreased: boolean;
+  hasDecreased: boolean;
+  isPriceChanged: boolean;
+  priceDifference: number;
+  currency: string;
+  bookingUrl: string;
+  revalidatedAt: string;
+  status: 'unchanged' | 'increased' | 'decreased' | 'verified';
+  hasLiveApiMatch?: boolean;
+  airline?: string;
+  flightNumber?: string;
+  message?: string;
+  error?: string;
+}
+
+export interface AutocompleteLocation {
+  code: string;
+  name: string;
+  city: string;
+  country: string;
+  countryCode?: string;
+  type: 'airport' | 'city';
+  isBangladesh?: boolean;
+}
+
+export type FlightAnalyticsEventType =
+  | 'airport_query'
+  | 'airport_selected'
+  | 'quick_route_used'
+  | 'search_submitted'
+  | 'results_returned'
+  | 'partner_redirect'
+  | 'desk_quote_started'
+  | 'flight_search_started'
+  | 'origin_selected'
+  | 'destination_selected'
+  | 'search_completed'
+  | 'destination_card_clicked'
+  | 'affiliate_deal_clicked';
+
 export interface InternalNote {
   id: string;
   authorName: string;

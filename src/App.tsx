@@ -73,19 +73,38 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Quick prompt handler from Discover Search Bar
-  const handlePlanTripPrompt = async (promptText: string) => {
+  // Quick prompt handler from Discover Search Bar & Voice Trip Planner
+  const handlePlanTripPrompt = async (
+    input: string | {
+      destination?: string;
+      startDate?: string;
+      endDate?: string;
+      vibes?: string[];
+      travelerCount?: number;
+      structuredPrompt?: string;
+      prompt?: string;
+      durationDays?: number;
+    }
+  ) => {
     setCurrentView('planner');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    let destination = typeof input === 'string' ? input : input.destination || input.structuredPrompt || input.prompt || 'Bangkok, Thailand';
+    let startDate = typeof input === 'object' && input.startDate ? input.startDate : '2026-11-01';
+    let endDate = typeof input === 'object' && input.endDate ? input.endDate : '2026-11-07';
+    let vibes = typeof input === 'object' && input.vibes ? input.vibes : ['Culture', 'Local Cuisine', 'Sightseeing'];
+    let travelerCount = typeof input === 'object' && input.travelerCount ? input.travelerCount : 2;
+
     try {
       const response = await fetch('/api/ai/itinerary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          destination: promptText,
-          startDate: '2026-11-01',
-          endDate: '2026-11-07',
-          vibes: ['Culture', 'Local Cuisine', 'Sightseeing'],
+          destination,
+          startDate,
+          endDate,
+          vibes,
+          travelerCount,
         }),
       });
       const data = await response.json();
@@ -93,10 +112,10 @@ function AppContent() {
         const generatedItinerary: Itinerary = {
           id: Date.now().toString(),
           title: data.title,
-          destination: data.destination || promptText,
-          durationDays: data.durationDays || 5,
+          destination: data.destination || destination,
+          durationDays: data.durationDays || (typeof input === 'object' && input.durationDays ? input.durationDays : 5),
           weatherSummary: data.weatherSummary || '20°C Mild & Pleasant',
-          aiSummary: data.aiSummary || 'AI curated itinerary based on your search.',
+          aiSummary: data.aiSummary || 'AI curated itinerary based on your voice travel preferences.',
           days: data.days || [],
           packingList: data.packingList || [],
           savedAt: new Date().toISOString(),

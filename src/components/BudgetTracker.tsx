@@ -740,19 +740,19 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
                       </h5>
 
                       {item.dayNumber && (
-                        <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-sky-500/20 text-sky-200 border border-sky-400/30">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/20 text-sky-200 border border-sky-400/30">
                           Day {item.dayNumber}
                         </span>
                       )}
 
                       {item.spotName && (
-                        <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/30 truncate max-w-[120px]">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/30 truncate max-w-[120px]">
                           📍 {item.spotName}
                         </span>
                       )}
 
                       {item.isPaid && (
-                        <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
                           Paid ✓
                         </span>
                       )}

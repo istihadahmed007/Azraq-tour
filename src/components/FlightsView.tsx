@@ -28,9 +28,7 @@ import { PopularDestinations } from './PopularDestinations';
 import { DestinationExplorer } from './DestinationExplorer';
 import { RouteGuidesSection } from './RouteGuidesSection';
 import { AffiliateDisclosure } from './AffiliateDisclosure';
-import { TravelpayoutsWidget } from './TravelpayoutsWidget';
 import { PartnerRedirectModal } from './PartnerRedirectModal';
-import { FlightItineraryTimeline } from './FlightItineraryTimeline';
 import { useAuth } from '../context/AuthContext';
 import {
   NormalizedFlightSearch,
@@ -250,61 +248,7 @@ export const FlightsView: React.FC<FlightsViewProps> = ({
           />
         </section>
 
-        {/* 4. Live Search & White Label Widget Container */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-blue-600" />
-              <span>Aviasales & Travelpayouts Direct Partner Widget</span>
-            </h3>
-            <span className="text-xs text-slate-500 font-medium">
-              Live airline inventory & official ticket booking
-            </span>
-          </div>
-
-          <TravelpayoutsWidget
-            originCode={activeSearch.origin.code}
-            destinationCode={activeSearch.destination.code}
-            defaultTab="deals"
-            onOpenQuote={() => {
-              if (onOpenVisaQuote) onOpenVisaQuote('Flight Inquiry');
-            }}
-          />
-        </section>
-
-        {/* 5. Interactive Flight Itinerary Timeline & Layover Visualizer */}
-        <section className="space-y-4 pt-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">
-                <Clock className="w-3 h-3" />
-                <span>Verified Route Itinerary</span>
-              </div>
-              <h3 className="text-xl sm:text-2xl font-serif-display font-extrabold text-slate-900 tracking-tight">
-                Flight Itinerary & Layover Explorer
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-500 max-w-2xl">
-                Generated flight timeline and transit details strictly matching{' '}
-                <strong>
-                  {activeSearch.origin.city} ({activeSearch.origin.code}) ➔ {activeSearch.destination.city} ({activeSearch.destination.code})
-                </strong>
-                .
-              </p>
-            </div>
-            <span className="text-xs text-slate-400 font-medium self-start sm:self-center">
-              Click any node to inspect terminal and baggage details
-            </span>
-          </div>
-
-          {/* Render ONLY itinerary matching the active search */}
-          <FlightItineraryTimeline
-            search={activeSearch}
-            showControls={true}
-            defaultViewMode="timeline"
-          />
-        </section>
-
-        {/* 5. Popular Flight Destinations from Bangladesh (30+ worldwide cards) */}
+        {/* 4. Popular Flight Destinations from Bangladesh (30+ worldwide cards) */}
         <PopularDestinations
           onSelectDestination={handleSelectDestination}
           className="pt-4"

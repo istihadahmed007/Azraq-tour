@@ -112,6 +112,10 @@ export const InteractiveAsiaMap: React.FC<InteractiveAsiaMapProps> = ({
     let resizeTimer: any = null;
 
     try {
+      if ((mapContainerRef.current as any)._leaflet_id) {
+        delete (mapContainerRef.current as any)._leaflet_id;
+      }
+
       // Default view centered on South/Southeast Asia
       const map = L.map(mapContainerRef.current, {
         center: [18.5, 95.0],

@@ -8,21 +8,15 @@ import {
   FileCheck2,
   Plane,
   Users,
-  Info,
-  Calendar,
+  MapPin,
+  Sparkles,
   Menu,
   X,
   User,
   LogOut,
-  MapPin,
-  Sparkles,
-  Phone,
-  Bed,
-  Car,
-  FerrisWheel,
-  Ticket,
   HelpCircle,
   Heart,
+  Bed,
 } from 'lucide-react';
 
 interface NavigationProps {
@@ -51,12 +45,12 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
 
     // Booking.com style service category items
     const bookingNavItems: { id: NavView; label: string; icon: React.ReactNode }[] = [
-      { id: 'discover', label: 'Stays', icon: <Bed className="w-4 h-4" /> },
+      { id: 'discover', label: 'Explore', icon: <Compass className="w-4 h-4" /> },
       { id: 'flights', label: 'Flights', icon: <Plane className="w-4 h-4" /> },
-      { id: 'destinations', label: 'Car Rentals', icon: <Car className="w-4 h-4" /> },
-      { id: 'planner', label: 'Attractions', icon: <Ticket className="w-4 h-4" /> },
-      { id: 'packages', label: 'Airport taxis', icon: <Compass className="w-4 h-4" /> },
+      { id: 'packages', label: 'Tour Packages', icon: <Package className="w-4 h-4" /> },
       { id: 'visa', label: 'Visa Assistance', icon: <FileCheck2 className="w-4 h-4" /> },
+      { id: 'planner', label: 'AI Planner', icon: <Sparkles className="w-4 h-4" /> },
+      { id: 'destinations', label: 'Destinations', icon: <MapPin className="w-4 h-4" /> },
       { id: 'feed', label: 'Travel Buddies', icon: <Users className="w-4 h-4" /> },
     ];
 
@@ -72,13 +66,13 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
         id="main-navigation-header"
         className="sticky top-0 left-0 right-0 w-full z-50 bg-[#003580] text-white border-b border-[#00224f] shadow-md transition-all duration-200"
       >
-        {/* Top Header Bar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-4">
+        {/* Row 1: Top Header Bar (Logo on left, Utilities & Auth on right) */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Brand Logo */}
           <button
-            onClick={() => handleNavigate('flights')}
+            onClick={() => handleNavigate('discover')}
             className="flex items-center gap-2.5 cursor-pointer text-left group shrink-0 focus:outline-none"
-            aria-label="Azraq Booking"
+            aria-label="Azraq.com"
           >
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg overflow-hidden shadow-xs border border-white/30 bg-white flex items-center justify-center group-hover:scale-105 transition-transform">
               <img
@@ -88,26 +82,26 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
               />
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-xl sm:text-2xl font-bold text-white tracking-tight block transition-colors leading-tight font-sans">
-                Azraq<span className="text-[#006ce4] text-sky-400">.com</span>
+              <span className="text-2xl font-bold text-white tracking-tight block transition-colors leading-tight font-sans">
+                Azraq<span className="text-sky-400 font-extrabold">.com</span>
               </span>
             </div>
           </button>
 
-          {/* Top Right Utilities (Currency, Country, Help, Account) */}
-          <div className="hidden lg:flex items-center gap-3 text-xs">
+          {/* Top Right Utilities (Currency, Flag, Support, Saved, Account) */}
+          <div className="hidden md:flex items-center gap-3 text-xs">
             {/* Currency Pill */}
             <span className="px-2.5 py-1.5 rounded-md hover:bg-white/10 text-white font-semibold transition-colors cursor-pointer">
-              BDT (Tk)
+              BDT (৳)
             </span>
 
             {/* Country Flag */}
-            <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-md hover:bg-white/10 text-white font-medium transition-colors cursor-pointer">
+            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/10 text-white font-medium transition-colors cursor-pointer">
               <span className="text-sm">🇧🇩</span>
               <span className="font-semibold">BD</span>
             </span>
 
-            {/* Help / Customer Support */}
+            {/* Customer Support */}
             <button
               type="button"
               onClick={() => {
@@ -125,12 +119,13 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
               type="button"
               onClick={() => handleNavigate('profile')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-white/10 text-white font-medium transition-colors cursor-pointer"
+              title="Saved Trips"
             >
               <Heart className="w-3.5 h-3.5" />
               <span>Saved ({savedTripsCount})</span>
             </button>
 
-            {/* Auth / Login Button */}
+            {/* Auth / Login Buttons */}
             {isGuest ? (
               <div className="flex items-center gap-2">
                 <button
@@ -183,8 +178,8 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex lg:hidden items-center gap-2">
+          {/* Mobile Actions & Menu Toggle */}
+          <div className="flex md:hidden items-center gap-2">
             <button
               onClick={() => {
                 if (onOpenQuote) onOpenQuote();
@@ -192,7 +187,7 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
               }}
               className="px-2.5 py-1 rounded-md bg-white text-[#003580] text-xs font-bold shadow-xs cursor-pointer"
             >
-              Support
+              Help
             </button>
 
             <button
@@ -205,23 +200,23 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
           </div>
         </div>
 
-        {/* Second Row: Booking.com Style Category Tabs */}
+        {/* Row 2: Booking.com Style Category Tabs (Pills with icons, single line, horizontal scrolling) */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-3 pt-0 overflow-x-auto no-scrollbar">
-          <nav className="flex items-center gap-2 min-w-max">
+          <nav className="flex items-center gap-2 min-w-max flex-nowrap">
             {bookingNavItems.map((item) => {
               const isActive = currentView === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => handleNavigate(item.id)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                     isActive
                       ? 'border border-white bg-white/10 text-white font-bold shadow-xs'
                       : 'text-white/90 hover:bg-white/10 hover:text-white border border-transparent'
                   }`}
                 >
                   <span className="shrink-0">{item.icon}</span>
-                  <span>{item.label}</span>
+                  <span className="whitespace-nowrap">{item.label}</span>
                 </button>
               );
             })}
@@ -230,7 +225,7 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-[#00224f] bg-[#003580] px-4 pt-3 pb-6 space-y-3 shadow-xl animate-fadeIn">
+          <div className="md:hidden border-t border-[#00224f] bg-[#003580] px-4 pt-3 pb-6 space-y-3 shadow-xl animate-fadeIn">
             <nav className="flex flex-col gap-1">
               {bookingNavItems.map((link) => {
                 const isActive = currentView === link.id;
@@ -252,8 +247,13 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
             </nav>
 
             <div className="pt-3 border-t border-white/20 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-xs text-white/80 px-1">
+                <span>Currency: <strong>BDT (৳)</strong></span>
+                <span>Region: <strong>🇧🇩 Bangladesh</strong></span>
+              </div>
+
               {isGuest ? (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     onClick={() => {
                       openAuthModal('login');
@@ -280,6 +280,7 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
                   }}
                   className="w-full py-2.5 rounded-xl bg-white/10 text-white font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
+                  <User className="w-4 h-4" />
                   <span>My Profile & Bookings</span>
                 </button>
               )}
@@ -292,3 +293,4 @@ export const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
 );
 
 Navigation.displayName = 'Navigation';
+

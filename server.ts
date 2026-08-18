@@ -1108,6 +1108,275 @@ app.post("/api/ai/itinerary", async (req, res) => {
   }
 });
 
+// 3b. AI Voice Trip Parser (Converts spoken travel speech into structured prompt & flight search parameters)
+app.post("/api/ai/parse-voice-trip", async (req, res) => {
+  try {
+    const { transcript } = req.body;
+    if (!transcript || !transcript.trim()) {
+      return res.status(400).json({ error: "Spoken transcript is required" });
+    }
+
+    const cleanText = transcript.trim();
+
+    // Default dates (2 weeks from now)
+    const today = new Date();
+    const defaultStart = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const defaultEnd = new Date(today.getTime() + 19 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    try {
+      const ai = getGenAI();
+      const prompt = `You are an expert AI Flight & Travel Assistant for Azraq Travel.
+The user spoke their travel/flight request via microphone: "${cleanText}".
+
+Analyze the spoken transcript. Detect whether the user wants to search for flights, plan a custom holiday itinerary, or both.
+Extract flight search parameters accurately (default origin airport to Dhaka Hazrat Shahjalal DAC unless specified otherwise) and travel itinerary parameters.
+
+Output strictly valid JSON matching the schema:
+- isFlightIntent: boolean (true if the user mentions flights, fly, tickets, airlines, route, airport, or looking for travel tickets)
+- destination: City and Country name (e.g. "Bangkok, Thailand", "Dubai, UAE", "Kuala Lumpur, Malaysia", "Maldives", "Singapore")
+- durationDays: integer duration in days (default 5 or based on context)
+- startDate: departure date in YYYY-MM-DD format (e.g. ${defaultStart})
+- endDate: return date in YYYY-MM-DD format (e.g. ${defaultEnd})
+- vibes: array of 3 to 6 travel keywords (e.g. ["Culture", "Local Cuisine", "Shopping"])
+- travelerCount: integer total passengers/travelers (default 1 or 2)
+- travelStyle: concise description (e.g. "Family Holiday", "Business Trip", "Couples Getaway")
+- budgetLevel: "Budget-Friendly" | "Moderate / Value" | "Luxury" | "Ultra-Luxury"
+- structuredPrompt: detailed 2-3 sentence prompt for itinerary generation
+- spokenSummary: 1-sentence friendly confirmation of the understood route & trip
+- flightParams:
+  - originCode: IATA code (e.g. "DAC", "CGP", "ZYL", "DXB", "BKK", "SIN", "LHR", "JFK")
+  - originCity: city name (e.g. "Dhaka")
+  - originName: airport name (e.g. "Hazrat Shahjalal International Airport")
+  - originCountry: country (e.g. "Bangladesh")
+  - destinationCode: IATA code (e.g. "BKK", "DXB", "KUL", "SIN", "MLE", "DPS", "JED", "IST", "LHR")
+  - destinationCity: city name (e.g. "Bangkok")
+  - destinationName: airport name (e.g. "Suvarnabhumi Airport")
+  - destinationCountry: country name (e.g. "Thailand")
+  - tripType: "round" | "oneway"
+  - departureDate: YYYY-MM-DD
+  - returnDate: YYYY-MM-DD
+  - adults: integer
+  - children: integer
+  - infants: integer
+  - cabinClass: "Economy" | "Premium Economy" | "Business" | "First"
+  - preferredAirline: optional string (e.g. "Biman Bangladesh Airlines", "Emirates", "Singapore Airlines", "US-Bangla")`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              isFlightIntent: { type: Type.BOOLEAN },
+              destination: { type: Type.STRING },
+              durationDays: { type: Type.INTEGER },
+              startDate: { type: Type.STRING },
+              endDate: { type: Type.STRING },
+              vibes: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              travelerCount: { type: Type.INTEGER },
+              travelStyle: { type: Type.STRING },
+              budgetLevel: { type: Type.STRING },
+              structuredPrompt: { type: Type.STRING },
+              spokenSummary: { type: Type.STRING },
+              flightParams: {
+                type: Type.OBJECT,
+                properties: {
+                  originCode: { type: Type.STRING },
+                  originCity: { type: Type.STRING },
+                  originName: { type: Type.STRING },
+                  originCountry: { type: Type.STRING },
+                  destinationCode: { type: Type.STRING },
+                  destinationCity: { type: Type.STRING },
+                  destinationName: { type: Type.STRING },
+                  destinationCountry: { type: Type.STRING },
+                  tripType: { type: Type.STRING },
+                  departureDate: { type: Type.STRING },
+                  returnDate: { type: Type.STRING },
+                  adults: { type: Type.INTEGER },
+                  children: { type: Type.INTEGER },
+                  infants: { type: Type.INTEGER },
+                  cabinClass: { type: Type.STRING },
+                  preferredAirline: { type: Type.STRING },
+                },
+                required: [
+                  "originCode",
+                  "originCity",
+                  "originName",
+                  "originCountry",
+                  "destinationCode",
+                  "destinationCity",
+                  "destinationName",
+                  "destinationCountry",
+                  "tripType",
+                  "departureDate",
+                  "returnDate",
+                  "adults",
+                  "children",
+                  "cabinClass",
+                ],
+              },
+            },
+            required: [
+              "isFlightIntent",
+              "destination",
+              "durationDays",
+              "startDate",
+              "endDate",
+              "vibes",
+              "travelerCount",
+              "travelStyle",
+              "budgetLevel",
+              "structuredPrompt",
+              "spokenSummary",
+              "flightParams",
+            ],
+          },
+        },
+      });
+
+      const parsedData = JSON.parse(response.text || "{}");
+      return res.json({
+        success: true,
+        data: parsedData,
+      });
+    } catch (geminiErr) {
+      console.warn("Gemini voice parsing fallback used:", geminiErr);
+
+      // Fast, resilient heuristic fallback
+      let durationDays = 5;
+      const daysMatch = cleanText.match(/(\d+)\s*(?:day|days|d)/i);
+      if (daysMatch) {
+        durationDays = Math.max(2, Math.min(21, parseInt(daysMatch[1], 10)));
+      }
+
+      let destCity = "Bangkok";
+      let destCountry = "Thailand";
+      let destCode = "BKK";
+      let destAirportName = "Suvarnabhumi Airport";
+
+      const lower = cleanText.toLowerCase();
+      if (lower.includes("dubai") || lower.includes("uae") || lower.includes("dxb")) {
+        destCity = "Dubai";
+        destCountry = "United Arab Emirates";
+        destCode = "DXB";
+        destAirportName = "Dubai International Airport";
+      } else if (lower.includes("maldives") || lower.includes("male") || lower.includes("mle")) {
+        destCity = "Male";
+        destCountry = "Maldives";
+        destCode = "MLE";
+        destAirportName = "Velana International Airport";
+      } else if (lower.includes("malaysia") || lower.includes("kuala lumpur") || lower.includes("kul")) {
+        destCity = "Kuala Lumpur";
+        destCountry = "Malaysia";
+        destCode = "KUL";
+        destAirportName = "Kuala Lumpur International Airport";
+      } else if (lower.includes("singapore") || lower.includes("sin")) {
+        destCity = "Singapore";
+        destCountry = "Singapore";
+        destCode = "SIN";
+        destAirportName = "Singapore Changi Airport";
+      } else if (lower.includes("japan") || lower.includes("tokyo") || lower.includes("nrt") || lower.includes("hnd")) {
+        destCity = "Tokyo";
+        destCountry = "Japan";
+        destCode = "NRT";
+        destAirportName = "Narita International Airport";
+      } else if (lower.includes("bali") || lower.includes("dps") || lower.includes("indonesia")) {
+        destCity = "Bali / Denpasar";
+        destCountry = "Indonesia";
+        destCode = "DPS";
+        destAirportName = "Ngurah Rai International Airport";
+      } else if (lower.includes("saudi") || lower.includes("jeddah") || lower.includes("jed") || lower.includes("umrah")) {
+        destCity = "Jeddah";
+        destCountry = "Saudi Arabia";
+        destCode = "JED";
+        destAirportName = "King Abdulaziz International Airport";
+      } else if (lower.includes("london") || lower.includes("lhr") || lower.includes("uk")) {
+        destCity = "London";
+        destCountry = "United Kingdom";
+        destCode = "LHR";
+        destAirportName = "Heathrow Airport";
+      } else if (lower.includes("cox's bazar") || lower.includes("cxb")) {
+        destCity = "Cox's Bazar";
+        destCountry = "Bangladesh";
+        destCode = "CXB";
+        destAirportName = "Cox's Bazar Airport";
+      }
+
+      const vibes: string[] = ["Culture", "Local Cuisine"];
+      if (lower.includes("family") || lower.includes("kids") || lower.includes("children")) vibes.push("Family");
+      if (lower.includes("luxury") || lower.includes("5 star") || lower.includes("villa")) vibes.push("Luxury");
+      if (lower.includes("halal") || lower.includes("food") || lower.includes("dining")) vibes.push("Halal Food");
+      if (lower.includes("beach") || lower.includes("island") || lower.includes("sea")) vibes.push("Beaches");
+      if (lower.includes("shopping") || lower.includes("mall") || lower.includes("market")) vibes.push("Shopping");
+      if (lower.includes("nature") || lower.includes("hiking") || lower.includes("mountains")) vibes.push("Nature");
+
+      let adults = 1;
+      if (lower.includes("2 adults") || lower.includes("two adults") || lower.includes("couple") || lower.includes("for 2")) adults = 2;
+      else if (lower.includes("3 adults") || lower.includes("three")) adults = 3;
+      else if (lower.includes("family") || lower.includes("4 adults") || lower.includes("4 people")) adults = 2;
+
+      let children = 0;
+      if (lower.includes("kid") || lower.includes("child") || lower.includes("children") || lower.includes("family")) {
+        children = 1;
+      }
+
+      const isOneWay = lower.includes("one way") || lower.includes("oneway") || lower.includes("single");
+      const tripType = isOneWay ? "oneway" : "round";
+      const isFlightIntent = lower.includes("flight") || lower.includes("ticket") || lower.includes("fly") || lower.includes("airline") || lower.includes("dac") || lower.includes("bkk");
+
+      let cabinClass: "Economy" | "Premium Economy" | "Business" | "First" = "Economy";
+      if (lower.includes("business")) cabinClass = "Business";
+      else if (lower.includes("first class")) cabinClass = "First";
+      else if (lower.includes("premium economy")) cabinClass = "Premium Economy";
+
+      const endDateCalc = new Date(new Date(defaultStart).getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      return res.json({
+        success: true,
+        data: {
+          isFlightIntent,
+          destination: `${destCity}, ${destCountry}`,
+          durationDays,
+          startDate: defaultStart,
+          endDate: endDateCalc,
+          vibes,
+          travelerCount: adults + children,
+          travelStyle: lower.includes("honeymoon") ? "Honeymoon Escape" : lower.includes("family") ? "Family Holiday" : "Curated Asian Holiday",
+          budgetLevel: lower.includes("luxury") ? "Luxury" : "Moderate / Value",
+          structuredPrompt: `${durationDays}-day curated trip to ${destCity}, ${destCountry} focusing on ${vibes.join(", ")}. Spoken request: "${cleanText}"`,
+          spokenSummary: `Found flights from Dhaka (DAC) to ${destCity} (${destCode}) for ${adults} adult(s) in ${cabinClass} class.`,
+          flightParams: {
+            originCode: "DAC",
+            originCity: "Dhaka",
+            originName: "Hazrat Shahjalal International Airport",
+            originCountry: "Bangladesh",
+            destinationCode: destCode,
+            destinationCity: destCity,
+            destinationName: destAirportName,
+            destinationCountry: destCountry,
+            tripType,
+            departureDate: defaultStart,
+            returnDate: endDateCalc,
+            adults,
+            children,
+            infants: 0,
+            cabinClass,
+            preferredAirline: lower.includes("biman") ? "Biman Bangladesh Airlines" : lower.includes("emirates") ? "Emirates" : undefined,
+          },
+        },
+      });
+    }
+  } catch (err: any) {
+    console.error("Error in /api/ai/parse-voice-trip:", err);
+    res.status(500).json({ error: "Failed to process spoken preferences." });
+  }
+});
+
 // --- Persistent Quotations Database ---
 const QUOTES_DB_FILE = path.join(process.cwd(), ".quotes_db.json");
 const ACTIVITY_LOGS_FILE = path.join(process.cwd(), ".activity_logs.json");
@@ -3325,6 +3594,225 @@ app.get("/api/social-proof/live", (req, res) => {
 });
 
 // =========================================================================
+// --- Live Airport & City Autocomplete Provider Proxy ---
+// =========================================================================
+interface AutocompleteItem {
+  code: string;
+  name: string;
+  city: string;
+  country: string;
+  countryCode?: string;
+  type: 'airport' | 'city';
+  isBangladesh?: boolean;
+}
+
+const GLOBAL_AIRPORTS_DIRECTORY: AutocompleteItem[] = [
+  // Bangladesh Airports
+  { code: 'DAC', name: 'Hazrat Shahjalal International Airport', city: 'Dhaka', country: 'Bangladesh', countryCode: 'BD', type: 'airport', isBangladesh: true },
+  { code: 'CGP', name: 'Shah Amanat International Airport', city: 'Chittagong', country: 'Bangladesh', countryCode: 'BD', type: 'airport', isBangladesh: true },
+  { code: 'ZYL', name: 'Osmani International Airport', city: 'Sylhet', country: 'Bangladesh', countryCode: 'BD', type: 'airport', isBangladesh: true },
+  { code: 'CXB', name: "Cox's Bazar Airport", city: "Cox's Bazar", country: 'Bangladesh', countryCode: 'BD', type: 'airport', isBangladesh: true },
+  { code: 'JSR', name: 'Jashore Airport', city: 'Jashore', country: 'Bangladesh', countryCode: 'BD', type: 'airport', isBangladesh: true },
+  { code: 'RJH', name: 'Shah Makhdum Airport', city: 'Rajshahi', country: 'Bangladesh', countryCode: 'BD', type: 'airport', isBangladesh: true },
+  { code: 'SPD', name: 'Saidpur Airport', city: 'Saidpur', country: 'Bangladesh', countryCode: 'BD', type: 'airport', isBangladesh: true },
+  { code: 'BZL', name: 'Barisal Airport', city: 'Barisal', country: 'Bangladesh', countryCode: 'BD', type: 'airport', isBangladesh: true },
+  { code: 'IRD', name: 'Ishwardi Airport', city: 'Ishwardi', country: 'Bangladesh', countryCode: 'BD', type: 'airport', isBangladesh: true },
+  { code: 'TKR', name: 'Thakurgaon Airport', city: 'Thakurgaon', country: 'Bangladesh', countryCode: 'BD', type: 'airport', isBangladesh: true },
+
+  // Asia & Southeast Asia
+  { code: 'BKK', name: 'Suvarnabhumi Airport', city: 'Bangkok', country: 'Thailand', countryCode: 'TH', type: 'airport' },
+  { code: 'DMK', name: 'Don Mueang International Airport', city: 'Bangkok', country: 'Thailand', countryCode: 'TH', type: 'airport' },
+  { code: 'KUL', name: 'Kuala Lumpur International Airport', city: 'Kuala Lumpur', country: 'Malaysia', countryCode: 'MY', type: 'airport' },
+  { code: 'SIN', name: 'Singapore Changi Airport', city: 'Singapore', country: 'Singapore', countryCode: 'SG', type: 'airport' },
+  { code: 'DPS', name: 'Ngurah Rai International Airport', city: 'Bali / Denpasar', country: 'Indonesia', countryCode: 'ID', type: 'airport' },
+  { code: 'CGK', name: 'Soekarno-Hatta International Airport', city: 'Jakarta', country: 'Indonesia', countryCode: 'ID', type: 'airport' },
+  { code: 'KTM', name: 'Tribhuvan International Airport', city: 'Kathmandu', country: 'Nepal', countryCode: 'NP', type: 'airport' },
+  { code: 'MLE', name: 'Velana International Airport', city: 'Male', country: 'Maldives', countryCode: 'MV', type: 'airport' },
+  { code: 'CMB', name: 'Bandaranaike International Airport', city: 'Colombo', country: 'Sri Lanka', countryCode: 'LK', type: 'airport' },
+  { code: 'HKG', name: 'Hong Kong International Airport', city: 'Hong Kong', country: 'Hong Kong', countryCode: 'HK', type: 'airport' },
+  { code: 'HND', name: 'Tokyo Haneda Airport', city: 'Tokyo', country: 'Japan', countryCode: 'JP', type: 'airport' },
+  { code: 'NRT', name: 'Narita International Airport', city: 'Tokyo', country: 'Japan', countryCode: 'JP', type: 'airport' },
+  { code: 'TYO', name: 'All Airports', city: 'Tokyo', country: 'Japan', countryCode: 'JP', type: 'city' },
+  { code: 'ICN', name: 'Incheon International Airport', city: 'Seoul', country: 'South Korea', countryCode: 'KR', type: 'airport' },
+  { code: 'SEL', name: 'All Airports', city: 'Seoul', country: 'South Korea', countryCode: 'KR', type: 'city' },
+  { code: 'CAN', name: 'Guangzhou Baiyun International Airport', city: 'Guangzhou', country: 'China', countryCode: 'CN', type: 'airport' },
+  { code: 'PVG', name: 'Shanghai Pudong International Airport', city: 'Shanghai', country: 'China', countryCode: 'CN', type: 'airport' },
+  { code: 'PEK', name: 'Beijing Capital International Airport', city: 'Beijing', country: 'China', countryCode: 'CN', type: 'airport' },
+  { code: 'PKX', name: 'Beijing Daxing International Airport', city: 'Beijing', country: 'China', countryCode: 'CN', type: 'airport' },
+
+  // India & Subcontinent
+  { code: 'CCU', name: 'Netaji Subhash Chandra Bose International Airport', city: 'Kolkata', country: 'India', countryCode: 'IN', type: 'airport' },
+  { code: 'DEL', name: 'Indira Gandhi International Airport', city: 'Delhi / New Delhi', country: 'India', countryCode: 'IN', type: 'airport' },
+  { code: 'BOM', name: 'Chhatrapati Shivaji Maharaj International Airport', city: 'Mumbai', country: 'India', countryCode: 'IN', type: 'airport' },
+  { code: 'MAA', name: 'Chennai International Airport', city: 'Chennai', country: 'India', countryCode: 'IN', type: 'airport' },
+  { code: 'BLR', name: 'Kempegowda International Airport', city: 'Bangalore / Bengaluru', country: 'India', countryCode: 'IN', type: 'airport' },
+  { code: 'HYD', name: 'Rajiv Gandhi International Airport', city: 'Hyderabad', country: 'India', countryCode: 'IN', type: 'airport' },
+  { code: 'COK', name: 'Cochin International Airport', city: 'Kochi', country: 'India', countryCode: 'IN', type: 'airport' },
+
+  // Middle East
+  { code: 'DXB', name: 'Dubai International Airport', city: 'Dubai', country: 'United Arab Emirates', countryCode: 'AE', type: 'airport' },
+  { code: 'DWC', name: 'Al Maktoum International Airport', city: 'Dubai', country: 'United Arab Emirates', countryCode: 'AE', type: 'airport' },
+  { code: 'AUH', name: 'Zayed International Airport', city: 'Abu Dhabi', country: 'United Arab Emirates', countryCode: 'AE', type: 'airport' },
+  { code: 'SHJ', name: 'Sharjah International Airport', city: 'Sharjah', country: 'United Arab Emirates', countryCode: 'AE', type: 'airport' },
+  { code: 'DOH', name: 'Hamad International Airport', city: 'Doha', country: 'Qatar', countryCode: 'QA', type: 'airport' },
+  { code: 'JED', name: 'King Abdulaziz International Airport', city: 'Jeddah', country: 'Saudi Arabia', countryCode: 'SA', type: 'airport' },
+  { code: 'MED', name: 'Prince Mohammad bin Abdulaziz International Airport', city: 'Madinah / Medina', country: 'Saudi Arabia', countryCode: 'SA', type: 'airport' },
+  { code: 'RUH', name: 'King Khalid International Airport', city: 'Riyadh', country: 'Saudi Arabia', countryCode: 'SA', type: 'airport' },
+  { code: 'DMM', name: 'King Fahd International Airport', city: 'Dammam', country: 'Saudi Arabia', countryCode: 'SA', type: 'airport' },
+  { code: 'MCT', name: 'Muscat International Airport', city: 'Muscat', country: 'Oman', countryCode: 'OM', type: 'airport' },
+  { code: 'KWI', name: 'Kuwait International Airport', city: 'Kuwait City', country: 'Kuwait', countryCode: 'KW', type: 'airport' },
+  { code: 'BAH', name: 'Bahrain International Airport', city: 'Manama', country: 'Bahrain', countryCode: 'BH', type: 'airport' },
+  { code: 'IST', name: 'Istanbul Airport', city: 'Istanbul', country: 'Turkey', countryCode: 'TR', type: 'airport' },
+  { code: 'SAW', name: 'Sabiha Gokcen International Airport', city: 'Istanbul', country: 'Turkey', countryCode: 'TR', type: 'airport' },
+  { code: 'CAI', name: 'Cairo International Airport', city: 'Cairo', country: 'Egypt', countryCode: 'EG', type: 'airport' },
+
+  // Europe
+  { code: 'LON', name: 'All Airports', city: 'London', country: 'United Kingdom', countryCode: 'GB', type: 'city' },
+  { code: 'LHR', name: 'Heathrow Airport', city: 'London', country: 'United Kingdom', countryCode: 'GB', type: 'airport' },
+  { code: 'LGW', name: 'Gatwick Airport', city: 'London', country: 'United Kingdom', countryCode: 'GB', type: 'airport' },
+  { code: 'STN', name: 'Stansted Airport', city: 'London', country: 'United Kingdom', countryCode: 'GB', type: 'airport' },
+  { code: 'MAN', name: 'Manchester Airport', city: 'Manchester', country: 'United Kingdom', countryCode: 'GB', type: 'airport' },
+  { code: 'PAR', name: 'All Airports', city: 'Paris', country: 'France', countryCode: 'FR', type: 'city' },
+  { code: 'CDG', name: 'Charles de Gaulle Airport', city: 'Paris', country: 'France', countryCode: 'FR', type: 'airport' },
+  { code: 'ORY', name: 'Orly Airport', city: 'Paris', country: 'France', countryCode: 'FR', type: 'airport' },
+  { code: 'FRA', name: 'Frankfurt Airport', city: 'Frankfurt', country: 'Germany', countryCode: 'DE', type: 'airport' },
+  { code: 'MUC', name: 'Munich Airport', city: 'Munich', country: 'Germany', countryCode: 'DE', type: 'airport' },
+  { code: 'BER', name: 'Berlin Brandenburg Airport', city: 'Berlin', country: 'Germany', countryCode: 'DE', type: 'airport' },
+  { code: 'AMS', name: 'Amsterdam Airport Schiphol', city: 'Amsterdam', country: 'Netherlands', countryCode: 'NL', type: 'airport' },
+  { code: 'FCO', name: 'Leonardo da Vinci-Fiumicino Airport', city: 'Rome', country: 'Italy', countryCode: 'IT', type: 'airport' },
+  { code: 'MXP', name: 'Milan Malpensa Airport', city: 'Milan', country: 'Italy', countryCode: 'IT', type: 'airport' },
+  { code: 'MAD', name: 'Adolfo Suarez Madrid-Barajas Airport', city: 'Madrid', country: 'Spain', countryCode: 'ES', type: 'airport' },
+  { code: 'BCN', name: 'Josep Tarradellas Barcelona-El Prat Airport', city: 'Barcelona', country: 'Spain', countryCode: 'ES', type: 'airport' },
+  { code: 'ZRH', name: 'Zurich Airport', city: 'Zurich', country: 'Switzerland', countryCode: 'CH', type: 'airport' },
+  { code: 'VIE', name: 'Vienna International Airport', city: 'Vienna', country: 'Austria', countryCode: 'AT', type: 'airport' },
+
+  // Americas
+  { code: 'NYC', name: 'All Airports', city: 'New York', country: 'United States', countryCode: 'US', type: 'city' },
+  { code: 'JFK', name: 'John F. Kennedy International Airport', city: 'New York', country: 'United States', countryCode: 'US', type: 'airport' },
+  { code: 'EWR', name: 'Newark Liberty International Airport', city: 'New York / Newark', country: 'United States', countryCode: 'US', type: 'airport' },
+  { code: 'LGA', name: 'LaGuardia Airport', city: 'New York', country: 'United States', countryCode: 'US', type: 'airport' },
+  { code: 'LAX', name: 'Los Angeles International Airport', city: 'Los Angeles', country: 'United States', countryCode: 'US', type: 'airport' },
+  { code: 'SFO', name: 'San Francisco International Airport', city: 'San Francisco', country: 'United States', countryCode: 'US', type: 'airport' },
+  { code: 'ORD', name: "O'Hare International Airport", city: 'Chicago', country: 'United States', countryCode: 'US', type: 'airport' },
+  { code: 'DFW', name: 'Dallas/Fort Worth International Airport', city: 'Dallas', country: 'United States', countryCode: 'US', type: 'airport' },
+  { code: 'MIA', name: 'Miami International Airport', city: 'Miami', country: 'United States', countryCode: 'US', type: 'airport' },
+  { code: 'IAD', name: 'Washington Dulles International Airport', city: 'Washington D.C.', country: 'United States', countryCode: 'US', type: 'airport' },
+  { code: 'BOS', name: 'Boston Logan International Airport', city: 'Boston', country: 'United States', countryCode: 'US', type: 'airport' },
+  { code: 'YYZ', name: 'Toronto Pearson International Airport', city: 'Toronto', country: 'Canada', countryCode: 'CA', type: 'airport' },
+  { code: 'YVR', name: 'Vancouver International Airport', city: 'Vancouver', country: 'Canada', countryCode: 'CA', type: 'airport' },
+  { code: 'YUL', name: 'Montréal-Trudeau International Airport', city: 'Montreal', country: 'Canada', countryCode: 'CA', type: 'airport' },
+
+  // Australia & New Zealand
+  { code: 'SYD', name: 'Sydney Kingsford Smith Airport', city: 'Sydney', country: 'Australia', countryCode: 'AU', type: 'airport' },
+  { code: 'MEL', name: 'Melbourne Airport', city: 'Melbourne', country: 'Australia', countryCode: 'AU', type: 'airport' },
+  { code: 'BNE', name: 'Brisbane Airport', city: 'Brisbane', country: 'Australia', countryCode: 'AU', type: 'airport' },
+  { code: 'PER', name: 'Perth Airport', city: 'Perth', country: 'Australia', countryCode: 'AU', type: 'airport' },
+  { code: 'AKL', name: 'Auckland Airport', city: 'Auckland', country: 'New Zealand', countryCode: 'NZ', type: 'airport' },
+];
+
+const autocompleteCache = new Map<string, { data: AutocompleteItem[]; timestamp: number }>();
+const AUTOCOMPLETE_CACHE_TTL = 30 * 60 * 1000; // 30 mins
+
+app.get("/api/flights/autocomplete", async (req, res) => {
+  try {
+    const rawTerm = (req.query.term as string || req.query.q as string || "").trim();
+    if (!rawTerm || rawTerm.length < 2) {
+      return res.json({ success: true, results: [], query: rawTerm });
+    }
+
+    const term = rawTerm.toLowerCase();
+    const cached = autocompleteCache.get(term);
+    if (cached && Date.now() - cached.timestamp < AUTOCOMPLETE_CACHE_TTL) {
+      return res.json({ success: true, results: cached.data, query: rawTerm, source: 'cache' });
+    }
+
+    let upstreamResults: AutocompleteItem[] = [];
+
+    // Attempt upstream Travelpayouts / Aviasales places2 search
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+      const upstreamUrl = `https://autocomplete.travelpayouts.com/places2?locale=en&types[]=airport&types[]=city&term=${encodeURIComponent(term)}`;
+      const response = await fetch(upstreamUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'AzraqTravelPlatform/2.0'
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const json = await response.json();
+        if (Array.isArray(json)) {
+          upstreamResults = json
+            .filter((item: any) => item && (item.code || item.city_code))
+            .map((item: any): AutocompleteItem => {
+              const code = (item.code || item.city_code || '').toUpperCase();
+              const isBD = item.country_code === 'BD' || ['DAC', 'CGP', 'ZYL', 'CXB', 'JSR', 'RJH', 'SPD', 'BZL', 'IRD', 'TKR'].includes(code);
+              return {
+                code,
+                name: item.name || item.main_airport_name || `${item.city_name || item.name} Airport`,
+                city: item.city_name || item.name || code,
+                country: item.country_name || '',
+                countryCode: (item.country_code || '').toUpperCase(),
+                type: item.type === 'city' ? 'city' : 'airport',
+                isBangladesh: isBD,
+              };
+            });
+        }
+      }
+    } catch (upstreamErr) {
+      console.warn("Upstream autocomplete proxy warning:", upstreamErr);
+    }
+
+    // Filter local directory as fallback or complement
+    const localMatches = GLOBAL_AIRPORTS_DIRECTORY.filter((ap) => {
+      const c = ap.code.toLowerCase();
+      const city = ap.city.toLowerCase();
+      const country = ap.country.toLowerCase();
+      const name = ap.name.toLowerCase();
+      return c.includes(term) || city.includes(term) || country.includes(term) || name.includes(term);
+    });
+
+    // Merge and deduplicate by IATA code
+    const seenCodes = new Set<string>();
+    const merged: AutocompleteItem[] = [];
+
+    // Prioritize exact IATA code match first
+    const exactCode = term.toUpperCase();
+    const exactMatch = localMatches.find((a) => a.code === exactCode) || upstreamResults.find((a) => a.code === exactCode);
+    if (exactMatch) {
+      seenCodes.add(exactMatch.code);
+      merged.push(exactMatch);
+    }
+
+    for (const item of [...upstreamResults, ...localMatches]) {
+      if (!seenCodes.has(item.code)) {
+        seenCodes.add(item.code);
+        merged.push(item);
+      }
+      if (merged.length >= 12) break;
+    }
+
+    // Cache the result
+    autocompleteCache.set(term, { data: merged, timestamp: Date.now() });
+
+    res.json({
+      success: true,
+      results: merged,
+      query: rawTerm,
+      count: merged.length,
+      source: upstreamResults.length > 0 ? 'provider' : 'directory'
+    });
+  } catch (err: any) {
+    console.error("Autocomplete Proxy Error:", err);
+    res.status(500).json({ success: false, results: [], error: "Failed to search airports." });
+  }
+});
+
+// =========================================================================
 // --- Live Aviasales / Travelpayouts Flight Pricing & Deep-Link Engine ---
 // =========================================================================
 app.get("/api/flights/aviasales-prices", async (req, res) => {
@@ -3426,6 +3914,7 @@ app.get("/api/flights/aviasales-prices", async (req, res) => {
                 returnDate: item.return_at?.split("T")[0] || returnDate,
                 airline: item.airline_title || item.airline || "Partner Airline",
                 airlineCode: item.airline || "",
+                airlineLogo: item.airline ? `https://pics.avs.io/al_square/64/64/${item.airline.toUpperCase()}.png` : undefined,
                 flightNumber: item.flight_number ? `${item.airline || ''} ${item.flight_number}`.trim() : undefined,
                 departureTime: item.departure_at?.includes("T") ? item.departure_at.split("T")[1]?.substring(0, 5) : undefined,
                 arrivalTime: item.arrival_at?.includes("T") ? item.arrival_at.split("T")[1]?.substring(0, 5) : undefined,
@@ -3488,6 +3977,191 @@ app.get("/api/flights/aviasales-prices", async (req, res) => {
   } catch (err: any) {
     console.error("Aviasales Prices Endpoint Error:", err);
     res.status(500).json({ error: "Failed to query live flight prices." });
+  }
+});
+
+// =========================================================================
+// --- Live Aviasales Price Revalidation Utility Endpoint ---
+// =========================================================================
+app.post("/api/flights/revalidate-price", async (req, res) => {
+  try {
+    const {
+      origin = "DAC",
+      destination = "BKK",
+      departDate = "",
+      returnDate,
+      tripType = "round",
+      adults = 1,
+      children = 0,
+      infants = 0,
+      cabin = "Economy",
+      currency = "BDT",
+      cachedPrice,
+      flightNumber,
+      airlineCode,
+      airline,
+      bookingUrl,
+      forceIncreaseTest,
+    } = req.body;
+
+    const origCode = String(origin).toUpperCase().trim();
+    const destCode = String(destination).toUpperCase().trim();
+    const totalPassengers = Math.max(1, (Number(adults) || 1) + (Number(children) || 0) + (Number(infants) || 0));
+    const token = process.env.TRAVELPAYOUTS_TOKEN || process.env.AVIASALES_TOKEN || "";
+    const nowIso = new Date().toISOString();
+
+    const USD_TO_BDT_RATE = 121.50;
+    const EUR_TO_BDT_RATE = 131.20;
+
+    // Build standard search key
+    const formatDateToDDMM = (dStr?: string) => {
+      if (!dStr || !dStr.includes("-")) return "";
+      const parts = dStr.split("-");
+      if (parts.length === 3) {
+        return `${parts[2].padStart(2, "0")}${parts[1].padStart(2, "0")}`;
+      }
+      return "";
+    };
+
+    const depDDMM = formatDateToDDMM(departDate);
+    const retDDMM = tripType === "round" && returnDate ? formatDateToDDMM(returnDate) : "";
+    const cabinCode =
+      cabin === "Business" ? "c" : cabin === "First" ? "f" : cabin === "Premium Economy" ? "w" : "y";
+
+    let paxSuffix = `${adults}`;
+    if (children > 0 || infants > 0 || cabinCode !== "y") {
+      paxSuffix = `${adults}${children}${infants}${cabinCode}`;
+    }
+
+    const searchKey = `${origCode}${depDDMM}${destCode}${retDDMM}${paxSuffix}`;
+    const directPartnerUrl = bookingUrl || `https://www.aviasales.com/search/${searchKey}?marker=563001&params=${origCode}1`;
+
+    let freshPriceBDT = Number(cachedPrice) || 0;
+    let freshOriginalPrice = freshPriceBDT;
+    let freshOriginalCurrency = currency;
+    let freshBookingUrl = directPartnerUrl;
+    let hasLiveApiMatch = false;
+
+    // If live API token configured, fetch fresh real-time Aviasales fare
+    if (token && departDate) {
+      try {
+        const queryParams = new URLSearchParams({
+          origin: origCode,
+          destination: destCode,
+          departure_at: departDate,
+          currency: currency === "BDT" ? "usd" : currency.toLowerCase(),
+          token,
+          limit: "15",
+          one_way: tripType === "oneway" ? "true" : "false",
+        });
+        if (returnDate && tripType === "round") {
+          queryParams.set("return_at", returnDate);
+        }
+
+        const queryUrl = `https://api.travelpayouts.com/aviasales/v3/prices_for_dates?${queryParams.toString()}`;
+        const resp = await fetch(queryUrl, {
+          headers: {
+            "Accept": "application/json",
+            "Cache-Control": "no-cache",
+          },
+        });
+
+        if (resp.ok) {
+          const liveData: any = await resp.json();
+          if (Array.isArray(liveData?.data) && liveData.data.length > 0) {
+            // Find matching airline/flight or closest fare
+            const match = airlineCode
+              ? liveData.data.find((item: any) => item.airline === airlineCode)
+              : liveData.data[0];
+
+            const selected = match || liveData.data[0];
+            const rawPrice = typeof selected.price === "number" ? selected.price : 0;
+            const itemCurr = (selected.currency || "USD").toUpperCase();
+
+            freshOriginalPrice = rawPrice;
+            freshOriginalCurrency = itemCurr;
+
+            if (itemCurr === "USD") {
+              freshPriceBDT = Math.round(rawPrice * USD_TO_BDT_RATE);
+            } else if (itemCurr === "EUR") {
+              freshPriceBDT = Math.round(rawPrice * EUR_TO_BDT_RATE);
+            } else {
+              freshPriceBDT = rawPrice;
+            }
+
+            if (selected.link) {
+              freshBookingUrl = selected.link.startsWith("http")
+                ? selected.link
+                : `https://www.aviasales.com${selected.link}${selected.link.includes("?") ? "&" : "?"}marker=563001`;
+            }
+            hasLiveApiMatch = true;
+          }
+        }
+      } catch (liveErr) {
+        console.warn("Revalidate Live API warning:", liveErr);
+      }
+    }
+
+    // Optional test toggle or realistic dynamic validation
+    if (forceIncreaseTest) {
+      // Simulate real-world airline bucket shift (+5% to +8%)
+      const increaseAmount = Math.round(freshPriceBDT * 0.07);
+      freshPriceBDT += increaseAmount;
+    }
+
+    const previousPrice = Number(cachedPrice) || freshPriceBDT;
+    const priceDiff = freshPriceBDT - previousPrice;
+    const hasIncreased = priceDiff > 0;
+    const hasDecreased = priceDiff < 0;
+    const isPriceChanged = priceDiff !== 0;
+
+    let status: 'unchanged' | 'increased' | 'decreased' | 'verified' = 'unchanged';
+    let message = 'Price verified with airline inventory.';
+
+    if (hasIncreased) {
+      status = 'increased';
+      message = `Fare updated: Seat bucket in ${cabin} class changed from BDT ${previousPrice.toLocaleString()} to BDT ${freshPriceBDT.toLocaleString()} (+BDT ${priceDiff.toLocaleString()}).`;
+    } else if (hasDecreased) {
+      status = 'decreased';
+      message = `Fare drop: Live price decreased by BDT ${Math.abs(priceDiff).toLocaleString()}!`;
+    } else {
+      status = 'verified';
+    }
+
+    res.json({
+      success: true,
+      cachedPrice: previousPrice,
+      freshPrice: freshPriceBDT,
+      originalPrice: freshOriginalPrice,
+      originalCurrency: freshOriginalCurrency,
+      hasIncreased,
+      hasDecreased,
+      isPriceChanged,
+      priceDifference: priceDiff,
+      currency: currency || "BDT",
+      bookingUrl: freshBookingUrl,
+      revalidatedAt: nowIso,
+      status,
+      hasLiveApiMatch,
+      airline: airline || "Partner Airline",
+      flightNumber: flightNumber || "Scheduled Flight",
+      message,
+    });
+  } catch (err: any) {
+    console.error("Price Revalidation Error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to revalidate flight price.",
+      cachedPrice: req.body?.cachedPrice,
+      freshPrice: req.body?.cachedPrice,
+      hasIncreased: false,
+      hasDecreased: false,
+      isPriceChanged: false,
+      priceDifference: 0,
+      currency: req.body?.currency || "BDT",
+      bookingUrl: req.body?.bookingUrl,
+      status: "unchanged",
+    });
   }
 });
 

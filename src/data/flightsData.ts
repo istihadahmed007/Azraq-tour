@@ -762,10 +762,23 @@ export function buildAviasalesSearchUrl(params: AviasalesSearchParams = {}): str
 }
 
 /**
- * Anonymous event tracker for flight searches and affiliate click attribution
+ * Anonymous event tracker for flight searches, autocomplete, and affiliate click attribution
  */
 export function trackFlightSearchEvent(
-  eventName: 'flight_search_started' | 'origin_selected' | 'destination_selected' | 'search_completed' | 'destination_card_clicked' | 'affiliate_deal_clicked',
+  eventName:
+    | 'airport_query'
+    | 'airport_selected'
+    | 'quick_route_used'
+    | 'search_submitted'
+    | 'results_returned'
+    | 'partner_redirect'
+    | 'desk_quote_started'
+    | 'flight_search_started'
+    | 'origin_selected'
+    | 'destination_selected'
+    | 'search_completed'
+    | 'destination_card_clicked'
+    | 'affiliate_deal_clicked',
   payload: Record<string, any>
 ) {
   try {
@@ -774,9 +787,12 @@ export function trackFlightSearchEvent(
       timestamp: new Date().toISOString(),
       ...payload,
     };
-    // Log to console for development audit
+    // Log to console for development audit & dispatch custom DOM event
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('azraq_flight_analytics', { detail: logData }));
+      if ((import.meta as any).env?.DEV) {
+        console.log(`%c[Flight Analytics] ${eventName}`, 'color: #006ce4; font-weight: bold;', payload);
+      }
     }
   } catch {
     // ignore

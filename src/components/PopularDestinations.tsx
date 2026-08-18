@@ -135,7 +135,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
               </div>
 
               {/* Flight Duration from DAC */}
-              <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-xs text-slate-800 text-[10px] font-bold flex items-center gap-1 shadow-xs">
+              <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-slate-800 text-[10px] font-bold flex items-center gap-1 shadow-sm">
                 <Clock className="w-2.5 h-2.5 text-blue-600" />
                 <span>{dest.flightDurationFromDAC}</span>
               </div>

@@ -41,6 +41,7 @@ import {
   buildDynamicFlightWhatsAppUrl,
   buildDynamicFlightShareText,
 } from '../utils/flightSearchEngine';
+import { AirlineLogo } from './AirlineLogo';
 
 interface FlightItineraryTimelineProps {
   search?: NormalizedFlightSearch;
@@ -210,8 +211,8 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
           {/* Route Title & Main Specs */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-sky-300 text-xs font-bold font-mono">
-                <Plane className="w-3 h-3 text-sky-400" />
+              <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-sky-200 text-xs font-bold">
+                <AirlineLogo airlineName={currentItinerary.primaryAirlineName} size="xs" />
                 <span>{currentItinerary.primaryAirlineName}</span>
               </span>
 
@@ -475,6 +476,7 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
                   >
                     {/* Top Flight Badge */}
                     <div className="flex items-center justify-center gap-2 mb-1.5 flex-wrap">
+                      <AirlineLogo airlineCode={seg1.airlineCode} airlineName={seg1.airlineName} size="xs" />
                       <span className="font-mono font-bold text-xs text-blue-900 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
                         {seg1.flightNumber}
                       </span>
@@ -533,7 +535,7 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
                       >
                         {/* Transit Pulse Node */}
                         <div
-                          className={`w-13 h-13 rounded-2xl flex flex-col items-center justify-center transition-all border-2 ${
+                          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex flex-col items-center justify-center transition-all border-2 ${
                             isSelected
                               ? 'bg-amber-500 text-white border-amber-300 ring-4 ring-amber-100 scale-105 shadow-lg'
                               : 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200 hover:scale-105 shadow-md'
@@ -587,6 +589,7 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
                         >
                           {/* Flight Badge */}
                           <div className="flex items-center justify-center gap-2 mb-1.5 flex-wrap">
+                            <AirlineLogo airlineCode={seg2.airlineCode} airlineName={seg2.airlineName} size="xs" />
                             <span className="font-mono font-bold text-xs text-blue-900 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
                               {seg2.flightNumber}
                             </span>
@@ -858,9 +861,7 @@ export const FlightItineraryTimeline: React.FC<FlightItineraryTimelineProps> = (
               <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-bold flex items-center justify-center">
-                      {seg.airlineCode}
-                    </div>
+                    <AirlineLogo airlineCode={seg.airlineCode} airlineName={seg.airlineName} size="md" />
                     <div>
                       <h4 className="font-bold text-slate-900 text-sm">
                         {seg.airlineName} · {seg.flightNumber}

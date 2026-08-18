@@ -1,57 +1,163 @@
-import React from 'react';
-import { ExternalLink, ShieldCheck, AlertCircle, X, Check, Plane, MessageCircle, Clock, Luggage } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  ExternalLink,
+  ShieldCheck,
+  AlertTriangle,
+  X,
+  Check,
+  Plane,
+  MessageCircle,
+  Clock,
+  Luggage,
+  RefreshCw,
+  TrendingUp,
+  ArrowRight,
+} from 'lucide-react';
 import { FlightOffer } from '../data/flightsData';
 import { AZRAQ_AGENCY_CONFIG } from '../data/agencyConfig';
+import { revalidateFlightPrice } from '../utils/flightSearchEngine';
+import { PriceRevalidationResult } from '../types';
 
 interface PartnerRedirectModalProps {
   flight: FlightOffer | null;
   isOpen: boolean;
   onClose: () => void;
+  onPriceUpdated?: (flightId: string, freshPrice: number) => void;
 }
 
 export const PartnerRedirectModal: React.FC<PartnerRedirectModalProps> = ({
   flight,
   isOpen,
   onClose,
+  onPriceUpdated,
 }) => {
+  const [isRevalidating, setIsRevalidating] = useState(false);
+  const [revalidationResult, setRevalidationResult] = useState<PriceRevalidationResult | null>(null);
+
   if (!isOpen || !flight) return null;
 
-  const partnerUrl =
+  const initialPartnerUrl =
     flight.partnerDeepLink ||
     AZRAQ_AGENCY_CONFIG.aviasalesAffiliateUrl ||
     'https://aviasales.tp.st/72ntufDx';
 
+  const handleProceedBooking = async () => {
+    setIsRevalidating(true);
+    try {
+      const result = await revalidateFlightPrice(flight);
+      if (result.hasIncreased) {
+        setRevalidationResult(result);
+      } else {
+        const targetUrl = result.bookingUrl || initialPartnerUrl;
+        if (result.hasDecreased && onPriceUpdated) {
+          onPriceUpdated(flight.id, result.freshPrice);
+        }
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        handleCloseModal();
+      }
+    } catch (err) {
+      window.open(initialPartnerUrl, '_blank', 'noopener,noreferrer');
+      handleCloseModal();
+    } finally {
+      setIsRevalidating(false);
+    }
+  };
+
+  const handleAcceptPriceIncrease = () => {
+    if (!revalidationResult) return;
+    if (onPriceUpdated) {
+      onPriceUpdated(flight.id, revalidationResult.freshPrice);
+    }
+    const targetUrl = revalidationResult.bookingUrl || initialPartnerUrl;
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    handleCloseModal();
+  };
+
+  const handleCloseModal = () => {
+    setRevalidationResult(null);
+    setIsRevalidating(false);
+    onClose();
+  };
+
+  const currentPrice = revalidationResult ? revalidationResult.freshPrice : flight.priceBDT;
+  const cachedPrice = revalidationResult ? revalidationResult.cachedPrice : flight.priceBDT;
+  const priceDiff = revalidationResult ? revalidationResult.priceDifference : 0;
+  const percentDiff = cachedPrice > 0 ? ((priceDiff / cachedPrice) * 100).toFixed(1) : '0';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn font-sans">
       <div
         className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="bg-[#071A33] text-white p-5 sm:p-6 relative">
+        <div className={`text-white p-5 sm:p-6 relative transition-colors ${revalidationResult?.hasIncreased ? 'bg-gradient-to-r from-amber-600 to-amber-700' : 'bg-[#071A33]'}`}>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleCloseModal}
             className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center gap-2 text-sky-400 text-xs font-bold uppercase tracking-wider mb-1">
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span>Official Partner Booking & Itinerary</span>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-1">
+            {revalidationResult?.hasIncreased ? (
+              <>
+                <AlertTriangle className="w-4 h-4 text-amber-300" />
+                <span className="text-amber-200">Live Fare Update Detected</span>
+              </>
+            ) : (
+              <>
+                <ExternalLink className="w-3.5 h-3.5 text-sky-400" />
+                <span className="text-sky-400">Official Partner Booking & Itinerary</span>
+              </>
+            )}
           </div>
 
-          <h3 className="text-xl font-bold text-white tracking-tight">
-            {flight.airlineName} · {flight.flightNumber}
+          <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            {revalidationResult?.hasIncreased ? 'Airline Fare Updated' : `${flight.airlineName} · ${flight.flightNumber}`}
           </h3>
-          <p className="text-xs text-slate-300 mt-1">
+          <p className="text-xs text-slate-200 mt-1">
             {flight.origin.city} ({flight.origin.code}) ➔ {flight.destination.city} ({flight.destination.code}) • {flight.cabinClass} Class
           </p>
         </div>
 
         {/* Modal Body */}
         <div className="p-5 sm:p-6 space-y-5 text-slate-700 text-sm max-h-[80vh] overflow-y-auto">
+          {/* Price Increase Warning Box */}
+          {revalidationResult?.hasIncreased && (
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                  Fare Change Summary
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs font-black text-amber-800 bg-amber-200 px-2 py-0.5 rounded-full">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>+{percentDiff}% (+Tk {priceDiff.toLocaleString()})</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="p-3 bg-white/80 rounded-xl border border-amber-200/60">
+                  <span className="text-[11px] text-slate-400 font-bold block">Previous Cached Fare</span>
+                  <span className="text-lg font-bold text-slate-400 line-through font-mono">
+                    Tk {cachedPrice.toLocaleString()}
+                  </span>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-amber-400">
+                  <span className="text-[11px] text-amber-900 font-bold block">Verified Live Fare</span>
+                  <span className="text-xl font-black text-amber-950 font-mono">
+                    Tk {currentPrice.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-amber-800 leading-relaxed">
+                The airline has adjusted seats in this booking tier. Please confirm if you wish to proceed to checkout with the verified live fare.
+              </p>
+            </div>
+          )}
+
           {/* Horizontal Itinerary Timeline Flow */}
           <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3">
             <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-200/60">
@@ -119,7 +225,7 @@ export const PartnerRedirectModal: React.FC<PartnerRedirectModalProps> = ({
               </div>
               <div className="text-right">
                 <span className="text-base font-extrabold text-[#0D6EFD] font-mono">
-                  BDT {flight.priceBDT.toLocaleString()}
+                  BDT {currentPrice.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -129,16 +235,16 @@ export const PartnerRedirectModal: React.FC<PartnerRedirectModalProps> = ({
           <div className="space-y-2 text-xs text-slate-600">
             <div className="flex items-start gap-2">
               <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <span>You will be redirected securely to the partner ticket checkout page.</span>
+              <span>Real-time price revalidation automatically verifies live GDS partner fares.</span>
             </div>
             <div className="flex items-start gap-2">
               <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <span>Flight prices and seat availability are finalized directly on partner systems.</span>
+              <span>You will be redirected securely to the verified partner ticket checkout.</span>
             </div>
             <div className="flex items-start gap-2">
               <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
               <span>
-                Azraq Concierge Desk can assist with visas, itinerary coordination, and hotel connections once booked.
+                Azraq Concierge Desk can assist with visas, itinerary coordination, and baggage assistance.
               </span>
             </div>
           </div>
@@ -150,29 +256,59 @@ export const PartnerRedirectModal: React.FC<PartnerRedirectModalProps> = ({
 
           {/* Actions */}
           <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-            <a
-              href={partnerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={onClose}
-              className="w-full sm:flex-1 py-3.5 px-4 rounded-xl bg-[#0D6EFD] hover:bg-blue-600 text-white font-extrabold text-xs sm:text-sm text-center shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>Proceed to Partner Booking</span>
-              <ExternalLink className="w-4 h-4" />
-            </a>
+            {revalidationResult?.hasIncreased ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleAcceptPriceIncrease}
+                  className="w-full sm:flex-1 py-3.5 px-4 rounded-xl bg-[#006CE4] hover:bg-[#0057B8] text-white font-extrabold text-xs sm:text-sm text-center shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Accept & Proceed (Tk {currentPrice.toLocaleString()})</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="w-full sm:w-auto py-3.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleProceedBooking}
+                  disabled={isRevalidating}
+                  className="w-full sm:flex-1 py-3.5 px-4 rounded-xl bg-[#0D6EFD] hover:bg-blue-600 disabled:bg-blue-400 text-white font-extrabold text-xs sm:text-sm text-center shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isRevalidating ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>Revalidating Live Price...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Proceed to Partner Booking</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
 
-            <a
-              href={`https://wa.me/${AZRAQ_AGENCY_CONFIG.whatsappNumber}?text=${encodeURIComponent(
-                `Hello Azraq Concierge! I would like your Dhaka desk to hold and book this flight for me: ${flight.airlineName} ${flight.flightNumber} (${flight.origin.code} -> ${flight.destination.code}) on ${flight.departureDate} for BDT ${flight.priceBDT.toLocaleString()}.`
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={onClose}
-              className="w-full sm:w-auto py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>Book with Azraq Desk</span>
-            </a>
+                <a
+                  href={`https://wa.me/${AZRAQ_AGENCY_CONFIG.whatsappNumber}?text=${encodeURIComponent(
+                    `Hello Azraq Concierge! I would like your Dhaka desk to hold and book this flight for me: ${flight.airlineName} ${flight.flightNumber} (${flight.origin.code} -> ${flight.destination.code}) on ${flight.departureDate} for BDT ${flight.priceBDT.toLocaleString()}.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleCloseModal}
+                  className="w-full sm:w-auto py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Book with Azraq Desk</span>
+                </a>
+              </>
+            )}
           </div>
         </div>
       </div>

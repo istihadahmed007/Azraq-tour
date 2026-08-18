@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth';
-import { initializeFirestore, doc, getDoc, setLogLevel } from 'firebase/firestore';
+import { initializeFirestore, doc, getDocFromServer, setLogLevel } from 'firebase/firestore';
 import { getAnalytics, isSupported, Analytics } from 'firebase/analytics';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -34,11 +34,11 @@ googleProvider.addScope('openid');
 
 export const oAuthClientId = firebaseConfig.oAuthClientId || '';
 
-// Initialize Firestore with robust long-polling auto-detection for iframe & web compatibility
+// Initialize Firestore with robust forced long-polling for iframe & web sandbox compatibility
 export const db = initializeFirestore(
   app,
   {
-    experimentalAutoDetectLongPolling: true,
+    experimentalForceLongPolling: true,
     ignoreUndefinedProperties: true,
   },
   firebaseConfig.firestoreDatabaseId || '(default)'
@@ -105,10 +105,14 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 async function testConnection() {
   if (!isFirebaseConfigured) return;
   try {
-    await getDoc(doc(db, 'test', 'connection'));
+    await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
     if (error instanceof Error) {
-      if (error.message.includes('the client is offline') || error.message.includes('unavailable')) {
+      if (
+        error.message.includes('the client is offline') ||
+        error.message.includes('unavailable') ||
+        error.message.includes('could not be completed')
+      ) {
         // Safe offline operation mode
       }
     }
@@ -116,10 +120,10 @@ async function testConnection() {
 }
 
 if (typeof window !== 'undefined') {
-  // Test connection after bootstrap
+  // Test connection once after bootstrap
   setTimeout(() => {
     testConnection().catch(() => {});
-  }, 2000);
+  }, 1000);
 }
 
 // Initialize Firebase Analytics safely (supported in browser environments)

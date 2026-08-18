@@ -23,16 +23,19 @@ import {
   ExternalLink,
   MessageCircle,
   CheckCircle2,
+  Mic,
+  Volume2,
 } from 'lucide-react';
 import { getOptimizedUnsplashUrl } from '../utils/imageOptimization';
 import { AzraqTripFinder, FlightSearchParams } from './AzraqTripFinder';
 import { AZRAQ_AGENCY_CONFIG } from '../data/agencyConfig';
 import { POPULAR_AIRPORTS } from '../data/flightsData';
+import { VoiceTripModal, StructuredVoiceTripData } from './VoiceTripModal';
 
 interface DiscoverViewProps {
   destinations: Destination[];
   onSelectDestination: (destination: Destination) => void;
-  onPlanTripPrompt: (promptText: string) => void;
+  onPlanTripPrompt: (promptText: any) => void;
   onQuickGenerateItinerary: (destName: string) => void;
   onNavigateToView?: (view: string, extra?: any) => void;
   onSearchFlights?: (params: FlightSearchParams) => void;
@@ -54,6 +57,28 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
 }) => {
   const { requireAuth, showToast } = useAuth();
   const { packages, setActivePackageModal } = usePackages();
+
+  // Voice Trip Planning State
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [voiceInitialTranscript, setVoiceInitialTranscript] = useState('');
+
+  const handleOpenVoicePlanner = (initialTranscript?: string) => {
+    setVoiceInitialTranscript(initialTranscript || '');
+    setIsVoiceModalOpen(true);
+  };
+
+  const handleConfirmVoicePlan = (data: StructuredVoiceTripData) => {
+    showToast(`Voice trip parsed! Generating itinerary for ${data.destination}...`, 'info');
+    onPlanTripPrompt({
+      destination: data.destination,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      vibes: data.vibes,
+      travelerCount: data.travelerCount,
+      durationDays: data.durationDays,
+      structuredPrompt: data.structuredPrompt,
+    });
+  };
 
   // Curated 4 Popular Destinations for Bangladeshi travelers matching user's exact aesthetic
   const bangladeshiCuratedDestinations = useMemo(
@@ -207,83 +232,37 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
 
   return (
     <div className="w-full bg-[#F4F8FA] text-slate-900 flex flex-col gap-12 sm:gap-16 pb-20">
-      {/* 1. HERO SECTION: Full-Screen Natural Thai Limestone Karst & Turquoise Ocean Background */}
-      <section className="relative w-full min-h-[620px] sm:min-h-[680px] lg:min-h-[760px] flex flex-col justify-between bg-[#071A33] text-white overflow-visible pb-16">
-        {/* Full-Bleed High Resolution Natural Landscape Photograph */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <img
-            src="https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=2400&q=85"
-            alt="Lush tropical limestone karst cliffs with traditional longtail boat on turquoise ocean"
-            className="w-full h-full object-cover object-center transform scale-100"
-          />
-          {/* Natural lighting overlays for perfect readability while maintaining vibrant photography */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#071A33]/95 via-[#071A33]/65 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#071A33]/85 via-transparent to-transparent" />
-        </div>
-
-        {/* Center-Left Hero Content */}
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-8">
-          <div className="max-w-2xl text-left space-y-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-sky-400/30 text-sky-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
-              <span>Official Dhaka Travel Concierge & Booking Engine</span>
+      {/* 1. HERO SECTION: Clean Booking.com Deep Blue (#003B95) & High-Contrast Header */}
+      <section className="relative w-full bg-[#003B95] text-white overflow-visible pt-8 sm:pt-12 pb-12 sm:pb-16">
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-6">
+          {/* Headline & Description */}
+          <div className="max-w-3xl text-left space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-sky-200 mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+              <span>AI Concierge & Live Airfare Engine</span>
             </div>
-
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.1] font-sans">
-              Your Gateway to<br />Curated Asian Escapes
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
+              Where to next?
             </h1>
-
-            <p className="text-base sm:text-lg text-slate-200 leading-relaxed font-normal max-w-xl">
-              Compare routes, discover better fares, and let Azraq arrange the rest of your journey — personalized visas, vetted hotels, and bespoke itineraries for Bangladeshi travelers.
+            <p className="text-sm sm:text-base md:text-lg text-slate-100 font-normal max-w-2xl">
+              Search live deals on flights, vetted luxury hotels, or speak your travel preferences to our AI voice concierge.
             </p>
-
-            {/* Exactly Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-2">
-              <button
-                onClick={() => {
-                  if (onNavigateToView) onNavigateToView('flights');
-                }}
-                className="px-7 py-3.5 rounded-xl bg-[#0D6EFD] hover:bg-blue-600 text-white font-bold text-base shadow-lg hover:shadow-blue-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-95"
-              >
-                <Plane className="w-4 h-4" />
-                <span>Search Flights</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  if (onNavigateToView) onNavigateToView('planner');
-                  else onPlanTripPrompt('Custom Asian Itinerary');
-                }}
-                className="px-6 py-3.5 rounded-xl bg-white/15 hover:bg-white/25 text-white backdrop-blur-md border border-white/30 font-semibold text-base transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-              >
-                <Sparkles className="w-4 h-4 text-purple-300" />
-                <span>Plan a Custom Trip</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  if (onOpenQuote) onOpenQuote();
-                }}
-                className="px-5 py-3.5 rounded-xl text-slate-300 hover:text-white font-semibold text-sm hover:underline cursor-pointer"
-              >
-                Request a Quote
-              </button>
-            </div>
           </div>
-        </div>
 
-        {/* AZRAQ TRIP FINDER (Interactive Booking Module Embedded in Hero) */}
-        <div className="relative z-20 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
-          <AzraqTripFinder
-            initialMode="flights"
-            onSearchFlights={handleFlightSearchTrigger}
-            onNavigateToView={(view, extra) => {
-              if (extra?.prompt) onPlanTripPrompt(extra.prompt);
-              else if (onNavigateToView) onNavigateToView(view);
-            }}
-            onOpenVisaModal={onOpenVisaModal}
-            onOpenQuoteModal={onOpenQuote}
-          />
+          {/* Booking.com Search Widget */}
+          <div className="w-full pt-1">
+            <AzraqTripFinder
+              initialMode="flights"
+              onSearchFlights={handleFlightSearchTrigger}
+              onNavigateToView={(view, extra) => {
+                if (extra?.prompt) onPlanTripPrompt(extra.prompt);
+                else if (onNavigateToView) onNavigateToView(view);
+              }}
+              onOpenVisaModal={onOpenVisaModal}
+              onOpenQuoteModal={onOpenQuote}
+              onOpenVoiceModal={handleOpenVoicePlanner}
+            />
+          </div>
         </div>
       </section>
 
@@ -331,6 +310,60 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             <div>
               <h3 className="text-base font-bold text-[#071A33]">24/7 Travel Support</h3>
               <p className="text-xs text-slate-500 font-medium">We're here anytime</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2b. INTERACTIVE VOICE TRIP PLANNER SHOWCASE BANNER */}
+      <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#003B95] via-[#0A2540] to-[#071A33] text-white p-6 sm:p-8 shadow-xl border border-blue-900/50">
+          <div className="absolute right-0 top-0 -mt-10 -mr-10 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-400/20 text-sky-200 border border-sky-300/30 text-xs font-bold tracking-wide uppercase">
+                <Mic className="w-3.5 h-3.5 text-sky-300 animate-pulse" />
+                <span>Web Speech API Voice Planning</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+                Plan Your Entire Holiday Just By Speaking
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
+                Tell us your travel dream in your own voice. Our Web Speech AI captures your preferences (dates, party size, halal food, luxury style) and crafts a structured, day-by-day itinerary in seconds.
+              </p>
+
+              {/* Sample voice prompt chips */}
+              <div className="pt-1 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold text-sky-300">Try saying:</span>
+                {[
+                  '5-day family escape in Bangkok & Phuket',
+                  '7-day Maldives overwater luxury honeymoon',
+                  '4-day Dubai shopping & Burj Khalifa getaway',
+                ].map((sample, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleOpenVoicePlanner(sample)}
+                    className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-sky-100 border border-white/15 text-xs font-medium transition-colors cursor-pointer"
+                  >
+                    "{sample}"
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="shrink-0 w-full lg:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleOpenVoicePlanner()}
+                className="px-6 py-4 rounded-2xl bg-gradient-to-r from-sky-400 to-[#0D6EFD] hover:from-sky-300 hover:to-blue-600 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 cursor-pointer active:scale-98"
+              >
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">
+                  <Mic className="w-4 h-4 text-white animate-bounce" />
+                </div>
+                <span>Start Speaking Now</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -674,7 +707,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                     loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-[#071A33]/80 backdrop-blur-xs text-white text-[11px] font-semibold">
+                  <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-[#071A33]/80 backdrop-blur-sm text-white text-[11px] font-semibold">
                     {pkgDuration}
                   </div>
                 </div>
@@ -987,6 +1020,15 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
           </div>
         </div>
       </section>
+
+      {/* Voice Trip Planner Web Speech Modal */}
+      <VoiceTripModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onConfirmPlan={handleConfirmVoicePlan}
+        onSearchFlights={handleFlightSearchTrigger}
+        initialTranscript={voiceInitialTranscript}
+      />
     </div>
   );
 };

@@ -126,11 +126,11 @@ export const DestinationsView: React.FC<DestinationsViewProps> = ({
                   loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-xs text-white text-xs font-semibold flex items-center gap-1">
+                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-sm text-white text-xs font-semibold flex items-center gap-1">
                   <MapPin className="w-3 h-3 text-sky-300" />
                   <span>{dest.country}</span>
                 </div>
-                <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-white/90 backdrop-blur-xs text-amber-600 text-xs font-bold flex items-center gap-1 shadow-xs">
+                <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-white/90 backdrop-blur-sm text-amber-600 text-xs font-bold flex items-center gap-1 shadow-sm">
                   <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                   <span>{dest.rating}</span>
                 </div>
