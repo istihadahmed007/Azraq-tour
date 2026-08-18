@@ -1023,14 +1023,14 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredAndSortedOffers.map((offer) => {
+              {filteredAndSortedOffers.map((offer, oIdx) => {
                 const isExpanded = expandedOfferId === offer.id;
                 const isCompared = comparedOfferIds.includes(offer.id);
                 const pricePerPax = Math.round(offer.priceBDT / totalPax);
 
                 return (
                   <div
-                    key={offer.id}
+                    key={`${offer.id}-${oIdx}`}
                     className="bg-white border border-slate-300 hover:border-slate-400 rounded-xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all space-y-4"
                   >
                     {/* Top Row: Badges & Right Action Icons */}
@@ -1650,7 +1650,7 @@ export const FlightSearchResults: React.FC<FlightSearchResultsProps> = ({
             <div className="flex-1 overflow-y-auto space-y-2 pr-1">
               {flightOffers.map((offer, idx) => (
                 <div
-                  key={offer.id}
+                  key={`${offer.id}-${idx}`}
                   className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs"
                 >
                   <div className="flex items-center gap-3">

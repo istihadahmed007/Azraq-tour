@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChatMessage, Destination, Itinerary, Spot } from '../types';
 import { BudgetTracker } from './BudgetTracker';
 import { InteractiveAsiaMap } from './InteractiveAsiaMap';
@@ -726,23 +727,43 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
             <>
               {/* AI Overview Summary */}
               {currentItinerary.aiSummary && (
-                <div className="bg-blue-950/40 border border-blue-800/40 rounded-xl p-4 mb-8 flex gap-3 items-start">
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  className="bg-blue-950/40 border border-blue-800/40 rounded-xl p-4 mb-8 flex gap-3 items-start"
+                >
                   <Sparkles className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
                   <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
                     {currentItinerary.aiSummary}
                   </p>
-                </div>
+                </motion.div>
               )}
 
               {/* Daily Timeline */}
               <div className="relative pl-6 border-l-2 border-slate-800 ml-2 space-y-10">
-                {currentItinerary.days?.map((day) => {
+                {currentItinerary.days?.map((day, dayIndex) => {
                   const isExpanded = expandedDays[day.dayNumber] !== false;
 
                   return (
-                    <div key={day.dayNumber} className="relative group">
+                    <motion.div
+                      key={day.dayNumber}
+                      initial={{ opacity: 0, y: 28, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{
+                        duration: 0.45,
+                        delay: Math.min(dayIndex * 0.08, 0.6),
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
+                      className="relative group"
+                    >
                       {/* Timeline Dot */}
-                      <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-[#0D6EFD] border-[3px] border-[#071A33] group-hover:scale-125 transition-transform"></div>
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 0.3, delay: Math.min(dayIndex * 0.08, 0.6) + 0.1 }}
+                        className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-[#0D6EFD] border-[3px] border-[#071A33] group-hover:scale-125 transition-transform"
+                      />
 
                       {/* Day Title & Toggle */}
                       <div
@@ -763,89 +784,116 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                         </span>
                       </div>
 
-                      {isExpanded ? (
-                        <div className="flex flex-col gap-4">
-                          {day.summary && (
-                            <p className="text-xs text-slate-300 font-normal">
-                              {day.summary}
-                            </p>
-                          )}
-
-                          {/* Spots */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {day.spots?.map((spot, sIdx) => (
-                              <div
-                                key={sIdx}
-                                onClick={() => handleSpotViewOnMap(spot)}
-                                className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden hover:bg-slate-800 hover:border-sky-500/50 transition-all group/card cursor-pointer shadow-lg"
-                              >
-                                {spot.imageUrl && (
-                                  <div className="h-32 w-full relative overflow-hidden bg-slate-900">
-                                    <img
-                                      src={spot.imageUrl}
-                                      alt={spot.name}
-                                      className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
-                                    />
-                                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-sky-300 font-semibold flex items-center gap-1">
-                                      <Clock className="w-3 h-3" />
-                                      <span>{spot.timeSlot}</span>
-                                    </div>
-                                    <div className="absolute top-2 right-2 bg-blue-600/80 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white font-semibold flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                                      <Compass className="w-3 h-3" />
-                                      <span>View on Map</span>
-                                    </div>
-                                  </div>
-                                )}
-
-                                <div className="p-3.5 flex flex-col gap-1.5">
-                                  {!spot.imageUrl && (
-                                    <div className="text-[10px] text-sky-300 font-semibold flex items-center gap-1">
-                                      <Clock className="w-3 h-3" />
-                                      <span>{spot.timeSlot}</span>
-                                    </div>
-                                  )}
-
-                                  <h5 className="text-sm md:text-base text-white font-bold group-hover/card:text-sky-300 transition-colors font-sans">
-                                    {spot.name}
-                                  </h5>
-
-                                  <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
-                                    {spot.description}
-                                  </p>
-
-                                  {spot.aiTip && (
-                                    <div className="mt-1 pt-2 border-t border-slate-700 text-[11px] text-sky-300 flex items-start gap-1">
-                                      <Lightbulb className="w-3.5 h-3.5 text-amber-300 shrink-0 mt-0.5" />
-                                      <span>{spot.aiTip}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-
-                            {/* AI Insight Box */}
-                            {day.aiInsight && (
-                              <div className="bg-blue-950/30 border border-blue-800/40 rounded-xl p-4 flex flex-col justify-center gap-2 relative overflow-hidden">
-                                <div className="flex items-center gap-1.5 text-sky-300 font-semibold text-xs">
-                                  <Sparkles className="w-3.5 h-3.5" />
-                                  <span>AI Insight</span>
-                                </div>
-                                <p className="text-xs text-slate-300 leading-relaxed">
-                                  {day.aiInsight}
-                                </p>
-                              </div>
+                      <AnimatePresence initial={false} mode="wait">
+                        {isExpanded ? (
+                          <motion.div
+                            key={`expanded-${day.dayNumber}`}
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                            className="overflow-hidden flex flex-col gap-4"
+                          >
+                            {day.summary && (
+                              <p className="text-xs text-slate-300 font-normal">
+                                {day.summary}
+                              </p>
                             )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          onClick={() => toggleDayExpand(day.dayNumber)}
-                          className="bg-slate-800/50 p-3 text-center text-xs text-slate-400 rounded-xl border border-dashed border-slate-700 hover:border-sky-400/50 cursor-pointer"
-                        >
-                          Click to expand Day {day.dayNumber} itinerary ({day.spots?.length || 0} spots)
-                        </div>
-                      )}
-                    </div>
+
+                            {/* Spots */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {day.spots?.map((spot, sIdx) => (
+                                <motion.div
+                                  key={sIdx}
+                                  initial={{ opacity: 0, y: 14, scale: 0.97 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  whileHover={{ y: -3 }}
+                                  transition={{
+                                    duration: 0.35,
+                                    delay: sIdx * 0.06,
+                                    ease: 'easeOut',
+                                  }}
+                                  onClick={() => handleSpotViewOnMap(spot)}
+                                  className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden hover:bg-slate-800 hover:border-sky-500/50 transition-colors group/card cursor-pointer shadow-lg"
+                                >
+                                  {spot.imageUrl && (
+                                    <div className="h-32 w-full relative overflow-hidden bg-slate-900">
+                                      <img
+                                        src={spot.imageUrl}
+                                        alt={spot.name}
+                                        className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
+                                      />
+                                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-sky-300 font-semibold flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        <span>{spot.timeSlot}</span>
+                                      </div>
+                                      <div className="absolute top-2 right-2 bg-blue-600/80 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white font-semibold flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                                        <Compass className="w-3 h-3" />
+                                        <span>View on Map</span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div className="p-3.5 flex flex-col gap-1.5">
+                                    {!spot.imageUrl && (
+                                      <div className="text-[10px] text-sky-300 font-semibold flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        <span>{spot.timeSlot}</span>
+                                      </div>
+                                    )}
+
+                                    <h5 className="text-sm md:text-base text-white font-bold group-hover/card:text-sky-300 transition-colors font-sans">
+                                      {spot.name}
+                                    </h5>
+
+                                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                                      {spot.description}
+                                    </p>
+
+                                    {spot.aiTip && (
+                                      <div className="mt-1 pt-2 border-t border-slate-700 text-[11px] text-sky-300 flex items-start gap-1">
+                                        <Lightbulb className="w-3.5 h-3.5 text-amber-300 shrink-0 mt-0.5" />
+                                        <span>{spot.aiTip}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              ))}
+
+                              {/* AI Insight Box */}
+                              {day.aiInsight && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.96 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ duration: 0.35, delay: (day.spots?.length || 0) * 0.06 }}
+                                  className="bg-blue-950/30 border border-blue-800/40 rounded-xl p-4 flex flex-col justify-center gap-2 relative overflow-hidden"
+                                >
+                                  <div className="flex items-center gap-1.5 text-sky-300 font-semibold text-xs">
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    <span>AI Insight</span>
+                                  </div>
+                                  <p className="text-xs text-slate-300 leading-relaxed">
+                                    {day.aiInsight}
+                                  </p>
+                                </motion.div>
+                              )}
+                            </div>
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key={`collapsed-${day.dayNumber}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            onClick={() => toggleDayExpand(day.dayNumber)}
+                            className="bg-slate-800/50 p-3 text-center text-xs text-slate-400 rounded-xl border border-dashed border-slate-700 hover:border-sky-400/50 cursor-pointer"
+                          >
+                            Click to expand Day {day.dayNumber} itinerary ({day.spots?.length || 0} spots)
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
                   );
                 })}
               </div>

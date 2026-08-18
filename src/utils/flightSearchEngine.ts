@@ -306,9 +306,13 @@ export function generateMatchingFlightOffers(
 ): FlightOffer[] {
   if (canonicalOffers && canonicalOffers.length > 0) {
     return canonicalOffers.map((cOffer, idx) => {
+      const uniqueOfferId = cOffer.offerId
+        ? (cOffer.offerId.endsWith(`-${idx}`) ? cOffer.offerId : `${cOffer.offerId}-${idx}`)
+        : `offer-${idx}`;
+
       return {
-        id: cOffer.offerId || `offer-${idx}`,
-        offerId: cOffer.offerId,
+        id: uniqueOfferId,
+        offerId: cOffer.offerId || uniqueOfferId,
         provider: cOffer.provider || 'travelpayouts',
         airlineCode: cOffer.airlineCode || 'Partner',
         airlineName: cOffer.airline || 'Partner Airline',

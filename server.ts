@@ -3906,7 +3906,7 @@ app.get("/api/flights/aviasales-prices", async (req, res) => {
                 : aviasalesDirectUrl;
 
               return {
-                offerId: `tp-${item.airline || 'offer'}-${item.flight_number || idx}-${item.departure_at || departDate}`,
+                offerId: `tp-${item.airline || 'offer'}-${item.flight_number || 'fl'}-${item.departure_at || departDate}-${idx}`,
                 provider: "travelpayouts",
                 origin,
                 destination,
