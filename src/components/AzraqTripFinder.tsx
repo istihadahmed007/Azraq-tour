@@ -243,71 +243,70 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
   };
 
   return (
-    <div className={`w-full max-w-full ${className}`}>
-      {/* 1. Category Switcher Tabs (Booking.com style) */}
-      <div className="flex items-center gap-1 sm:gap-2 mb-3 overflow-x-auto no-scrollbar">
+    <div className={`w-full max-w-full ${className}`}>      {/* 1. Mode Category Tabs (Floating rounded pills) */}
+      <div className="flex items-center gap-1.5 sm:gap-2 pb-2 overflow-x-auto no-scrollbar">
         <button
           type="button"
           onClick={() => setActiveTab('flights')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'flights'
-              ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
-              : 'text-white hover:bg-white/10'
+              ? 'bg-white text-[#0759B8] shadow-md border border-[#CDE9FB]'
+              : 'bg-white/80 hover:bg-white text-slate-700 hover:text-[#0759B8] border border-transparent'
           }`}
         >
-          <Plane className="w-4 h-4 text-blue-600" />
+          <Plane className="w-4 h-4 text-[#1389E8]" />
           <span>Flights</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('hotels')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'hotels'
-              ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
-              : 'text-white hover:bg-white/10'
+              ? 'bg-white text-[#0759B8] shadow-md border border-[#CDE9FB]'
+              : 'bg-white/80 hover:bg-white text-slate-700 hover:text-[#0759B8] border border-transparent'
           }`}
         >
-          <Building2 className="w-4 h-4 text-teal-600" />
+          <Building2 className="w-4 h-4 text-[#0759B8]" />
           <span>Stays & Hotels</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('packages')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'packages'
-              ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
-              : 'text-white hover:bg-white/10'
+              ? 'bg-white text-[#0759B8] shadow-md border border-[#CDE9FB]'
+              : 'bg-white/80 hover:bg-white text-slate-700 hover:text-[#0759B8] border border-transparent'
           }`}
         >
-          <Package className="w-4 h-4 text-amber-600" />
+          <Package className="w-4 h-4 text-[#F59E0B]" />
           <span>Tour Packages</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('visa')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'visa'
-              ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
-              : 'text-white hover:bg-white/10'
+              ? 'bg-white text-[#0759B8] shadow-md border border-[#CDE9FB]'
+              : 'bg-white/80 hover:bg-white text-slate-700 hover:text-[#0759B8] border border-transparent'
           }`}
         >
-          <FileCheck2 className="w-4 h-4 text-emerald-600" />
+          <FileCheck2 className="w-4 h-4 text-[#10B981]" />
           <span>Visa Assistance</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('planner')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'planner'
-              ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
-              : 'text-white hover:bg-white/10'
+              ? 'bg-white text-[#0759B8] shadow-md border border-[#CDE9FB]'
+              : 'bg-white/80 hover:bg-white text-slate-700 hover:text-[#0759B8] border border-transparent'
           }`}
         >
-          <Sparkles className="w-4 h-4 text-purple-600" />
+          <Sparkles className="w-4 h-4 text-[#8B5CF6]" />
           <span>Custom Trip</span>
         </button>
 
@@ -316,33 +315,33 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
           <button
             type="button"
             onClick={() => onOpenVoiceModal()}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md border border-white/20 hover:scale-105 active:scale-95 ml-auto"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer bg-gradient-to-r from-[#1389E8] to-[#0759B8] hover:from-[#0E7FE3] hover:to-[#064B9C] text-white shadow-md hover:scale-105 active:scale-95 ml-auto border border-white/30"
           >
             <Mic className="w-4 h-4 text-sky-200 animate-pulse" />
-            <span>Voice Planner</span>
+            <span>Voice Search</span>
           </button>
         )}
       </div>
 
-      {/* 2. Main Search Container: Booking.com Signature Golden Yellow (#ffb700) */}
-      <div className="w-full bg-[#ffb700] rounded-2xl p-4 sm:p-5 shadow-lg text-slate-900">
+      {/* 2. Main Search Container: Floating White Card with Soft Blue Border & Shadow */}
+      <div className="w-full bg-white rounded-3xl p-4 sm:p-6 shadow-floating-search border border-[#CDE9FB] text-slate-900">
         {/* ================= MODE 1: FLIGHTS ================= */}
         {activeTab === 'flights' && (
-          <form onSubmit={handleFlightSubmit} className="space-y-3">
+          <form onSubmit={handleFlightSubmit} className="space-y-4">
             {/* Top Secondary Controls Row */}
-            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-900 pb-1">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-700 pb-2 border-b border-[#E1EFF8]">
               {/* Trip Type Selector */}
               <div className="relative">
                 <select
                   value={tripType}
                   onChange={(e) => setTripType(e.target.value as any)}
-                  className="bg-transparent hover:bg-black/5 font-bold text-slate-900 py-1.5 px-3 rounded-md border border-transparent hover:border-black/10 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer pr-7 appearance-none"
+                  className="bg-[#EAF7FF] hover:bg-[#DDF4FD] font-bold text-[#0759B8] py-1.5 px-3 rounded-lg border border-[#CDE9FB] focus:ring-2 focus:ring-[#1389E8] focus:outline-none cursor-pointer pr-7 appearance-none"
                 >
                   <option value="round">Round-trip</option>
                   <option value="oneway">One-way</option>
                   <option value="multi">Multi-city</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-2.5 pointer-events-none text-slate-800" />
+                <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-2.5 pointer-events-none text-[#0759B8]" />
               </div>
 
               {/* Passenger Selector Button & Popover */}
@@ -350,23 +349,23 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                 <button
                   type="button"
                   onClick={() => setOpenTravelersMenu(!openTravelersMenu)}
-                  className="flex items-center gap-1.5 bg-transparent hover:bg-black/5 font-bold text-slate-900 py-1.5 px-3 rounded-md border border-transparent hover:border-black/10 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 bg-[#EAF7FF] hover:bg-[#DDF4FD] font-bold text-[#0759B8] py-1.5 px-3 rounded-lg border border-[#CDE9FB] transition-colors cursor-pointer"
                 >
-                  <Users className="w-3.5 h-3.5 text-slate-800" />
+                  <Users className="w-3.5 h-3.5 text-[#1389E8]" />
                   <span>
                     {adults} {adults === 1 ? 'adult' : 'adults'}
                     {children > 0 ? `, ${children} child` : ''}
                     {infants > 0 ? `, ${infants} infant` : ''}
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-800" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#0759B8]" />
                 </button>
 
                 {openTravelersMenu && (
-                  <div className="absolute top-full left-0 mt-1.5 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-4 text-slate-900 space-y-3">
+                  <div className="absolute top-full left-0 mt-1.5 w-64 bg-white rounded-2xl shadow-2xl border border-[#CDE9FB] z-50 p-4 text-slate-900 space-y-3 animate-fadeIn">
                     {/* Adults */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-xs font-bold">Adults</div>
+                        <div className="text-xs font-bold text-slate-900">Adults</div>
                         <div className="text-[10px] text-slate-500">Age 12+</div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -393,7 +392,7 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                     {/* Children */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-xs font-bold">Children</div>
+                        <div className="text-xs font-bold text-slate-900">Children</div>
                         <div className="text-[10px] text-slate-500">Age 2-11</div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -420,7 +419,7 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                     {/* Infants */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-xs font-bold">Infants</div>
+                        <div className="text-xs font-bold text-slate-900">Infants</div>
                         <div className="text-[10px] text-slate-500">Under 2 (on lap)</div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -447,7 +446,7 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                     <button
                       type="button"
                       onClick={() => setOpenTravelersMenu(false)}
-                      className="w-full py-1.5 rounded-lg bg-[#006ce4] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                      className="w-full py-2 rounded-xl bg-[#1389E8] hover:bg-[#0E7FE3] text-white text-xs font-bold transition-colors cursor-pointer"
                     >
                       Done
                     </button>
@@ -460,14 +459,14 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                 <select
                   value={cabinClass}
                   onChange={(e) => setCabinClass(e.target.value as any)}
-                  className="bg-transparent hover:bg-black/5 font-bold text-slate-900 py-1.5 px-3 rounded-md border border-transparent hover:border-black/10 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer pr-7 appearance-none"
+                  className="bg-[#EAF7FF] hover:bg-[#DDF4FD] font-bold text-[#0759B8] py-1.5 px-3 rounded-lg border border-[#CDE9FB] focus:ring-2 focus:ring-[#1389E8] focus:outline-none cursor-pointer pr-7 appearance-none"
                 >
                   <option value="Economy">Economy</option>
                   <option value="Premium Economy">Premium Economy</option>
                   <option value="Business">Business</option>
                   <option value="First">First-class</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-2.5 pointer-events-none text-slate-800" />
+                <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-2.5 pointer-events-none text-[#0759B8]" />
               </div>
 
               {/* Currency */}
@@ -475,22 +474,22 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className="bg-transparent hover:bg-black/5 font-bold text-slate-900 py-1.5 px-3 rounded-md border border-transparent hover:border-black/10 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer pr-7 appearance-none"
+                  className="bg-[#EAF7FF] hover:bg-[#DDF4FD] font-bold text-[#0759B8] py-1.5 px-3 rounded-lg border border-[#CDE9FB] focus:ring-2 focus:ring-[#1389E8] focus:outline-none cursor-pointer pr-7 appearance-none"
                 >
                   <option value="BDT">BDT (৳)</option>
                   <option value="USD">USD ($)</option>
                   <option value="EUR">EUR (€)</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-2.5 pointer-events-none text-slate-800" />
+                <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-2.5 pointer-events-none text-[#0759B8]" />
               </div>
 
               {/* Direct flights only */}
-              <label className="flex items-center gap-1.5 text-xs font-bold text-slate-900 cursor-pointer select-none">
+              <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={directOnly}
                   onChange={(e) => setDirectOnly(e.target.checked)}
-                  className="rounded text-blue-600 focus:ring-blue-500 h-3.5 w-3.5 border-slate-400"
+                  className="rounded text-[#1389E8] focus:ring-[#1389E8] h-3.5 w-3.5 border-slate-300"
                 />
                 <span>Direct flights only</span>
               </label>
@@ -500,17 +499,17 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                 <button
                   type="button"
                   onClick={() => onOpenVoiceModal('Find flights from Dhaka to Bangkok next Friday for 2 adults')}
-                  className="ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 hover:bg-white text-slate-900 font-bold text-xs shadow-xs border border-black/10 transition-all hover:scale-105 cursor-pointer"
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EAF7FF] hover:bg-[#DDF4FD] text-[#0759B8] font-bold text-xs border border-[#CDE9FB] transition-all hover:scale-105 cursor-pointer"
                   title="Search flights by voice"
                 >
-                  <Mic className="w-3.5 h-3.5 text-[#006ce4] animate-pulse" />
-                  <span>Search Flights by Voice</span>
+                  <Mic className="w-3.5 h-3.5 text-[#1389E8] animate-pulse" />
+                  <span>Voice Flight Search</span>
                 </button>
               )}
             </div>
 
-            {/* Main Primary Search Row (Connected Booking.com Grid) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-1.5 items-center">
+            {/* Main Primary Search Row (Connected Field Grid) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-center">
               {/* Origin Field */}
               <div className="lg:col-span-3">
                 <AirportAutocompleteField
@@ -528,9 +527,9 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                   type="button"
                   onClick={handleSwapAirports}
                   aria-label="Swap origin and destination"
-                  className="w-9 h-9 rounded-full bg-white border border-slate-300 hover:border-[#006ce4] text-slate-700 shadow-xs flex items-center justify-center hover:scale-105 transition-all cursor-pointer"
+                  className="w-10 h-10 rounded-full bg-[#EAF7FF] border border-[#CDE9FB] hover:border-[#1389E8] text-[#0759B8] shadow-xs flex items-center justify-center hover:scale-105 transition-all cursor-pointer"
                 >
-                  <ArrowRightLeft className="w-4 h-4 text-slate-800" />
+                  <ArrowRightLeft className="w-4 h-4 text-[#1389E8]" />
                 </button>
               </div>
 
@@ -547,9 +546,9 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
 
               {/* Departure Date */}
               <div className="lg:col-span-2 relative">
-                <div className="w-full h-[52px] px-2.5 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center justify-between cursor-pointer">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Calendar className="w-4 h-4 text-slate-700 shrink-0" />
+                <div className="w-full h-[54px] px-3 py-1.5 bg-[#F4FAFD] hover:bg-white rounded-xl border border-[#E1EFF8] hover:border-[#1389E8] shadow-xs flex items-center justify-between cursor-pointer transition-all">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Calendar className="w-4 h-4 text-[#1389E8] shrink-0" />
                     <label className="cursor-pointer">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                         Departure
@@ -573,7 +572,7 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                         e.stopPropagation();
                         handleDepartureDateChange(adjustDateByDays(departureDate, -1));
                       }}
-                      className="p-1 hover:bg-slate-100 rounded text-slate-600 font-bold text-xs"
+                      className="p-1 hover:bg-[#EAF7FF] rounded text-slate-600 font-bold text-xs"
                       title="Previous Day"
                     >
                       ‹
@@ -584,7 +583,7 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                         e.stopPropagation();
                         handleDepartureDateChange(adjustDateByDays(departureDate, 1));
                       }}
-                      className="p-1 hover:bg-slate-100 rounded text-slate-600 font-bold text-xs"
+                      className="p-1 hover:bg-[#EAF7FF] rounded text-slate-600 font-bold text-xs"
                       title="Next Day"
                     >
                       ›
@@ -596,12 +595,12 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
               {/* Return Date */}
               <div className="lg:col-span-2 relative">
                 <div
-                  className={`w-full h-[52px] px-2.5 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center justify-between cursor-pointer ${
+                  className={`w-full h-[54px] px-3 py-1.5 bg-[#F4FAFD] hover:bg-white rounded-xl border border-[#E1EFF8] hover:border-[#1389E8] shadow-xs flex items-center justify-between cursor-pointer transition-all ${
                     tripType === 'oneway' ? 'opacity-50 pointer-events-none bg-slate-100' : ''
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Calendar className="w-4 h-4 text-slate-700 shrink-0" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Calendar className="w-4 h-4 text-[#1389E8] shrink-0" />
                     <label className="cursor-pointer">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                         Return
@@ -629,7 +628,7 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                           const newD = adjustDateByDays(returnDate, -1);
                           if (newD >= departureDate) handleReturnDateChange(newD);
                         }}
-                        className="p-1 hover:bg-slate-100 rounded text-slate-600 font-bold text-xs"
+                        className="p-1 hover:bg-[#EAF7FF] rounded text-slate-600 font-bold text-xs"
                         title="Previous Day"
                       >
                         ‹
@@ -640,7 +639,7 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                           e.stopPropagation();
                           handleReturnDateChange(adjustDateByDays(returnDate, 1));
                         }}
-                        className="p-1 hover:bg-slate-100 rounded text-slate-600 font-bold text-xs"
+                        className="p-1 hover:bg-[#EAF7FF] rounded text-slate-600 font-bold text-xs"
                         title="Next Day"
                       >
                         ›
@@ -654,7 +653,7 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
               <div className="lg:col-span-1 flex gap-1">
                 <button
                   type="submit"
-                  className="flex-1 h-[52px] px-3 rounded-lg bg-[#006ce4] hover:bg-[#0057b8] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer active:scale-98"
+                  className="flex-1 h-[54px] px-3 rounded-xl bg-[#1389E8] hover:bg-[#0E7FE3] text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-98"
                 >
                   <span>Search</span>
                 </button>
@@ -662,10 +661,10 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                   <button
                     type="button"
                     onClick={() => onOpenVoiceModal()}
-                    className="h-[52px] px-2.5 rounded-lg bg-white hover:bg-slate-50 text-[#006ce4] border border-slate-300 hover:border-[#006ce4] font-bold text-xs shadow-xs transition-colors flex items-center justify-center cursor-pointer"
+                    className="h-[54px] px-2.5 rounded-xl bg-[#EAF7FF] hover:bg-[#DDF4FD] text-[#1389E8] border border-[#CDE9FB] font-bold text-xs shadow-xs transition-colors flex items-center justify-center cursor-pointer"
                     title="Voice Flight Search"
                   >
-                    <Mic className="w-4 h-4 animate-pulse text-[#006ce4]" />
+                    <Mic className="w-4 h-4 animate-pulse text-[#1389E8]" />
                   </button>
                 )}
               </div>
@@ -673,15 +672,15 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
 
             {/* Validation Error Message */}
             {validationError && (
-              <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                 <span>{validationError}</span>
               </div>
             )}
 
             {/* Quick Route Shortcuts */}
-            <div className="pt-2 border-t border-black/10 flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-bold text-slate-900 text-[11px]">Popular from Dhaka:</span>
+            <div className="pt-2 border-t border-[#E1EFF8] flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-bold text-slate-800 text-[11px]">Popular from Dhaka:</span>
               {QUICK_ROUTES.map((r) => {
                 const isCurrent = origin.code === 'DAC' && destination.code === r.code;
                 return (
@@ -689,10 +688,10 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                     key={r.code}
                     type="button"
                     onClick={() => handleSelectQuickRoute(r)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                       isCurrent
-                        ? 'bg-slate-900 text-white shadow-xs'
-                        : 'bg-white/80 hover:bg-white text-slate-800 border border-black/5 hover:border-black/20'
+                        ? 'bg-[#0759B8] text-white shadow-xs'
+                        : 'bg-[#EAF7FF] hover:bg-[#DDF4FD] text-[#0759B8] border border-[#CDE9FB]'
                     }`}
                   >
                     DAC ➔ {r.city} ({r.code})
@@ -706,11 +705,11 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
         {/* ================= MODE 2: STAYS & HOTELS ================= */}
         {activeTab === 'hotels' && (
           <div className="space-y-3">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-1.5 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-center">
               {/* Destination Input */}
               <div className="lg:col-span-5 relative">
-                <div className="w-full h-[52px] px-3 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-slate-600 shrink-0" />
+                <div className="w-full h-[54px] px-3 py-1.5 bg-[#F4FAFD] hover:bg-white rounded-xl border border-[#E1EFF8] hover:border-[#1389E8] shadow-xs flex items-center gap-2 transition-all">
+                  <MapPin className="w-4 h-4 text-[#1389E8] shrink-0" />
                   <div className="flex-1 min-w-0">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                       Where are you going?
@@ -728,8 +727,8 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
 
               {/* Check-in / Check-out Dates */}
               <div className="lg:col-span-3 relative">
-                <div className="w-full h-[52px] px-3 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-slate-600 shrink-0" />
+                <div className="w-full h-[54px] px-3 py-1.5 bg-[#F4FAFD] hover:bg-white rounded-xl border border-[#E1EFF8] hover:border-[#1389E8] shadow-xs flex items-center gap-2 transition-all">
+                  <Calendar className="w-4 h-4 text-[#1389E8] shrink-0" />
                   <div className="flex-1 min-w-0">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                       Check-in — Check-out
@@ -743,8 +742,8 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
 
               {/* Guests */}
               <div className="lg:col-span-2 relative">
-                <div className="w-full h-[52px] px-3 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center gap-2">
-                  <Users className="w-4 h-4 text-slate-600 shrink-0" />
+                <div className="w-full h-[54px] px-3 py-1.5 bg-[#F4FAFD] hover:bg-white rounded-xl border border-[#E1EFF8] hover:border-[#1389E8] shadow-xs flex items-center gap-2 transition-all">
+                  <Users className="w-4 h-4 text-[#1389E8] shrink-0" />
                   <div className="flex-1 min-w-0">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                       Rooms & Guests
@@ -764,14 +763,14 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigateToView('packages')}
-                  className="w-full h-[52px] px-4 rounded-lg bg-[#006ce4] hover:bg-[#0057b8] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  className="w-full h-[54px] px-4 rounded-xl bg-[#1389E8] hover:bg-[#0E7FE3] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Search className="w-4 h-4" />
                   <span>Search Stays</span>
                 </button>
               </div>
             </div>
-            <div className="pt-2 border-t border-black/10 text-xs text-slate-800 font-medium">
+            <div className="pt-2 border-t border-[#E1EFF8] text-xs text-slate-600 font-medium">
               Vetted 4★ and 5★ luxury hotels with breakfast, airport transfers, and halal dining options.
             </div>
           </div>
@@ -780,11 +779,11 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
         {/* ================= MODE 3: TOUR PACKAGES ================= */}
         {activeTab === 'packages' && (
           <div className="space-y-3">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-1.5 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-center">
               {/* Destination Country */}
               <div className="lg:col-span-5 relative">
-                <div className="w-full h-[52px] px-3 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center gap-2">
-                  <Package className="w-4 h-4 text-slate-600 shrink-0" />
+                <div className="w-full h-[54px] px-3 py-1.5 bg-[#F4FAFD] hover:bg-white rounded-xl border border-[#E1EFF8] hover:border-[#1389E8] shadow-xs flex items-center gap-2 transition-all">
+                  <Package className="w-4 h-4 text-[#F59E0B] shrink-0" />
                   <div className="flex-1 min-w-0">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                       Destination Country
@@ -806,8 +805,8 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
 
               {/* Package Type */}
               <div className="lg:col-span-4 relative">
-                <div className="w-full h-[52px] px-3 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-slate-600 shrink-0" />
+                <div className="w-full h-[54px] px-3 py-1.5 bg-[#F4FAFD] hover:bg-white rounded-xl border border-[#E1EFF8] hover:border-[#1389E8] shadow-xs flex items-center gap-2 transition-all">
+                  <ShieldCheck className="w-4 h-4 text-[#1389E8] shrink-0" />
                   <div className="flex-1 min-w-0">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                       Travel Style
@@ -831,14 +830,14 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigateToView('packages')}
-                  className="w-full h-[52px] px-4 rounded-lg bg-[#006ce4] hover:bg-[#0057b8] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  className="w-full h-[54px] px-4 rounded-xl bg-[#1389E8] hover:bg-[#0E7FE3] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <span>Explore Packages</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
-            <div className="pt-2 border-t border-black/10 text-xs text-slate-800 font-medium">
+            <div className="pt-2 border-t border-[#E1EFF8] text-xs text-slate-600 font-medium">
               Handcrafted packages starting from BDT 14,999 with verified Dhaka desk concierge.
             </div>
           </div>
@@ -847,11 +846,11 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
         {/* ================= MODE 4: VISA ASSISTANCE ================= */}
         {activeTab === 'visa' && (
           <div className="space-y-3">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-1.5 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-center">
               {/* Destination Country */}
               <div className="lg:col-span-5 relative">
-                <div className="w-full h-[52px] px-3 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center gap-2">
-                  <FileCheck2 className="w-4 h-4 text-slate-600 shrink-0" />
+                <div className="w-full h-[54px] px-3 py-1.5 bg-[#F4FAFD] hover:bg-white rounded-xl border border-[#E1EFF8] hover:border-[#1389E8] shadow-xs flex items-center gap-2 transition-all">
+                  <FileCheck2 className="w-4 h-4 text-[#10B981] shrink-0" />
                   <div className="flex-1 min-w-0">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                       Destination Embassy
@@ -874,8 +873,8 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
 
               {/* Passport Type */}
               <div className="lg:col-span-4 relative">
-                <div className="w-full h-[52px] px-3 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-slate-600 shrink-0" />
+                <div className="w-full h-[54px] px-3 py-1.5 bg-[#F4FAFD] hover:bg-white rounded-xl border border-[#E1EFF8] hover:border-[#1389E8] shadow-xs flex items-center gap-2 transition-all">
+                  <ShieldCheck className="w-4 h-4 text-[#1389E8] shrink-0" />
                   <div className="flex-1 min-w-0">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                       Passport Type
@@ -901,14 +900,14 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                     if (onOpenVisaModal) onOpenVisaModal(visaCountry);
                     else onNavigateToView('visa');
                   }}
-                  className="w-full h-[52px] px-4 rounded-lg bg-[#006ce4] hover:bg-[#0057b8] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  className="w-full h-[54px] px-4 rounded-xl bg-[#1389E8] hover:bg-[#0E7FE3] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <span>Check Visa Info</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
-            <div className="pt-2 border-t border-black/10 text-xs text-slate-800 font-medium">
+            <div className="pt-2 border-t border-[#E1EFF8] text-xs text-slate-600 font-medium">
               Clear document checklists, NOC templates, and application verification at Gulshan-2 desk.
             </div>
           </div>
@@ -917,11 +916,11 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
         {/* ================= MODE 5: CUSTOM TRIP ================= */}
         {activeTab === 'planner' && (
           <div className="space-y-3">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-1.5 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-center">
               {/* Prompt Input */}
               <div className="lg:col-span-9 relative">
-                <div className="w-full h-[52px] px-3 py-1.5 bg-white rounded-lg border border-slate-300 hover:border-[#006ce4] shadow-sm flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                <div className="w-full h-[54px] px-3 py-1.5 bg-[#F4FAFD] hover:bg-white rounded-xl border border-[#E1EFF8] hover:border-[#1389E8] shadow-xs flex items-center gap-2 transition-all">
+                  <Sparkles className="w-4 h-4 text-[#8B5CF6] shrink-0" />
                   <div className="flex-1 min-w-0">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                       Describe your dream trip
@@ -938,7 +937,7 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                     <button
                       type="button"
                       onClick={() => onOpenVoiceModal(plannerPrompt)}
-                      className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0D6EFD] transition-colors cursor-pointer shrink-0"
+                      className="p-2 rounded-lg bg-[#EAF7FF] hover:bg-[#DDF4FD] text-[#1389E8] transition-colors cursor-pointer shrink-0"
                       title="Speak your dream trip using Web Speech AI"
                     >
                       <Mic className="w-4 h-4" />
@@ -952,14 +951,14 @@ export const AzraqTripFinder: React.FC<AzraqTripFinderProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigateToView('planner', { prompt: plannerPrompt })}
-                  className="w-full h-[52px] px-4 rounded-lg bg-[#006ce4] hover:bg-[#0057b8] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  className="w-full h-[54px] px-4 rounded-xl bg-[#1389E8] hover:bg-[#0E7FE3] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>Plan My Trip</span>
                 </button>
               </div>
             </div>
-            <div className="pt-2 border-t border-black/10 text-xs text-slate-800 font-medium">
+            <div className="pt-2 border-t border-[#E1EFF8] text-xs text-slate-600 font-medium">
               Instant AI itinerary builder with day-by-day activities, hotel recommendations, and budget estimation.
             </div>
           </div>

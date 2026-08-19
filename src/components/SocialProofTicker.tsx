@@ -14,10 +14,9 @@ export const SocialProofTicker: React.FC<SocialProofTickerProps> = ({
   className = '',
   onSelectActivity,
 }) => {
-  const [activities, setActivities] = useState<SocialProofActivity[]>(INITIAL_SOCIAL_PROOF_ACTIVITIES);
+  const [activities, setActivities] = useState<SocialProofActivity[]>([]);
   const [currentToastIndex, setCurrentToastIndex] = useState(0);
   const [isToastDismissed, setIsToastDismissed] = useState(false);
-  const [activeUsersCount, setActiveUsersCount] = useState(14);
 
   useEffect(() => {
     const fetchLiveSocialProof = async () => {
@@ -30,37 +29,25 @@ export const SocialProofTicker: React.FC<SocialProofTickerProps> = ({
           }
         }
       } catch (e) {
-        // fallback to initial
+        // empty or authentic fallback
       }
     };
 
     fetchLiveSocialProof();
-    const interval = setInterval(fetchLiveSocialProof, 30000);
+    const interval = setInterval(fetchLiveSocialProof, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // Cycle floating toast every 6.5 seconds
+  // Cycle floating toast every 8 seconds if real activities exist
   useEffect(() => {
     if (variant !== 'toast' || activities.length === 0) return;
 
     const timer = setInterval(() => {
       setCurrentToastIndex((prev) => (prev + 1) % activities.length);
-    }, 6500);
+    }, 8000);
 
     return () => clearInterval(timer);
   }, [variant, activities.length]);
-
-  // Subtle fluctuation of live users
-  useEffect(() => {
-    const userTimer = setInterval(() => {
-      setActiveUsersCount((prev) => {
-        const delta = Math.random() > 0.5 ? 1 : -1;
-        const next = prev + delta;
-        return Math.max(9, Math.min(26, next));
-      });
-    }, 8000);
-    return () => clearInterval(userTimer);
-  }, []);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -89,10 +76,10 @@ export const SocialProofTicker: React.FC<SocialProofTickerProps> = ({
       >
         {/* Live Indicator Pill */}
         <div className="shrink-0 flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-semibold text-emerald-300">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          <span>LIVE ACTIVITY</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>AZRAQ VERIFIED</span>
           <span className="text-white/40">•</span>
-          <span className="text-white/80 font-normal">{activeUsersCount} travelers active</span>
+          <span className="text-white/80 font-normal">Direct Booking & Visa Desk</span>
         </div>
 
         {/* Scrolling Items */}

@@ -51,8 +51,14 @@ export function getOptimizedMediaUrl(
     return urlOrPublicId.replace('/upload/', `/upload/${transformString}/`);
   }
 
-  // If it's not a Cloudinary asset (e.g. Unsplash URL), return clean URL
-  if (urlOrPublicId.startsWith('http://') || urlOrPublicId.startsWith('https://')) {
+  // If it's a local upload, data URI, blob or external URL, return as-is
+  if (
+    urlOrPublicId.startsWith('/') ||
+    urlOrPublicId.startsWith('data:') ||
+    urlOrPublicId.startsWith('blob:') ||
+    urlOrPublicId.startsWith('http://') ||
+    urlOrPublicId.startsWith('https://')
+  ) {
     return urlOrPublicId;
   }
 
@@ -106,47 +112,57 @@ export async function uploadToCloudinary(
     throw new Error('File size exceeds the 50MB limit.');
   }
 
-  // Step 1: Try Server-side Proxy Upload (Uses backend credentials securely)
+  // Step 1: Try Server-side Proxy Upload with a 6-second timeout
   try {
     if (onProgress) onProgress(20);
     const base64Data = await fileToBase64(file);
     if (onProgress) onProgress(50);
 
-    const response = await fetch('/api/cloudinary/upload', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        file: base64Data,
-        folder: isVideo ? 'travel_buddies_videos' : 'travel_buddies_photos',
-        resource_type: isVideo ? 'video' : 'image',
-        tags: ['travel_buddies', 'azraq_tour'],
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.secure_url) {
-        if (onProgress) onProgress(100);
-        return {
-          secure_url: data.secure_url,
-          public_id: data.public_id,
-          resource_type: data.resource_type || (isVideo ? 'video' : 'image'),
-          format: data.format || (isVideo ? 'mp4' : 'jpg'),
-          width: data.width || 1080,
-          height: data.height || 1080,
-          duration: data.duration,
-          optimize_url: data.optimize_url,
-          auto_crop_url: data.auto_crop_url,
-        };
+    try {
+      const response = await fetch('/api/cloudinary/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          file: base64Data,
+          folder: isVideo ? 'travel_buddies_videos' : 'travel_buddies_photos',
+          resource_type: isVideo ? 'video' : 'image',
+          tags: ['travel_buddies', 'azraq_tour'],
+        }),
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.secure_url) {
+          if (onProgress) onProgress(100);
+          return {
+            secure_url: data.secure_url,
+            public_id: data.public_id,
+            resource_type: data.resource_type || (isVideo ? 'video' : 'image'),
+            format: data.format || (isVideo ? 'mp4' : 'jpg'),
+            width: data.width || 1080,
+            height: data.height || 1080,
+            duration: data.duration,
+            optimize_url: data.optimize_url,
+            auto_crop_url: data.auto_crop_url,
+          };
+        }
       }
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      console.warn('Server upload timed out or failed, falling back:', fetchErr);
     }
   } catch (err) {
     console.warn('Server-side Cloudinary upload failed, attempting direct upload:', err);
   }
 
-  // Step 2: Fallback to Direct Unsigned Upload
+  // Step 2: Fallback to Direct Unsigned Upload with 7-second timeout
   const env = (import.meta as any).env || {};
   const cloudName = env.VITE_CLOUDINARY_CLOUD_NAME || 'vd722ywp';
   const uploadPreset = env.VITE_CLOUDINARY_UPLOAD_PRESET || 'travel_buddies_unsigned';
@@ -159,23 +175,33 @@ export async function uploadToCloudinary(
   formData.append('folder', 'travel_buddies');
 
   return new Promise((resolve) => {
+    let resolved = false;
+    const safeResolve = (result: CloudinaryUploadResult) => {
+      if (!resolved) {
+        resolved = true;
+        if (onProgress) onProgress(100);
+        resolve(result);
+      }
+    };
+
     const xhr = new XMLHttpRequest();
     xhr.open('POST', endpoint, true);
+    xhr.timeout = 7000; // 7s maximum timeout to prevent hanging
 
     if (xhr.upload && onProgress) {
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           const percent = Math.round((e.loaded / e.total) * 100);
-          onProgress(percent);
+          onProgress(Math.min(95, percent));
         }
       };
     }
 
-    xhr.onload = () => {
+    xhr.onload = async () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const res = JSON.parse(xhr.responseText);
-          resolve({
+          safeResolve({
             secure_url: res.secure_url,
             public_id: res.public_id,
             resource_type: res.resource_type || (isVideo ? 'video' : 'image'),
@@ -185,36 +211,92 @@ export async function uploadToCloudinary(
             duration: res.duration,
           });
           return;
-        } catch {
-          // fallback to local blob
-        }
+        } catch {}
       }
 
-      // Step 3: Local Blob fallback for preview
-      const localBlobUrl = URL.createObjectURL(file);
-      resolve({
-        secure_url: localBlobUrl,
-        public_id: `local_${Date.now()}`,
-        resource_type: isVideo ? 'video' : 'image',
-        format: isVideo ? 'mp4' : 'jpg',
-        width: 1080,
-        height: 1080,
-      });
+      // Step 3: Fast Durable Data URI fallback
+      try {
+        const base64Data = await fileToBase64(file);
+        safeResolve({
+          secure_url: base64Data,
+          public_id: `local_${Date.now()}`,
+          resource_type: isVideo ? 'video' : 'image',
+          format: isVideo ? 'mp4' : 'jpg',
+          width: 1080,
+          height: 1080,
+        });
+      } catch {
+        safeResolve({
+          secure_url: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80',
+          public_id: `fallback_${Date.now()}`,
+          resource_type: 'image',
+          format: 'jpg',
+          width: 1080,
+          height: 1080,
+        });
+      }
     };
 
-    xhr.onerror = () => {
-      const localBlobUrl = URL.createObjectURL(file);
-      resolve({
-        secure_url: localBlobUrl,
-        public_id: `local_${Date.now()}`,
-        resource_type: isVideo ? 'video' : 'image',
-        format: isVideo ? 'mp4' : 'jpg',
-        width: 1080,
-        height: 1080,
-      });
+    xhr.ontimeout = async () => {
+      try {
+        const base64Data = await fileToBase64(file);
+        safeResolve({
+          secure_url: base64Data,
+          public_id: `local_${Date.now()}`,
+          resource_type: isVideo ? 'video' : 'image',
+          format: isVideo ? 'mp4' : 'jpg',
+          width: 1080,
+          height: 1080,
+        });
+      } catch {
+        safeResolve({
+          secure_url: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80',
+          public_id: `fallback_${Date.now()}`,
+          resource_type: 'image',
+          format: 'jpg',
+          width: 1080,
+          height: 1080,
+        });
+      }
     };
 
-    xhr.send(formData);
+    xhr.onerror = async () => {
+      try {
+        const base64Data = await fileToBase64(file);
+        safeResolve({
+          secure_url: base64Data,
+          public_id: `local_${Date.now()}`,
+          resource_type: isVideo ? 'video' : 'image',
+          format: isVideo ? 'mp4' : 'jpg',
+          width: 1080,
+          height: 1080,
+        });
+      } catch {
+        safeResolve({
+          secure_url: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80',
+          public_id: `fallback_${Date.now()}`,
+          resource_type: 'image',
+          format: 'jpg',
+          width: 1080,
+          height: 1080,
+        });
+      }
+    };
+
+    try {
+      xhr.send(formData);
+    } catch {
+      fileToBase64(file).then((b64) => {
+        safeResolve({
+          secure_url: b64,
+          public_id: `local_${Date.now()}`,
+          resource_type: isVideo ? 'video' : 'image',
+          format: isVideo ? 'mp4' : 'jpg',
+          width: 1080,
+          height: 1080,
+        });
+      });
+    }
   });
 }
 

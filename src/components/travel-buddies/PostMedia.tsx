@@ -100,6 +100,10 @@ export const PostMedia: React.FC<PostMediaProps> = ({ mediaUrls }) => {
           alt="Post media"
           loading="lazy"
           className="w-full h-full object-cover transition-opacity duration-300"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src =
+              'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80';
+          }}
         />
       )}
 

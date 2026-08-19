@@ -25,12 +25,12 @@ export const Footer: React.FC<FooterProps> = ({
 
   return (
     <>
-      <footer className="w-full bg-[#071A33] border-t border-slate-800 text-slate-400 pt-16 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 pb-12 border-b border-slate-800">
+      <footer className="w-full bg-[#12304A] border-t border-sky-900/40 text-slate-300 pt-16 pb-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 pb-12 border-b border-sky-900/40">
           {/* Column 1: Brand & Company Bio (Span 2) */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/10 border border-slate-700">
+              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shadow-sm flex items-center justify-center p-0.5 border border-white/20">
                 <img
                   src={BRAND_LOGOS.azraq}
                   alt="Azraq Logo"
@@ -38,10 +38,13 @@ export const Footer: React.FC<FooterProps> = ({
                 />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white tracking-tight">
-                  Azraq
+                <h3 className="text-xl font-extrabold text-white tracking-tight font-poppins flex items-center gap-1.5">
+                  <span>AZRAQ</span>
+                  <span className="text-xs font-bold text-[#5BC7F4] uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/10">
+                    TOUR
+                  </span>
                 </h3>
-                <p className="text-xs text-sky-400 font-medium">
+                <p className="text-xs text-[#5BC7F4] font-medium">
                   {AZRAQ_AGENCY_CONFIG.tagline} • Curated Asian Escapes
                 </p>
               </div>
@@ -53,17 +56,17 @@ export const Footer: React.FC<FooterProps> = ({
 
             <div className="pt-2 space-y-1.5 text-xs text-slate-300">
               <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                <MapPin className="w-3.5 h-3.5 text-[#5BC7F4]" />
                 <span>{AZRAQ_AGENCY_CONFIG.officeAddress}, {AZRAQ_AGENCY_CONFIG.officeCity}, {AZRAQ_AGENCY_CONFIG.officeCountry}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Phone className="w-3.5 h-3.5 text-sky-400" />
+                <Phone className="w-3.5 h-3.5 text-[#5BC7F4]" />
                 <a href={`https://wa.me/${AZRAQ_AGENCY_CONFIG.whatsappNumber}`} target="_blank" rel="noreferrer" className="hover:text-white font-mono">
                   {AZRAQ_AGENCY_CONFIG.phoneDisplay}
                 </a>
               </div>
               <div className="flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-sky-400" />
+                <Mail className="w-3.5 h-3.5 text-[#5BC7F4]" />
                 <a href={`mailto:${AZRAQ_AGENCY_CONFIG.email}`} className="hover:text-white transition-colors">
                   {AZRAQ_AGENCY_CONFIG.email}
                 </a>

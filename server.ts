@@ -13,8 +13,19 @@ const INITIAL_BLOG_POSTS: any[] = [];
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: "25mb" }));
-app.use(express.urlencoded({ extended: true, limit: "25mb" }));
+// Ensure public/uploads directory exists for permanent media storage
+const uploadsDir = path.join(process.cwd(), "public", "uploads");
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (e) {
+  console.warn("Could not create public/uploads folder:", e);
+}
+
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use("/uploads", express.static(uploadsDir));
 
 // --- Cloudinary Server Configuration & Client Helper ---
 function getCloudinary() {
@@ -3201,8 +3212,8 @@ app.get("/api/cloudinary/config", (req, res) => {
   });
 });
 
-// 2. Upload Image or Video to Cloudinary
-app.post("/api/cloudinary/upload", async (req, res) => {
+// 2. Upload Image or Video to Cloudinary with local storage fallback
+app.post(["/api/cloudinary/upload", "/api/upload/image", "/api/upload/avatar"], async (req, res) => {
   try {
     const {
       file,
@@ -3221,53 +3232,99 @@ app.post("/api/cloudinary/upload", async (req, res) => {
       });
     }
 
-    const cld = getCloudinary();
-    const uploadOptions: any = {
-      folder,
-      resource_type,
-      tags,
-      overwrite: true,
-      invalidate: true,
-    };
+    // Try Cloudinary if API secret exists
+    if (process.env.CLOUDINARY_API_SECRET) {
+      try {
+        const cld = getCloudinary();
+        const uploadOptions: any = {
+          folder,
+          resource_type,
+          tags,
+          overwrite: true,
+          invalidate: true,
+        };
 
-    if (public_id) uploadOptions.public_id = public_id;
-    if (transformation) uploadOptions.transformation = transformation;
+        if (public_id) uploadOptions.public_id = public_id;
+        if (transformation) uploadOptions.transformation = transformation;
 
-    const result = await cld.uploader.upload(mediaSource, uploadOptions);
+        const result = await cld.uploader.upload(mediaSource, uploadOptions);
 
-    // Generate auto-format and auto-quality optimized URL
-    const optimizeUrl = cld.url(result.public_id, {
-      fetch_format: "auto",
-      quality: "auto",
-      secure: true,
-    });
+        // Generate auto-format and auto-quality optimized URL
+        const optimizeUrl = cld.url(result.public_id, {
+          fetch_format: "auto",
+          quality: "auto",
+          secure: true,
+        });
 
-    // Generate square auto-crop URL
-    const autoCropUrl = cld.url(result.public_id, {
-      crop: "auto",
-      gravity: "auto",
-      width: 500,
-      height: 500,
-      secure: true,
-    });
+        // Generate square auto-crop URL
+        const autoCropUrl = cld.url(result.public_id, {
+          crop: "auto",
+          gravity: "auto",
+          width: 500,
+          height: 500,
+          secure: true,
+        });
 
-    res.json({
-      success: true,
-      public_id: result.public_id,
-      secure_url: result.secure_url,
-      optimize_url: optimizeUrl,
-      auto_crop_url: autoCropUrl,
-      format: result.format,
-      width: result.width,
-      height: result.height,
-      bytes: result.bytes,
-      resource_type: result.resource_type,
-      created_at: result.created_at,
-    });
+        return res.json({
+          success: true,
+          public_id: result.public_id,
+          secure_url: result.secure_url,
+          optimize_url: optimizeUrl,
+          auto_crop_url: autoCropUrl,
+          format: result.format,
+          width: result.width,
+          height: result.height,
+          bytes: result.bytes,
+          resource_type: result.resource_type,
+          created_at: result.created_at,
+        });
+      } catch (cldErr: any) {
+        console.warn("Cloudinary upload failed, falling back to local file storage:", cldErr?.message);
+      }
+    }
+
+    // Resilient local file storage fallback
+    if (typeof mediaSource === "string") {
+      let base64Data = mediaSource;
+      let extension = "jpg";
+
+      const matches = mediaSource.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        const mime = matches[1];
+        base64Data = matches[2];
+        if (mime.includes("png")) extension = "png";
+        else if (mime.includes("webp")) extension = "webp";
+        else if (mime.includes("gif")) extension = "gif";
+        else if (mime.includes("mp4")) extension = "mp4";
+      }
+
+      const fileBuffer = Buffer.from(base64Data, "base64");
+      const filename = `media_${Date.now()}_${crypto.randomBytes(4).toString("hex")}.${extension}`;
+      const filePath = path.join(uploadsDir, filename);
+
+      fs.writeFileSync(filePath, fileBuffer);
+      const fileUrl = `/uploads/${filename}`;
+
+      return res.json({
+        success: true,
+        public_id: filename,
+        secure_url: fileUrl,
+        optimize_url: fileUrl,
+        auto_crop_url: fileUrl,
+        format: extension,
+        width: 1080,
+        height: 1080,
+        bytes: fileBuffer.length,
+        resource_type: extension === "mp4" ? "video" : "image",
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    res.status(400).json({ error: "Invalid image format provided." });
   } catch (err: any) {
-    console.error("Cloudinary Server Upload Error:", err);
+    console.error("Media Server Upload Error:", err);
     res.status(500).json({
-      error: err.message || "Cloudinary upload failed.",
+      error: err.message || "Media upload failed.",
     });
   }
 });

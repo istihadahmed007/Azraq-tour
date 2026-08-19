@@ -383,7 +383,7 @@ export async function getStories(): Promise<Story[]> {
 
 /**
  * Create a new Post
- * Default is_approved = false (Post Moderation requirement)
+ * User posts are immediately approved and visible in the feed
  */
 export async function createPost({
   userId,
@@ -400,8 +400,7 @@ export async function createPost({
   mediaUrls: string[];
   isAdmin?: boolean;
 }): Promise<{ success: boolean; post?: Post; error?: string }> {
-  // If admin/owner, auto-approve; normal users go to moderation review
-  const isApproved = isAdmin;
+  const isApproved = true; // Instantly visible to the traveler and community
 
   const newPost: Post = {
     id: `post_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
@@ -418,32 +417,102 @@ export async function createPost({
     reaction_counts: { love: 0, fire: 0, wow: 0, like: 0 },
   };
 
-  // 1. Write to Supabase if configured
-  if (isSupabaseConfigured) {
-    try {
-      await supabase.from('posts').insert([
-        {
-          id: newPost.id,
-          user_id: userId,
-          location: newPost.location,
-          caption: newPost.caption,
-          media_urls: newPost.media_urls,
-          is_approved: isApproved,
-          created_at: newPost.created_at,
-        },
-      ]);
-    } catch (e) {
-      console.warn('Supabase post insert notice:', e);
-    }
-  }
+  // Attach canonical imageUrl and photoURL for maximum cross-compatibility
+  (newPost as any).imageUrl = mediaUrls.length > 0 ? mediaUrls[0] : '';
+  (newPost as any).authorAvatar = userProfile.avatar_url;
+  (newPost as any).authorName = userProfile.full_name || userProfile.username;
 
-  // 2. Also write to local storage cache
+  // 1. Instantly write to local storage caches for immediate UI response (0ms latency)
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_POSTS_KEY);
     const posts: Post[] = saved ? JSON.parse(saved) : INITIAL_COMMUNITY_POSTS;
-    posts.unshift(newPost);
-    localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(posts));
-  } catch (e) {}
+    const filtered = posts.filter((p) => p.id !== newPost.id);
+    filtered.unshift(newPost);
+    localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(filtered));
+
+    // Also sync to FeedContext storage key
+    const feedSaved = localStorage.getItem('azraq_tours_feed_posts_v2');
+    if (feedSaved) {
+      try {
+        const feedPosts = JSON.parse(feedSaved);
+        if (Array.isArray(feedPosts)) {
+          feedPosts.unshift({
+            id: newPost.id,
+            authorId: userId,
+            authorName: userProfile.full_name || userProfile.username,
+            authorAvatar: userProfile.avatar_url,
+            caption: newPost.caption,
+            location: newPost.location,
+            imageUrl: (newPost as any).imageUrl,
+            mediaUrls: newPost.media_urls,
+            likes: 0,
+            likedBy: [],
+            comments: [],
+            shares: 0,
+            views: 1,
+            isVerified: userProfile.is_verified || false,
+            tags: newPost.hashtags,
+            createdAt: newPost.created_at,
+          });
+          localStorage.setItem('azraq_tours_feed_posts_v2', JSON.stringify(feedPosts));
+        }
+      } catch {}
+    }
+  } catch (e) {
+    console.warn('Local storage write notice:', e);
+  }
+
+  // 2. Asynchronously background-sync to Firestore (non-blocking, will not stall UI)
+  if (db) {
+    const syncFirestore = async () => {
+      try {
+        const feedRef = doc(db, 'feed_posts', newPost.id);
+        await setDoc(feedRef, {
+          id: newPost.id,
+          user_id: userId,
+          authorId: userId,
+          authorName: userProfile.full_name || userProfile.username,
+          authorAvatar: userProfile.avatar_url,
+          photoURL: userProfile.avatar_url,
+          location: newPost.location,
+          caption: newPost.caption,
+          imageUrl: (newPost as any).imageUrl,
+          media_urls: newPost.media_urls,
+          is_approved: true,
+          created_at: newPost.created_at,
+          likes_count: 0,
+          comments_count: 0,
+          hashtags: newPost.hashtags,
+          profile: userProfile,
+        });
+      } catch (firestoreErr) {
+        console.warn('Firestore background post sync notice:', firestoreErr);
+      }
+    };
+    syncFirestore();
+  }
+
+  // 3. Asynchronously background-sync to Supabase if configured
+  if (isSupabaseConfigured) {
+    const syncSupabase = async () => {
+      try {
+        await supabase.from('posts').insert([
+          {
+            id: newPost.id,
+            user_id: userId,
+            location: newPost.location,
+            caption: newPost.caption,
+            media_urls: newPost.media_urls,
+            is_approved: isApproved,
+            created_at: newPost.created_at,
+          },
+        ]);
+      } catch (e) {
+        console.warn('Supabase post insert notice:', e);
+      }
+    };
+    syncSupabase();
+  }
 
   return { success: true, post: newPost };
 }

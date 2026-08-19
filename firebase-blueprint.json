@@ -61,6 +61,47 @@
         "createdAt": { "type": "string" }
       },
       "required": ["userEmail"]
+    },
+    "buddy_profiles": {
+      "title": "Travel Buddy Profiles",
+      "description": "User profiles for finding travel companions and matching by destination, style, and travel dates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "displayName": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "homeLocation": { "type": "string" },
+        "bio": { "type": "string" },
+        "destinations": { "type": "array" },
+        "travelStyles": { "type": "array" },
+        "languages": { "type": "array" },
+        "travelStart": { "type": "string" },
+        "travelEnd": { "type": "string" },
+        "groupSize": { "type": "number" },
+        "contactPreference": { "type": "string" },
+        "visibility": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "displayName", "destinations"]
+    },
+    "buddy_requests": {
+      "title": "Travel Buddy Connection Requests",
+      "description": "Connection requests between travelers with private messages and acceptance workflow",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string" },
+        "senderProfile": { "type": "object" },
+        "receiverProfile": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "senderId", "receiverId", "status"]
     }
   },
   "firestore": {
@@ -75,6 +116,14 @@
     "/quotes/{quoteId}": {
       "schema": "quotes",
       "description": "Flight and visa quotation inquiries"
+    },
+    "/buddy_profiles/{userId}": {
+      "schema": "buddy_profiles",
+      "description": "Travel buddy profiles searchable by destination and travel dates"
+    },
+    "/buddy_requests/{requestId}": {
+      "schema": "buddy_requests",
+      "description": "Private connection requests between travel companions"
     }
   }
 }

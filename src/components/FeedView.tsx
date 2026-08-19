@@ -1,5 +1,5 @@
 import React from 'react';
-import { TravelBuddiesFeed } from './travel-buddies/TravelBuddiesFeed';
+import { TravelBuddiesHub } from './travel-buddies/TravelBuddiesHub';
 
 interface FeedViewProps {
   onSelectDestinationByName: (name: string) => void;
@@ -11,7 +11,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
   onNavigateToProfile,
 }) => {
   return (
-    <TravelBuddiesFeed
+    <TravelBuddiesHub
       onSelectDestinationByName={onSelectDestinationByName}
       onNavigateToProfile={onNavigateToProfile}
     />

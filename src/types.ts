@@ -662,4 +662,49 @@ export interface UserTripTimelineEvent {
   actionType?: string;
 }
 
+export type BuddyContactPreference = 'WhatsApp' | 'Email' | 'In-app only';
+export type BuddyVisibility = 'public' | 'matches';
+export type BuddyRequestStatus = 'pending' | 'accepted' | 'declined' | 'cancelled';
+
+export interface TravelBuddyProfile {
+  id: string; // userId
+  displayName: string;
+  avatarUrl: string;
+  homeLocation: string;
+  bio: string;
+  destinations: string[];
+  travelStyles: string[];
+  languages: string[];
+  travelStart?: string;
+  travelEnd?: string;
+  groupSize: number;
+  contactPreference: BuddyContactPreference;
+  visibility: BuddyVisibility;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  isDemo?: boolean;
+}
+
+export interface TravelBuddyRequest {
+  id: string; // `${senderUid}__${receiverUid}`
+  senderId: string;
+  receiverId: string;
+  senderProfile?: Partial<TravelBuddyProfile>;
+  receiverProfile?: Partial<TravelBuddyProfile>;
+  message: string;
+  status: BuddyRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MatchedTravelBuddy extends TravelBuddyProfile {
+  matchScore: number;
+  matchedOn: string[];
+  requestStatus?: BuddyRequestStatus | 'connected';
+  requestDirection?: 'incoming' | 'outgoing';
+  activeRequestId?: string;
+  existingRequest?: TravelBuddyRequest;
+}
+
 

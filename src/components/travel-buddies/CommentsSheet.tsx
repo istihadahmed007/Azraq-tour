@@ -187,6 +187,18 @@ export const CommentsSheet: React.FC<CommentsSheetProps> = ({
           onSubmit={handleSubmit}
           className="p-3 bg-slate-950 border-t border-white/10 flex items-center gap-2"
         >
+          {!isGuest && user && (
+            <img
+              src={
+                user.photoURL ||
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+                  user.fullName || user.email || 'traveler'
+                )}`
+              }
+              alt={user.fullName || 'User'}
+              className="w-7 h-7 rounded-full object-cover border border-white/20 shrink-0"
+            />
+          )}
           <input
             type="text"
             value={newCommentText}

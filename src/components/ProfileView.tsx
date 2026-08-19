@@ -44,6 +44,8 @@ import {
 } from 'lucide-react';
 import { TrackQuoteModal } from './TrackQuoteModal';
 import { UpdatesFeedTab } from './UpdatesFeedTab';
+import { ProfilePictureModal } from './ProfilePictureModal';
+import { Camera } from 'lucide-react';
 
 interface ProfileViewProps {
   savedItineraries: Itinerary[];
@@ -76,6 +78,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   // Active Navigation Tab: dashboard | updates | quote_history | saved_destinations | itineraries | my_posts | bookmarks | settings
   const [activeTab, setActiveTab] = useState<'dashboard' | 'updates' | 'quote_history' | 'saved_destinations' | 'itineraries' | 'my_posts' | 'bookmarks' | 'settings'>('dashboard');
+
+  // Profile Picture Modal
+  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] = useState(false);
 
   // Quotes state
   const [userQuotes, setUserQuotes] = useState<QuoteRequest[]>([]);
@@ -581,17 +586,28 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="absolute -top-10 -right-10 w-72 h-72 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="relative group shrink-0">
-              <img
-                src={
-                  user?.photoURL ||
-                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
-                    user?.fullName || user?.email || 'traveler'
-                  )}`
-                }
-                alt={user?.fullName || 'Traveler'}
-                className="w-24 h-24 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl ring-4 ring-amber-400/20"
-              />
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 border-2 border-slate-950 flex items-center justify-center text-slate-950 text-xs font-black shadow-lg" title="Azraq VIP Member">
+              <button
+                type="button"
+                onClick={() => setIsProfilePictureModalOpen(true)}
+                className="relative block rounded-full overflow-hidden focus:outline-none focus:ring-4 focus:ring-amber-400/40 cursor-pointer group"
+                title="Click to change profile picture"
+              >
+                <img
+                  src={
+                    user?.photoURL ||
+                    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+                      user?.fullName || user?.email || 'traveler'
+                    )}`
+                  }
+                  alt={user?.fullName || 'Traveler'}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl ring-4 ring-amber-400/20 group-hover:brightness-90 transition-all"
+                />
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                  <Camera className="w-6 h-6 text-amber-300 drop-shadow-md mb-0.5" />
+                  <span className="text-[10px] font-bold text-amber-200 uppercase tracking-wider">Change</span>
+                </div>
+              </button>
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 border-2 border-slate-950 flex items-center justify-center text-slate-950 text-xs font-black shadow-lg pointer-events-none" title="Azraq VIP Member">
                 👑
               </div>
             </div>
@@ -1389,9 +1405,73 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       )}
 
-      {/* SECTION 4: ACCOUNT SETTINGS (Profile + Password Change) */}
+      {/* SECTION 4: ACCOUNT SETTINGS (Profile Photo + Details + Password Change) */}
       {activeTab === 'settings' && (
         <div className="max-w-3xl mx-auto w-full space-y-8 animate-fade-in">
+          {/* Profile Picture Card */}
+          <div className="glass-card rounded-3xl p-6 sm:p-8 border border-white/15 shadow-2xl bg-slate-900/90 space-y-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-xl font-serif-display font-bold text-white flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-amber-300" />
+                  Profile Picture
+                </h2>
+                <p className="text-xs text-sky-200/80">
+                  Your photo appears across your profile, travel buddy posts, comments, and navigation.
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-300">
+                <Camera className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              <div className="relative group shrink-0">
+                <img
+                  src={
+                    user?.photoURL ||
+                    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+                      user?.fullName || user?.email || 'traveler'
+                    )}`
+                  }
+                  alt={user?.fullName || 'Traveler'}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-amber-400/60 shadow-xl ring-4 ring-amber-400/20"
+                />
+              </div>
+
+              <div className="flex-1 text-center sm:text-left space-y-3">
+                <div>
+                  <h3 className="text-sm font-bold text-white">{user?.fullName || 'VIP Traveler'}</h3>
+                  <p className="text-xs text-slate-400">
+                    {user?.photoURL ? 'Custom photo uploaded & active.' : 'Using default seed avatar.'}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsProfilePictureModalOpen(true)}
+                    className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-400 text-slate-950 font-bold text-xs shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Upload / Change Photo</span>
+                  </button>
+
+                  {user?.photoURL && (
+                    <button
+                      type="button"
+                      onClick={() => setIsProfilePictureModalOpen(true)}
+                      className="px-4 py-2.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Manage Photo</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Profile Details Form */}
           <div className="glass-card rounded-3xl p-6 sm:p-8 border border-white/15 shadow-2xl space-y-6 bg-slate-900/90">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -1762,6 +1842,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Profile Picture Modal */}
+      <ProfilePictureModal
+        isOpen={isProfilePictureModalOpen}
+        onClose={() => setIsProfilePictureModalOpen(false)}
+      />
     </div>
   );
 };

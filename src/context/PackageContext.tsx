@@ -42,6 +42,11 @@ interface PackageContextType {
   activeQuotationModal: TourPackage | null;
   setActiveQuotationModal: (pkg: TourPackage | null) => void;
   
+  // Wishlist & Saved Packages
+  savedPackageIds: string[];
+  toggleSavePackage: (id: string) => void;
+  isPackageSaved: (id: string) => boolean;
+
   // 37 Package Import Confirmation State
   importConfirmation: ImportConfirmationState | null;
   clearImportConfirmation: () => void;
@@ -121,6 +126,34 @@ export const PackageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activePackageModal, setActivePackageModal] = useState<TourPackage | null>(null);
   const [activeQuotationModal, setActiveQuotationModal] = useState<TourPackage | null>(null);
   const [importConfirmation, setImportConfirmation] = useState<ImportConfirmationState | null>(null);
+
+  // Wishlist / Saved Packages state
+  const [savedPackageIds, setSavedPackageIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('azraq_saved_packages_wishlist');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('azraq_saved_packages_wishlist', JSON.stringify(savedPackageIds));
+    } catch (e) {
+      console.error('Error saving wishlist:', e);
+    }
+  }, [savedPackageIds]);
+
+  const toggleSavePackage = (id: string) => {
+    setSavedPackageIds((prev) =>
+      prev.includes(id) ? prev.filter((pId) => pId !== id) : [...prev, id]
+    );
+  };
+
+  const isPackageSaved = (id: string) => {
+    return savedPackageIds.includes(id);
+  };
 
   const clearImportConfirmation = () => {
     setImportConfirmation(null);
@@ -540,6 +573,9 @@ export const PackageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActivePackageModal,
         activeQuotationModal,
         setActiveQuotationModal,
+        savedPackageIds,
+        toggleSavePackage,
+        isPackageSaved,
         importConfirmation,
         clearImportConfirmation,
         parseAndImportFull37Packages,

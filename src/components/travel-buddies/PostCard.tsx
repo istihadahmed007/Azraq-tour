@@ -142,6 +142,23 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  const authorAvatar =
+    post.profile?.photoURL ||
+    post.profile?.avatar_url ||
+    (post as any).authorAvatar ||
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+      post.profile?.username || post.profile?.full_name || 'traveler'
+    )}`;
+
+  const resolvedMediaUrls: string[] =
+    Array.isArray(post.media_urls) && post.media_urls.length > 0
+      ? post.media_urls
+      : (post as any).imageUrl
+      ? [(post as any).imageUrl]
+      : (post as any).image_url
+      ? [(post as any).image_url]
+      : [];
+
   return (
     <article className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden shadow-xl transition-all hover:border-white/20">
       {/* Post Header */}
@@ -149,14 +166,14 @@ export const PostCard: React.FC<PostCardProps> = ({
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
-              src={
-                post.profile?.avatar_url ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
-                  post.profile?.username || 'traveler'
-                )}`
-              }
+              src={authorAvatar}
               alt={post.profile?.username || 'Traveler'}
               className="w-10 h-10 rounded-full object-cover border border-white/15 shadow-sm"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+                  post.profile?.username || 'traveler'
+                )}`;
+              }}
             />
             {isAzraqOfficial && (
               <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center text-[10px] text-slate-950 font-bold border border-slate-900">
@@ -244,8 +261,8 @@ export const PostCard: React.FC<PostCardProps> = ({
       </div>
 
       {/* Post Media Carousel / Video */}
-      {post.media_urls && post.media_urls.length > 0 && (
-        <PostMedia mediaUrls={post.media_urls} />
+      {resolvedMediaUrls.length > 0 && (
+        <PostMedia mediaUrls={resolvedMediaUrls} />
       )}
 
       {/* Caption Body */}
