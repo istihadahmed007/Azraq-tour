@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, Plane, Send, ShieldCheck, Clock, Award, Image as ImageIcon } from 'lucide-react';
+import React from 'react';
+import { Send, ShieldCheck, Clock, Award } from 'lucide-react';
 import { AzraqTripFinder, FlightSearchParams } from '../AzraqTripFinder';
 import { TourPackage } from '../../types';
 
@@ -12,29 +12,6 @@ interface HomeHeroProps {
   onOpenVoiceModal?: (initialTranscript?: string) => void;
 }
 
-const SCENERY_PRESETS = [
-  {
-    id: 'island-karsts',
-    label: 'Tropical Karsts',
-    url: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=2560&q=90',
-  },
-  {
-    id: 'mountain-valley',
-    label: 'Alpine Valley',
-    url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2560&q=90',
-  },
-  {
-    id: 'emerald-fjord',
-    label: 'Emerald Fjord',
-    url: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2560&q=90',
-  },
-  {
-    id: 'misty-highlands',
-    label: 'Misty Peaks',
-    url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=2560&q=90',
-  },
-];
-
 export const HomeHero: React.FC<HomeHeroProps> = ({
   onSearchFlights,
   onNavigateToView,
@@ -43,42 +20,18 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
   onOpenQuote,
   onOpenVoiceModal,
 }) => {
-  const [selectedScenery, setSelectedScenery] = useState(SCENERY_PRESETS[0].url);
-
   return (
     <section className="relative w-full text-white pt-8 sm:pt-14 pb-14 sm:pb-20 shadow-lg overflow-hidden bg-slate-950">
-      {/* Wonderful Natural Landscape Background - Pure Vivid Scenery */}
+      {/* Wonderful Natural Landscape Background - Thailand Phang Nga Bay & Longtail Boat Scenery */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <img
-          key={selectedScenery}
-          src={selectedScenery}
-          alt="Wonderful natural travel scenery"
+          src="https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=2560&q=90"
+          alt="Thailand James Bond Island and longtail boat in crystal turquoise bay"
           referrerPolicy="no-referrer"
-          className="w-full h-full object-cover object-center scale-100 transition-opacity duration-700 animate-in fade-in"
+          className="w-full h-full object-cover object-center scale-100"
         />
         {/* Soft, minimal dark gradient strictly for white typography contrast, keeping the natural scenery 100% vibrant */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/60" />
-      </div>
-
-      {/* Scenery Quick Preset Selector */}
-      <div className="absolute top-4 right-4 z-20 hidden sm:flex items-center gap-1 bg-black/40 backdrop-blur-md p-1 rounded-full border border-white/20">
-        <span className="px-2 text-[10px] text-slate-300 font-medium flex items-center gap-1">
-          <ImageIcon className="w-3 h-3 text-sky-400" />
-          Scenery:
-        </span>
-        {SCENERY_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            onClick={() => setSelectedScenery(preset.url)}
-            className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold transition-all cursor-pointer ${
-              selectedScenery === preset.url
-                ? 'bg-white text-slate-950 shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            {preset.label}
-          </button>
-        ))}
       </div>
 
       {/* Decorative Paper-Airplane Flight Paths */}

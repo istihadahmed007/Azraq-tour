@@ -255,9 +255,14 @@ function findUserByEmailOrPhone(identifier: string): ServerUser | undefined {
   const cleanPhone = norm.replace(/[^0-9]/g, '');
   for (const user of usersStore.values()) {
     if (user.email.toLowerCase() === norm) return user;
-    if (user.phone) {
+    if (user.phone && cleanPhone.length >= 6) {
       const userCleanPhone = user.phone.replace(/[^0-9]/g, '');
-      if (userCleanPhone && userCleanPhone === cleanPhone && cleanPhone.length >= 6) {
+      if (
+        userCleanPhone === cleanPhone ||
+        userCleanPhone.endsWith(cleanPhone) ||
+        cleanPhone.endsWith(userCleanPhone) ||
+        (cleanPhone.length >= 8 && userCleanPhone.slice(-8) === cleanPhone.slice(-8))
+      ) {
         return user;
       }
     }

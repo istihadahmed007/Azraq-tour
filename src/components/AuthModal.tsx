@@ -554,7 +554,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ brandTitle = 'Azraq Tours 
               </div>
             )}
 
-            {/* VIEW 3: GOOGLE ACCOUNT PROMPT (1-CLICK & ENTER GOOGLE EMAIL) */}
+            {/* VIEW 3: GOOGLE ACCOUNT PROMPT (ONE-CLICK POPUP OR DIRECT EMAIL) */}
             {authModalView === 'google_prompt' && (
               <div className="space-y-5 animate-fade-in">
                 <button
@@ -575,53 +575,45 @@ export const AuthModal: React.FC<AuthModalProps> = ({ brandTitle = 'Azraq Tours 
                   </div>
                   <h3 className="text-xl font-bold font-serif-display text-white">Sign In with Google</h3>
                   <p className="text-xs text-sky-200/80 max-w-xs mx-auto">
-                    Select your Google account or enter your Gmail address to securely sign in.
+                    Sign in with your personal Google account or enter your Gmail address.
                   </p>
                 </div>
 
-                {/* Quick 1-Click for Super Admin / Owner */}
+                {/* Direct Google One-Click OAuth */}
                 <div className="space-y-2.5 pt-1">
-                  <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wider text-center">
-                    Fast Sign-In with Registered Account
-                  </div>
-
                   <button
                     type="button"
                     onClick={async () => {
                       setIsGoogleProcessing(true);
                       setErrorMessage('');
-                      const res = await loginWithGoogle('istihadahmed1163@gmail.com', 'Istihad Ahmed');
+                      const res = await loginWithGoogle();
                       setIsGoogleProcessing(false);
-                      if (res.error) setErrorMessage(res.error);
+                      if (res.error && !res.error.includes('popup restricted')) {
+                        setErrorMessage(res.error);
+                      }
                     }}
                     disabled={isGoogleProcessing}
-                    className="w-full p-4 rounded-2xl bg-slate-800/95 hover:bg-slate-700/90 border border-amber-400/50 text-left flex items-center justify-between gap-3 group transition-all shadow-xl active:scale-[0.99] cursor-pointer"
+                    className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2.5 disabled:opacity-60 cursor-pointer min-h-[44px]"
                   >
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-400 to-amber-200 text-slate-950 flex items-center justify-center font-black font-serif-display text-sm shadow-md">
-                        IA
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-white group-hover:text-amber-300 transition-colors">
-                            Istihad Ahmed
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold border border-amber-400/30">
-                            Super Admin
-                          </span>
-                        </div>
-                        <span className="text-xs text-sky-200/70 font-mono">istihadahmed1163@gmail.com</span>
-                      </div>
-                    </div>
-
-                    <ArrowRight className="w-4 h-4 text-amber-300 group-hover:translate-x-1 transition-transform shrink-0" />
+                    {isGoogleProcessing ? (
+                      <RefreshCw className="w-4 h-4 animate-spin text-slate-900" />
+                    ) : (
+                      <>
+                        <img
+                          src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                          alt="Google"
+                          className="w-4 h-4"
+                        />
+                        <span>Launch Google Sign-In Popup</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
                 {/* Custom Google Email Form */}
                 <div className="pt-3 border-t border-white/10 space-y-3">
                   <div className="text-[11px] font-bold text-sky-200/70 uppercase tracking-wider text-center">
-                    Or Enter Any Google / Gmail Account
+                    Or Sign In with Your Gmail Address
                   </div>
 
                   <form
@@ -656,18 +648,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ brandTitle = 'Azraq Tours 
                     <button
                       type="submit"
                       disabled={isGoogleProcessing}
-                      className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2.5 disabled:opacity-60 cursor-pointer min-h-[44px]"
+                      className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2.5 disabled:opacity-60 cursor-pointer min-h-[44px]"
                     >
                       {isGoogleProcessing ? (
                         <RefreshCw className="w-4 h-4 animate-spin text-slate-900" />
                       ) : (
                         <>
-                          <img
-                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                            alt="Google"
-                            className="w-4 h-4"
-                          />
-                          <span>Sign In with this Google Account</span>
+                          <LogIn className="w-4 h-4" />
+                          <span>Continue with Entered Email</span>
                         </>
                       )}
                     </button>
